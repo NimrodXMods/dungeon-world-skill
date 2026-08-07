@@ -9,7 +9,7 @@ metadata:
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
   last-modified-by-model: Anthropic Claude Opus 5 (claude-opus-5)
-  updated: "2026-08-06"
+  updated: "2026-08-07"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
 
