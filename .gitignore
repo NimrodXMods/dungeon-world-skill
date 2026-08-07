@@ -1,1 +1,20 @@
 dungeon-world-skill.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Campaign state / playtest artifacts (never commit real session data)
+*_gmsecret.yaml
+*_gmsecret.rot13.yaml
+handoff.md
+*.zip
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
