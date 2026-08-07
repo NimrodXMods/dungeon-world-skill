@@ -89,6 +89,17 @@ EOF
 Note: the Bash tool's working directory persists between calls — `cd` to the repo root explicitly
 rather than assuming it.
 
+**Use the Bash tool for all commands in this repo**, even on Windows where a PowerShell tool is
+also available. CI runs these same commands on Linux, so keeping local and CI on one dialect is
+what keeps the commands above true in both places.
+
+Do not mix shell dialects within a call. PowerShell syntax in a Bash call is the dangerous
+direction, because it often stays *valid* Bash and fails silently — a PowerShell here-string
+(`@'` … `'@`) used for a commit message parses as `@` plus a quoted string plus `@`, and quietly
+wraps the message in stray `@` lines. For multi-line text use a quoted heredoc
+(`git commit -F - <<'MSGEOF'` … `MSGEOF`), and verify with `git log -1 --format=%B` —
+`git log --oneline` shows only the subject and hides exactly this corruption.
+
 ## CI and releasing
 
 `.github/workflows/validate.yml` runs `tools/validate_skill.py` on every push and PR;
