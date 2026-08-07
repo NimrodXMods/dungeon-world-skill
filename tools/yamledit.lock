@@ -9,6 +9,6 @@
 # SAME commit. tools/validate_skill.py fails CI if they drift apart.
 
 repo: https://github.com/NimrodXMods/yamledit
-tag: v2.3.1
-version: "2.3.1"
-sha256: 4ccc886fffe50ed8d4f4b54ab19d0b16f3b84e68304d84af53f8642e4a8e463b
+tag: v3.0.1
+version: "3.0.1"
+sha256: b2a05fc89e1a17041a81ca3722a862f58f8ad99824e0e65614f9b73028c0e70e

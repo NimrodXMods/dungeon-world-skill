@@ -52,16 +52,8 @@ been pruned as they resolved during play; this is the backstop:
 list that only grows stops being read.
 
 Closing threads is one atomic call - the batch either all applies or nothing is written,
-so the deed can never land without its threads being cleared. Put the deed prose in a file
-and append it with `+@`, which avoids quoting problems with apostrophes and commas:
-
-```
-python3 scripts/yamledit.pyz campaign_gmsecret.yaml \
-    deeds "+@deed.yaml" \
-    pause_state.open_threads "-Cattle vanishing near Cowsburg" \
-    pause_state.open_threads "-Strange tracks by the river" \
-    --schema assets/yaml_schemas/gmsecret.schema.yaml
-```
+so the deed can never land without its threads being cleared. Put both operations into the
+same `yamledit.pyz` call.
 
 ## Packaging Data
 

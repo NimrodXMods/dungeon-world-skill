@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.10.1"
+  version: "0.10.2"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -60,7 +60,7 @@ Before starting a game session, one of the following things should happen. Ask t
 - **Resuming a Campaign:** The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
 - **Starting a New Campaign:** Read **[[fronts-and-worldbuilding]]** and also check **rulebook-digest/L0-index** for information on creating one or more fronts. To do this, ask the user some questions about what sort of world they want, what sort of campaign they want to play, how many players there will be, and anything else that is useful to write at least one front and set up the campaign scenario. Use `idea_gen.py` (see below) to help. Suggest a 'campaign slug' to identify the game, ask user to confirm or suggest new slug, and store decisions in the `<campaign_slug>_gmsecret.yaml` file (see below) as they are made. Ask the user if they'd like to maintain a running story based on the game (see **Writing `story.md`** below), the default answer is yes so assume yes unless otherwise stated.
 
-**`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run one edit with `python3 scripts/yamledit.pyz campaign_gmsecret.yaml session_number +1 --schema assets/yaml_schemas/gmsecret.schema.yaml`, then announce `Beginning session <new number>...`.
+**`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run `python3 scripts/yamledit.pyz --help-llm` to get the full documentation for `yamledit.pyz` and perform on edit of the gmsecret file incrementing `session_number` +1 , then announce `Beginning session <new number>...`.
 
 **Reconciling `pause_state` on load:** `pause_state.situation` and `pause_state.open_threads`
 are not independent - `situation` is the authoritative snapshot of where things stand right
@@ -192,8 +192,7 @@ genuinely new field is fine and needs `--create`.
 
 **Note:** Warn the user if direct editing of a yaml file is needed because `yamledit.pyz`
 can't perform a desired editing function. Always store a report in memory when `yamledit.pyz`
-is lacking a feature to add/delete/edit something and you work around it with other tools. Always
-avoid bypassing `yamledit.pyz` for editing as much as possible.
+has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possible.
 
 ## GM Assistant "Mode"
 
