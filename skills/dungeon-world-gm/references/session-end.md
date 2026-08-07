@@ -13,16 +13,16 @@ Characters gain XP at the end of a session. Gain 1 XP each for:
 - looted a memorable treasure
 - Bonds, if used: XP for resolving bond.
 - Flags variant, if being used: XP for hitting/being hit on a flag.
-- check gmsecrets for any special goal resolutions earning XP. (The GM can designate some ahead of time and store in gmsecrets.)
+- check gmsecret for any special goal resolutions earning XP. (The GM can designate some ahead of time and store in gmsecret.)
 
 Some typical session end moves that are recommended if conditions (safety, sufficient time) allow:
 
 - "Make Camp" (resolve before end but make note to resolve "Take Watch" at the beginning of the next session if applicable.)
-  - Class moves like "Prepare Spells" and "Commune" can be done if camped or loged for multiple hours.
-  - "Level Up" can only be done if camped or loged for multiple hours, but can be done after rewarding end of session XP.
-- "Supply" - Requires being in a stedding/settlement with NPCs to trade with, but can be done at session end.
+  - Class moves like "Prepare Spells" and "Commune" can be done if camped or logged for multiple hours.
+  - "Level Up" can only be done if camped or logged for multiple hours, but can be done after rewarding end of session XP.
+- "Supply" - Requires being in a steading/settlement with NPCs to trade with, but can be done at session end.
 - "Bolster" - Requires being in a permanent or long-term dwelling and takes at least one week.
-- Not recommended: "Carouse", "Outstanding Warrants" - These require being in a stedding/settlement and if triggered should be deferred to start of next session. This is because they tend to trigger additional new time-consuming adventurous situations.
+- Not recommended: "Carouse", "Outstanding Warrants" - These require being in a steading/settlement and if triggered should be deferred to start of next session. This is because they tend to trigger additional new time-consuming adventurous situations.
 
 In summary, after awarding XP and possibly leveling up, only "maintenance" type moves should be allowed and only if required conditions are met. Offer to defer some moves to the beginning of next session if players' time is short and they need to end the session suddenly.
 
@@ -73,7 +73,7 @@ All of the data files below should be in the same directory to make this easy.
 
 `session_number` is the session _currently being played_, and the first session is 1, never 0. Neither script writes it: `session_load.py` only reports it ("Loaded Session 3.") and `session_save.py` only reads it to name the zip, so `campaign_s3.zip` contains `session_number: 3` and re-running either script is harmless.
 
-`session_save.py` also never re-serialises the gmsecret - it rot13s the raw file text, so
+`session_save.py` also never re-serializes the gmsecret - it rot13s the raw file text, so
 the explanatory comments in it survive a save/load round trip. A YAML round trip would
 strip every one of them.
 
