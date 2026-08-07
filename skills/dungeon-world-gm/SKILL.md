@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.9.1"
+  version: "0.9.2"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -61,6 +61,14 @@ Before starting a game session, one of the following things should happen. Ask t
 - **Starting a New Campaign:** Read **[[fronts-and-worldbuilding]]** and also check **rulebook-digest/L0-index** for information on creating one or more fronts. To do this, ask the user some questions about what sort of world they want, what sort of campaign they want to play, how many players there will be, and anything else that is useful to write at least one front and set up the campaign scenario. Use `idea_gen.py` (see below) to help. Suggest a 'campaign slug' to identify the game, ask user to confirm or suggest new slug, and store decisions in the `<campaign_slug>_gmsecret.yaml` file (see below) as they are made. Ask the user if they'd like to maintain a running story based on the game (see **Writing `story.md`** below), the default answer is yes so assume yes unless otherwise stated.
 
 **`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run one edit with `python3 scripts/yamledit.pyz campaign_gmsecret.yaml session_number +1 --schema assets/yaml_schemas/gmsecret.schema.yaml`, then announce `Beginning session <new number>...`.
+
+**Reconciling `pause_state` on load:** `pause_state.situation` and `pause_state.open_threads`
+are not independent - `situation` is the authoritative snapshot of where things stand right
+now, while `open_threads` is a working list that should already reflect it. If they disagree
+(e.g. a thread's text implies something hasn't happened yet, but `situation` or the prior
+session's narrative shows it already did), trust `situation` and correct or prune the stale
+thread immediately as part of session load - before narrating anything to the player. Don't
+narrate off the first `open_threads` entry you read without checking it against `situation`.
 
 When you have verified that the session has started, ensure you have read `handoff.md` and delete it. Only delete `handoff.md` after reading and after the session actually starts, not before.
 

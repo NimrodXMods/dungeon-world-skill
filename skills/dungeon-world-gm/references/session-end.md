@@ -44,6 +44,9 @@ been pruned as they resolved during play; this is the backstop:
   and gained the gratitude of the townsfolk". One deed may close several threads at once.
   `deeds` is append-only and sequential: never rewrite or reorder past entries. It is the
   campaign's memory, and the reason pruning threads loses nothing.
+- Before pruning, check each surviving thread against `pause_state.situation` - if a thread's
+  text no longer matches what actually happened this session, `situation` wins: rewrite or
+  cut the thread rather than leaving a stale version of events sitting in `open_threads`.
 
 `open_threads` should end the session shorter than a plain accumulation would leave it. A
 list that only grows stops being read.
