@@ -130,6 +130,15 @@ Semver policy for `metadata.version`:
 Never bump more than one part, and never bump for a change that doesn't touch `skills/`
 (edits to `tools/`, workflows, or this file are not skill changes).
 
+CI enforces this: `tools/check_version_bump.py` fails the build when a commit touches a
+skill without moving its `metadata.version`, when the version moves but `metadata.updated`
+doesn't, or when the version goes backwards. It can't judge *which* part you bumped — that
+part is still on you. Run it locally against whatever you're branched from:
+
+```bash
+python tools/check_version_bump.py --base origin/main
+```
+
 ## Licensing
 
 The skill is CC-BY-NC-SA-4.0 and distills the Dungeon World core rulebook plus fan supplements. All
