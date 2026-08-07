@@ -295,6 +295,10 @@ def check_session_roundtrip():
         secret.write_bytes(template.read_bytes())
         (work / "handoff.md").write_text("test handoff\n", encoding="utf-8")
         (work / "someone_warrior.yaml").write_text("name: Someone\n", encoding="utf-8")
+        # The campaign files deliberately live somewhere other than the cwd the
+        # scripts run from - that is the normal arrangement, and a path handled
+        # relative to the cwd instead of --dir has to fail here.
+        (work / "story.md").write_text("# Story\n\n## Chapter 3\n\nProse.\n", encoding="utf-8")
 
         result = run(
             "scripts/yamledit.pyz", str(secret),
@@ -323,17 +327,43 @@ def check_session_roundtrip():
             )
             return
 
+        # story.md has to be stored at the top of the zip under a bare name, or
+        # it extracts to a stray nested path on the way back out.
+        with zipfile.ZipFile(archive) as zf:
+            names = zf.namelist()
+        if "story.md" not in names:
+            fail(
+                rel(save),
+                "did not bundle story.md at the top of the zip (got {})".format(names),
+            )
+
         result = run("scripts/" + load.name, str(archive), "--dir", str(restored))
         if result.returncode != 0:
             fail(rel(load), "could not load the zip back ({})".format(result.stderr.strip()))
             return
 
+        if not (restored / "story.md").is_file():
+            fail(rel(load), "did not restore story.md")
         if not (restored / "roundtrip_gmsecret.yaml").is_file():
             fail(rel(load), "did not restore a plain roundtrip_gmsecret.yaml working copy")
         if "roundtrip" not in result.stdout:
             fail(rel(load), "summary does not report the campaign slug")
         if (restored / "roundtrip_gmsecret.txt").exists():
             fail(rel(load), "left the rot13 .txt behind after decoding")
+
+        # A checkpoint is taken mid-session, before any handoff.md exists, so
+        # it must not require one the way session_end does.
+        (work / "handoff.md").unlink()
+        result = run("scripts/" + save.name, str(secret), "--kind", "checkpoint", "--outdir", str(work))
+        if result.returncode != 0:
+            fail(
+                rel(save),
+                "checkpoint save requires a handoff.md, but none exists mid-session ({})".format(
+                    result.stderr.strip()
+                ),
+            )
+        elif not (work / "roundtrip_checkpoint.zip").is_file():
+            fail(rel(save), "checkpoint save produced no roundtrip_checkpoint.zip")
 
 
 def check_schemas(fastjsonschema, yaml_mod):

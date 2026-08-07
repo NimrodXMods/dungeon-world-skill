@@ -13,7 +13,12 @@ What it does:
        the zip as <slug>_gmsecret.txt. The working .yaml is left untouched on
        disk in plain text for you to keep editing.
     3. Bundles handoff.md (rot13'd) and every character *.yaml in the same
-       directory into the zip, unmodified.
+       directory into the zip, unmodified. story.md, if present, goes in as
+       plain text - it is the narrative the player already saw, so unlike the
+       gmsecret and handoff there is nothing in it to spoil.
+
+       handoff.md is required for --kind session_end and optional for a
+       checkpoint, which is taken mid-session before one exists.
     4. Prints the output path. You still need to call present_files/whatever
        your environment uses to actually hand the zip to the user - this
        script only builds it.
@@ -43,6 +48,8 @@ import sys
 import zipfile
 
 YAMLEDIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yamledit.pyz")
+
+STORY_FILENAME = "story.md"
 
 
 def read_fields(path, fields):
@@ -83,7 +90,9 @@ def main():
 
     # `campaign_slug` is the key the template and schema define; `campaign` is
     # accepted as a fallback for files written before that was settled.
-    fields = read_fields(args.gmsecret, ["campaign_slug", "campaign", "session_number"])
+    fields = read_fields(
+        args.gmsecret, ["campaign_slug", "campaign", "session_number", "maintain_story"]
+    )
 
     campaign = fields["campaign_slug"] or fields["campaign"]
     if not campaign and not args.slug:
@@ -107,20 +116,35 @@ def main():
     with open(args.gmsecret) as f:
         encoded_gmsecret_text = codecs.encode(f.read(), "rot13")
 
-    # encode handoff.md
+    # encode handoff.md. Required at session end - that is the file the next
+    # session picks up from - but a checkpoint is a mid-session snapshot taken
+    # before any handoff exists, so there it is merely absent.
     print(f"Looking for handoff.md in {char_dir}...")
     encoded_handoff_text = None
-    if os.path.exists(os.path.join(char_dir, "handoff.md")):
-        with open(os.path.join(char_dir, "handoff.md")) as f:
+    handoff_path = os.path.join(char_dir, "handoff.md")
+    if os.path.exists(handoff_path):
+        with open(handoff_path) as f:
             plain_text = f.read()
         encoded_handoff_text = codecs.encode(plain_text, "rot13")
+    elif args.kind == "session_end":
+        sys.exit(f"ERROR: no handoff.md found in {char_dir}. Write one before "
+                 f"ending the session, or pass --dir if it lives elsewhere.")
     else:
-        print("No handoff.md found, skipping.")
+        print("No handoff.md found, skipping (checkpoint).")
 
     char_files = sorted(
         p for p in glob.glob(os.path.join(char_dir, "*.yaml"))
         if not os.path.basename(p).endswith("_gmsecret.yaml")
     )
+
+    # story.md rides along in plain text, unlike the gmsecret and handoff: it is
+    # the narrative the player has already lived through, so there is nothing in
+    # it to spoil. Only nag about a missing one when the campaign opted in.
+    story_path = os.path.join(char_dir, STORY_FILENAME)
+    has_story = os.path.exists(story_path)
+    if not has_story and fields["maintain_story"]:
+        print(f"Warning: maintain_story is set but no {STORY_FILENAME} found in {char_dir}",
+              file=sys.stderr)
 
     zip_path = os.path.join(args.outdir, zip_name)
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -129,6 +153,10 @@ def main():
             zf.writestr(f"{slug}_handoff.txt", encoded_handoff_text)
         for cf in char_files:
             zf.write(cf, arcname=os.path.basename(cf))
+        if has_story:
+            # arcname keeps it at the top of the zip; without it the whole
+            # source path would be stored and extract to the wrong place.
+            zf.write(story_path, arcname=STORY_FILENAME)
 
     print(f"Wrote {zip_path}")
     print(f"  - {slug}_gmsecret.txt (rot13-encoded)")
@@ -136,6 +164,8 @@ def main():
         print(f"  - {slug}_handoff.txt (rot13-encoded)")
     for cf in char_files:
         print(f"  - {os.path.basename(cf)}")
+    if has_story:
+        print(f"  - {STORY_FILENAME}")
     if not char_files:
         print("  (no character *.yaml files found alongside the gmsecret - is --dir right?)", file=sys.stderr)
 

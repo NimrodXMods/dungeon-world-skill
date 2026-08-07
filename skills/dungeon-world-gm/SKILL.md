@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.8.3"
+  version: "0.9.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -30,6 +30,13 @@ or product.
 - Rolling dice for the game (use `scripts/roll.py`, don't estimate or hand-wave a roll)
 - If user asks for assistance with GMing a Dungeon World game (see assistant mode)
 
+## Every Time This Skill Is First Loaded
+
+The very first line of your response after this skill is first loaded in a session must be
+this exact text, before any other content or tool calls:
+
+> 🏰⚔️ Dungeon World Skill, by NimrodX. Based on Dungeon World by Sage LaTorra & Adam Koebel.
+
 ## First Contact / Generic Invocation
 
 If this skill is invoked with no other instructions or context to act on (e.g. the user
@@ -50,8 +57,8 @@ three possible states: start, main gameplay loop, end.
 
 Before starting a game session, one of the following things should happen. Ask the user which one they intend if they don't state up front.
 
-- **Resuming a Campaign:** The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project.
-- **Starting a New Campaign:** Read **[[fronts-and-worldbuilding]]** and also check **rulebook-digest/L0-index** for information on creating one or more fronts. To do this, ask the user some questions about what sort of world they want, what sort of campaign they want to play, how many players there will be, and anything else that is useful to write at least one front and set up the campaign scenario. Use `idea_gen.py` (see below) to help. Suggest a 'campaign slug' to identify the game, ask user to confirm or suggest new slug, and store decisions in the `<campaign_slug>_gmsecret.yaml` file (see below) as they are made.
+- **Resuming a Campaign:** The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
+- **Starting a New Campaign:** Read **[[fronts-and-worldbuilding]]** and also check **rulebook-digest/L0-index** for information on creating one or more fronts. To do this, ask the user some questions about what sort of world they want, what sort of campaign they want to play, how many players there will be, and anything else that is useful to write at least one front and set up the campaign scenario. Use `idea_gen.py` (see below) to help. Suggest a 'campaign slug' to identify the game, ask user to confirm or suggest new slug, and store decisions in the `<campaign_slug>_gmsecret.yaml` file (see below) as they are made. Ask the user if they'd like to maintain a running story based on the game (see **Writing `story.md`** below), the default answer is yes so assume yes unless otherwise stated.
 
 **`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run one edit with `python3 scripts/yamledit.pyz campaign_gmsecret.yaml session_number +1 --schema assets/yaml_schemas/gmsecret.schema.yaml`, then announce `Beginning session <new number>...`.
 
@@ -59,7 +66,7 @@ When you have verified that the session has started, ensure you have read `hando
 
 Never narrate the new session as begun before that edit has actually run. If two sessions end up sharing a number, the increment was skipped - fix it forward, don't rewrite history.
 
-Always read at session start: **[[gameplay-loop]]**, **[[core-moves]]**, **[[gm-agenda-principles-moves]]**, **rulebook-digest/L0-index.md**, **[[llm-patches]]**, and yaml templates in `assets/yaml_templates` (they serve as documentation of yaml use). Other references should be read only as needed.
+Always read at session start: **[[gameplay-loop]]**, **[[core-moves]]**, **[[gm-agenda-principles-moves]]**, **[[llm-patches]]**, and yaml templates in `assets/yaml_templates` (they serve as documentation of yaml use). Other references should be read only as needed.
 
 Once all the session start details are resolved, either by restoring a previous session or starting a new campaign, the
 game state moves to the main gameplay loop.
@@ -230,6 +237,73 @@ It is important to retrieve only as many lines as needed. When seeking informati
 3. **Climb back up for context when starting from a fact.** If a search or link lands you on an L2 fact or L3 quote, read its `[s-NNN]` parent for surrounding context before answering — a fact line is self-contained but not context-complete.
 4. **Decompress on the way out, don't quote the digest verbatim.** L1/L2 are deliberately lossy — surprisal-only residue, not prose meant to be read aloud to the user. When using a digest to answer a question, re-expand the kept residue using your own general knowledge to reconstruct full, natural context, the same way you'd explain a topic you knew well, rather than pasting the compressed paragraph as the answer. The digest tells you _what_ was worth keeping; you still supply the connective tissue.
    - **Mind the decoder.** Because a digest is lossy compression _against the authoring model's weights as a shared dictionary_ the `generated_by` model in the frontmatter records the dictionary the drops assumed. Decoding with a _different_ model still works, but reliability is **capability-relative, not identity-relative**: a decoder at least as capable as — and as knowledgeable in this domain as — the author can trust the drops, whereas a **weaker or differently-specialized** decoder may hit residue the author cut as "common knowledge" that it can't actually reconstruct. When decoding a digest authored by a stronger model, treat thin spots as possible gaps and lean harder on the Verification procedure / re-fetch. (Effort affects _authoring_ quality, not the decoder's dictionary, so it's secondary to model identity here.)
+
+## Writing `story.md` - running narrative log
+
+Only maintain `story.md` if `maintain_story` is `true` (true is default).
+
+This is lightweight, prose-only story log that accumulates alongside the gmsecret
+and character sheets, giving a readable "story so far" without anyone having
+to re-read the structured YAML.
+
+### Format
+
+- Title (`# The Adventures of Blah`): propose a title to the user on
+  starting a new campaign and use whatever they specify.
+- Section headers per session (`## Chapter N` with N being the session number),
+  plain prose paragraphs under each - no bullet points, no mechanical tags,
+  no dice/HP/stat detail.
+- It's fine for entries to read a little jumpy or unevenly paced - this is a
+  running log built incrementally during live play, not a polished summary
+  written after the fact.
+- Skip mechanics entirely (rolls, HP, XP, move names) - narrative only, the
+  same way you'd describe the scene and character actions in a novel.
+
+### When to append
+
+Append **after a scene concludes**, not on a fixed turn interval - a fight
+ends, a conversation wraps, a big reveal lands, or the party changes location.
+In practice this is roughly every 3-8 turns, but the trigger is narrative
+closure, not a count. Hold the scene in mind and write one or two paragraphs
+covering it in one append call, rather than editing the file after every
+individual turn. Try to describe the environment, characters, foes, NPCs, and
+all the action since the last update.
+
+### How to append
+
+Plain append, never `str_replace` - a growing log makes `str_replace`
+increasingly fragile to match uniquely as the file gets longer. Since
+`story.md` is plain prose (not YAML), no special escaping is needed; a normal
+heredoc append is fine:
+
+```bash
+cat >> story.md << 'EOF'
+
+New paragraph(s) here.
+EOF
+```
+
+Don't reread the whole file before appending — the scene you're summarizing
+is already in context. Only tail `story.md` if checking tone/continuity
+against earlier entries, which should be rare.
+
+### At session end
+
+Do one final append covering anything since the last update, then include
+`story.md` in the same directory as the character files and gmsecret file.
+(`session_save.py` will look for it in the "character directory".)
+
+### Retroactive backfill (one-time, not part of the ongoing workflow above)
+
+This is _only_ needed if a user initially did not want a `story.md` maintained
+but later changed their mind and wants to reconstruct one from past sessions.
+
+If starting `story.md` partway through an existing campaign, earlier sessions
+can be reconstructed from past conversation history (`conversation_search` /
+`read_conversation` by session title) rather than from `session_log` recaps
+alone — the recaps are usually too compressed to produce real prose, while
+the actual transcripts have the scene-level detail needed for a readable
+narrative. This only needs to happen once per campaign.
 
 ## Possible Future Additions
 

@@ -29,7 +29,8 @@ Abridged compressed core workflow.
      abandoned, append a `deeds` entry in the _same_ edit.
 5. Remind players of hp remaining as current/max + debilities
 6. Check previous turn for anything missing or forgotten. If anything forgotten that is indication to reread this file.
-7. Return to 1
+7. If `maintain_story` is `true`, append to `story.md` as instructed, based on last append, if **a scene concludes**, a fight ends, a conversation wraps, a big reveal lands, or the party changes location.
+8. Return to 1
 
 **Note:** Do not narrate mechanical state changes (level-ups, Bonds, XP) as done before
 actually running the yamledit edit that makes them so. If a past turn is caught doing
