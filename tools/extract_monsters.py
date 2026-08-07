@@ -4,15 +4,21 @@ Extract Dungeon World bestiary data from the official monster_settings XML
 (https://github.com/Sagelt/Dungeon-World/tree/master/text/monster_settings,
 CC BY 3.0, credit Sage LaTorra & Adam Koebel) into structured JSON.
 
-Provenance: skills/dungeon-world-gm/assets/monsters.json was generated from
-this script against a clone of Sagelt/Dungeon-World at commit
-e67bd51c09d24518a7f989149b76094fbcc7fecc (2023-02-27). To regenerate against
-an updated source, re-clone that repo's text/monster_settings/ directory and
-rerun this script; diff the output before committing, since the difficulty
-formula and setting descriptions below are hand-tuned for this repo's needs
-and not part of the upstream source.
+Provenance: that source is now vendored into the skill itself, at
+skills/dungeon-world-gm/references/rulebook-digest/source/xml/monster_settings/
+(pinned at commit e67bd51c09d24518a7f989149b76094fbcc7fecc, 2023-02-27 - see
+that directory's ../ATTRIBUTION.md). Read from the vendored copy rather than a
+fresh clone, so the bestiary and the rulebook digest can never end up built
+from different revisions of the text.
 
-Usage: python3 extract_monsters.py <xml_dir> <output.json>
+Diff the output before committing: the difficulty formula and setting
+descriptions below are hand-tuned for this repo's needs and are not part of the
+upstream source, so a regeneration should change monster data only.
+
+Usage:
+    python3 tools/extract_monsters.py \\
+        skills/dungeon-world-gm/references/rulebook-digest/source/xml/monster_settings \\
+        skills/dungeon-world-gm/assets/monsters.json
 """
 import json
 import re

@@ -29,11 +29,19 @@ context-budget discipline.
   SKILL.md's "Reference Index" with an explicit read-eagerly / read-on-demand note. Preserve that
   distinction when adding files; a new reference that isn't in the index is invisible at runtime.
 - `references/rulebook-digest/` — an `advanced-digest`: `L0-index.md` (coverage map) → `L1-digest.md`
-  (one paragraph per section + atomic `F-NNN` facts) → `source/core-rulebook-full-text.txt` (full
-  `pdftotext -layout` conversion, ~670KB, with `===== PAGE N =====` markers). The digest is
-  deliberately lossy compression against the authoring model's weights; page markers exist so L3
-  lookups are `grep -n "===== PAGE 91 ====="` rather than whole-file reads. Never read the source file
-  wholesale.
+  (one paragraph per section + atomic `F-NNN` facts) → `source/xml/` (the authors' own published
+  rulebook XML, 37 files, ~700KB, vendored byte-identical from `Sagelt/Dungeon-World` at a pinned
+  SHA — see `source/ATTRIBUTION.md`). The digest is deliberately lossy compression against the
+  authoring model's weights; L3 exists so exact wording is recoverable.
+  - L3 is addressed by **anchor**, not page: `scripts/rulebook.py --anchor moves#basic-moves/hack-and-slash`.
+    Anchors are computed from the heading path at read time and never stored in the XML, which is
+    what keeps an upstream refresh a clean diff. Each `L1-digest.md` section header carries its own
+    `[xml:...]` anchor. Never read the XML files directly or wholesale.
+  - The `(pNN-NN)` page ranges in the digest are retained **only** so the model can tell a user
+    where to look in a printed 1st edition. Nothing resolves them and CI cannot check them. Don't
+    reintroduce page-based lookup.
+  - Known gap: the Tag Reference appendix is print-only and absent upstream; `[[tag-reference]]` is
+    the authority for it.
 - `scripts/*.py` — generators and utilities, all stdlib-only, invoked as `python3 scripts/<name>.py`.
 - `assets/yaml_templates/` and `assets/yaml_schemas/` — the campaign state format. Templates double as
   runtime documentation; schemas are *selectively* open (fixed shapes like `hp` closed so typos error,
