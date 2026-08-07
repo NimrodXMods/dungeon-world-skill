@@ -43,6 +43,24 @@ Download the .zip file and install it according to your agent provider's
 skill installation procedure. It follows standard skill packaging convensions
 and should work with Anthropic Claude, xAI Grok, and OpenAI ChatGPT.
 
+**Requirements:**
+
+- A model equivalent to Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5,
+  or better. Should work with anything with similar capability.
+- Multi-step tool use capability.
+- Reliable long-context tracking. The skill is designed to address attention
+  drift with reminders from scripts and prompted reloads of key text.
+- _Network access is NOT required._ Once the skill is installed, the agent does
+  not need to browse the web or download other information.
+- **A sandbox container or similar execution environment with a `bash` or other
+  CLI tool call is needed.** This is pretty standard these days though.
+- The execution environment must have python 3.0+, python pyz support, and
+  temporary file storage that persists between turns. No special tool calls or
+  MCP servers are needed, though they could be one means for saving game data.
+- Some place for the skill to save campaign data, which can just be you
+  downloading the campaign's `.zip` archive from the agent and uploading it
+  again later to new sessions.
+
 ## Copyrights and Licenses
 
 ### dungeon-world-skill Copyright (C) 2026 by NimrodX
