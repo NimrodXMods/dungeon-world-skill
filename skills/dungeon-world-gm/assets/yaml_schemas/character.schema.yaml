@@ -1,0 +1,109 @@
+# Describes assets/yaml_templates/character_template.yaml.
+# Selectively open: the top level accepts new fields, but every fixed shape
+# inside it is closed so that a typo'd path is an error rather than a new key.
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Dungeon World character sheet"
+type: object
+
+# Open at the top level: class-specific extras and campaign-invented fields are
+# added here all the time, and forbidding them would make the tool unusable.
+additionalProperties: true
+
+required: [name, class, level, xp, hp, stats, class_specifics]
+
+properties:
+  name: { type: string }
+  class: { type: string }
+  race: { type: string }
+  gender: { type: string }
+  alignment: { type: string }
+  level: { type: integer, minimum: 1 }
+  xp: { type: integer, minimum: 0 }
+  look:
+    type: array
+    items: { type: string }
+
+  # Closed: exactly six attributes, no more. `stats.strength` or `stats.str.scroe`
+  # should fail loudly rather than silently becoming a new field.
+  stats:
+    type: object
+    additionalProperties: false
+    required: [str, dex, con, int, wis, cha]
+    properties:
+      str: { $ref: "#/definitions/stat" }
+      dex: { $ref: "#/definitions/stat" }
+      con: { $ref: "#/definitions/stat" }
+      int: { $ref: "#/definitions/stat" }
+      wis: { $ref: "#/definitions/stat" }
+      cha: { $ref: "#/definitions/stat" }
+
+  # Closed. hp.current may legitimately go negative, so there is no minimum -
+  # yamledit's own "at or below 0" warning covers that case instead.
+  hp: { $ref: "#/definitions/pool" }
+  load: { $ref: "#/definitions/pool" }
+
+  moves:
+    type: object
+    additionalProperties: false
+    properties:
+      starting: { type: array, items: { type: string } }
+      advanced: { type: array, items: { type: string } }
+
+  gear: { type: array }
+  bonds: { type: array }
+
+  # A bare integer, never a string like "45 coin". yamledit's +N/-N delta
+  # shorthand refuses a non-numeric value, so `coin -12` for a purchase only
+  # works if the currency name lives in the field name rather than the value.
+  coin: { type: integer, minimum: 0 }
+
+  # Open, unlike the fixed shapes above: which extras exist depends entirely on
+  # the class, and homebrew classes invent their own. Only the shapes that are
+  # the same for every character are closed.
+  class_specifics:
+    type: object
+    required: []
+    properties:
+      # A Ranger's companion carries whatever the class demands, so it stays
+      # open too. It belongs here rather than at the top level - it is as
+      # class-specific as a spellbook.
+      animal_companion:
+        type: object
+        additionalProperties: true
+
+  notes: { type: string }
+
+  debilities:
+    type: object
+    required: [tags]
+    properties:
+      tags:
+        type: array
+        items:
+          type: string
+          enum: [weak, shaky, sick, stunned, confused, scarred]
+      comment:
+        type: string
+
+definitions:
+  # `mod` is derivable from `score` (1-3:-3, 4-5:-2, 6-8:-1, 9-12:0, 13-15:+1,
+  # 16-17:+2, 18:+3) but is stored anyway, since every move roll
+  # reads it and recomputing it each time invites arithmetic slips. The cost is
+  # that the two can drift: nothing here can check one against the other, so
+  # always set both in the same yamledit call.
+  stat:
+    type: object
+    additionalProperties: false
+    required: [score, mod]
+    properties:
+      score: { type: integer }
+      mod: { type: integer }
+
+  pool:
+    type: object
+    additionalProperties: false
+    required: [current, max]
+    properties:
+      current: { type: integer }
+      max: { type: integer }

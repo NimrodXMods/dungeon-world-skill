@@ -1,0 +1,50 @@
+# Template character sheet. Copy to <name>_<class>.yaml (lowercase, e.g. ragnar_warrior.yaml)
+# and fill in. Keep this schema stable across characters so yamledit.pyz paths
+# (hp.current, stats.str.score, etc.) work the same way for every PC.
+# Note: this schema is NOT strictly limited to these fields! Other fields can be added as needed.
+
+name: ""
+class: ""
+level: 1
+xp: 0
+race: ""
+gender: ""
+alignment: ""
+look: [] # e.g. [Hard Eyes, Wild Hair, Scarred Skin, Built Body]
+bonds: []
+
+# Set score and mod together in one edit - nothing validates one against the
+# other. mod: 1-3:-3, 4-5:-2, 6-8:-1, 9-12:0, 13-15:+1, 16-17:+2, 18:+3
+stats:
+  str: { score: 0, mod: 0 }
+  dex: { score: 0, mod: 0 }
+  con: { score: 0, mod: 0 }
+  int: { score: 0, mod: 0 }
+  wis: { score: 0, mod: 0 }
+  cha: { score: 0, mod: 0 }
+
+hp: { current: 0, max: 0 }
+# the below changed and may need fixing in pre-existing yaml files if schema validation fails
+debilities:
+  tags: [] # any of: weak, shaky, sick, stunned, confused, scarred
+  comment: "" # prose narrative description of health condition, what, where, when, how etc.
+
+moves:
+  starting: []
+  advanced: []
+
+# Class-specific extras - only use what applies to the class
+class_specifics: {}
+  #signature_weapon: "" # Fighter
+  #domain: "" # Cleric
+  #deity: "" # Cleric/Paladin
+  #land: "" # Druid
+  #tell: "" # Druid
+  #animal_companion: {} # Ranger: {name, species, ferocity, cunning, armor, instinct, strengths: [], trainings: [], weaknesses: []}
+  #spellbook: [] # Wizard/Cleric - list of {name, level, prepared: true/false}
+
+load: { current: 0, max: 0 }
+gear: []
+coin: 0 # bare integer, NOT "45 coin" - a string blocks yamledit's `coin -12` delta
+
+notes: ""
