@@ -27,8 +27,16 @@ EMPTY_SHA = re.compile(r"^0{40}$")
 
 
 def git(*args, check=True):
+    # encoding is explicit: text=True would decode with the locale codec, which
+    # on a non-UTF-8 machine dies on the em dashes in SKILL.md and - because
+    # that happens in a reader thread - silently yields no output, making every
+    # check pass. A checker that fails open is worse than no checker.
     result = subprocess.run(
-        ["git"] + list(args), cwd=str(ROOT), capture_output=True, text=True
+        ["git"] + list(args),
+        cwd=str(ROOT),
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if check and result.returncode != 0:
         return None
@@ -99,8 +107,9 @@ def main():
         if old == new:
             problems.append(
                 "{}: {} file(s) changed but metadata.version is still {} - bump it "
-                "(major=major change, minor=new functionality, patch=fix) and set "
-                "metadata.updated + metadata.last-modified-by-model.\n"
+                "(major=major change, minor=new functionality, patch=fix), and set "
+                "metadata.last-modified-by-model plus metadata.updated if the date "
+                "has moved on.\n"
                 "    changed: {}".format(skill, len(touched), new, sample)
             )
             continue
@@ -110,10 +119,16 @@ def main():
             problems.append("{}: metadata.version went backwards, {} -> {}".format(skill, old, new))
             continue
 
-        if frontmatter_field(base_text, UPDATED_RE) == frontmatter_field(current_text, UPDATED_RE):
+        # metadata.updated is deliberately NOT required to change: two edits on
+        # the same day leave it correctly untouched. Only a date moving
+        # backwards is wrong.
+        old_updated = frontmatter_field(base_text, UPDATED_RE)
+        new_updated = frontmatter_field(current_text, UPDATED_RE)
+        if old_updated and new_updated and new_updated < old_updated:
             problems.append(
-                "{}: metadata.version {} -> {} but metadata.updated was not "
-                "touched".format(skill, old, new)
+                "{}: metadata.updated went backwards, {} -> {}".format(
+                    skill, old_updated, new_updated
+                )
             )
             continue
 

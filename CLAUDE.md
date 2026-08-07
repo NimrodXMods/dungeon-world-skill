@@ -114,7 +114,8 @@ affected skill's own frontmatter.
 Three fields, always together:
 
 - `metadata.version` — bump per the policy below.
-- `metadata.updated` — today's date, `"YYYY-MM-DD"`.
+- `metadata.updated` — today's date, `"YYYY-MM-DD"`. Unchanged is correct when today's
+  date is already what's there: several edits in one day share a date.
 - `metadata.last-modified-by-model` — the model making the edit, in the existing
   `Vendor Model Name (model-id)` form, e.g. `Anthropic Claude Opus 5 (claude-opus-5)`.
   Overwrite it; it records who touched it last, not a history. Leave `creator-model` alone.
@@ -131,9 +132,10 @@ Never bump more than one part, and never bump for a change that doesn't touch `s
 (edits to `tools/`, workflows, or this file are not skill changes).
 
 CI enforces this: `tools/check_version_bump.py` fails the build when a commit touches a
-skill without moving its `metadata.version`, when the version moves but `metadata.updated`
-doesn't, or when the version goes backwards. It can't judge *which* part you bumped — that
-part is still on you. Run it locally against whatever you're branched from:
+skill without moving its `metadata.version`, or when `version`/`updated` move *backwards*.
+It deliberately does not require `updated` to change — same-day edits share a date. It also
+can't judge *which* part you bumped; that stays on you. Run it locally against whatever
+you're branched from:
 
 ```bash
 python tools/check_version_bump.py --base origin/main

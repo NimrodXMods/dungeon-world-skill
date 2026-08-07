@@ -52,6 +52,7 @@ FORBIDDEN_TRACKED = [
 
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
 PAGE_MARKER = re.compile(r"^===== PAGE (\d+) =====")
 
@@ -137,6 +138,14 @@ def check_frontmatter(yaml_mod):
     if len(description) > 1024:
         fail(rel(skill_md), "description is {} chars, limit is 1024".format(len(description)))
 
+    # ISO order is what makes the "date never goes backwards" check in
+    # check_version_bump.py a plain string comparison, so enforce the shape.
+    updated = str((meta.get("metadata") or {}).get("updated", ""))
+    if not updated:
+        fail(rel(skill_md), "frontmatter is missing metadata.updated")
+    elif not ISO_DATE.match(updated):
+        fail(rel(skill_md), "metadata.updated '{}' is not YYYY-MM-DD".format(updated))
+
     version = str((meta.get("metadata") or {}).get("version", ""))
     if not version:
         fail(rel(skill_md), "frontmatter is missing metadata.version")
@@ -185,7 +194,8 @@ def run(*args):
         [sys.executable] + list(args),
         cwd=str(SKILL_DIR),
         capture_output=True,
-        text=True,
+        encoding="utf-8",  # not text=True: the locale codec mangles non-ASCII output
+        errors="replace",
         timeout=120,
     )
 
@@ -456,7 +466,8 @@ def check_tracked_files():
     """Campaign state is player-facing or spoiler material; it must not ship."""
     try:
         result = subprocess.run(
-            ["git", "ls-files"], cwd=str(ROOT), capture_output=True, text=True, timeout=60
+            ["git", "ls-files"], cwd=str(ROOT), capture_output=True,
+            encoding="utf-8", errors="replace", timeout=60
         )
     except (OSError, subprocess.SubprocessError):
         warn("git", "not available - skipped the tracked-file hygiene check")
