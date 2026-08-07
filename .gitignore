@@ -1,5 +1,8 @@
 dungeon-world-skill.code-workspace
 
+# Build output
+dist/
+
 # Python
 __pycache__/
 *.py[cod]

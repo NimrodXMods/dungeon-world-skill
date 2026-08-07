@@ -1,0 +1,14 @@
+# Provenance for the vendored skills/dungeon-world-gm/scripts/yamledit.pyz.
+#
+# The .pyz is a build artifact, not source: yamledit's own repo gitignores dist/,
+# so there is nothing to submodule and nothing to fetch without a network build.
+# It is committed here deliberately, and this file is what makes that honest.
+#
+# To refresh: in the yamledit checkout, `python build.py`, copy dist/yamledit.pyz
+# over the vendored one, then update `tag`, `version` and `sha256` below in the
+# SAME commit. tools/validate_skill.py fails CI if they drift apart.
+
+repo: https://github.com/NimrodXMods/yamledit
+tag: v2.3.1
+version: "2.3.1"
+sha256: 4ccc886fffe50ed8d4f4b54ab19d0b16f3b84e68304d84af53f8642e4a8e463b
