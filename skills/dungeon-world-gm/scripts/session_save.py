@@ -59,16 +59,16 @@ def read_fields(path, fields):
     out = {f: None for f in fields}
     for field in fields:
         proc = subprocess.run(
-            [sys.executable, YAMLEDIT, path, field, "--get", "--json"],
-            capture_output=True, text=True)
+            [sys.executable, YAMLEDIT, path, "--script", "-", "--json"],
+            input=f"{field} -> ?\n", capture_output=True, text=True)
         if proc.returncode != 0:
             continue  # absent key; caller decides whether that is fatal
         try:
-            results = json.loads(proc.stdout).get("results", [])
+            records = json.loads(proc.stdout).get("records", [])
         except ValueError:
             continue
-        if results:
-            out[field] = results[0].get("value")
+        if records:
+            out[field] = records[0].get("value")
     return out
 
 
