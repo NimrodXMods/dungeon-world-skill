@@ -24,6 +24,22 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+
+def _force_utf8_stdio():
+    """Windows defaults sys.stdout to the ANSI code page (cp1252) whenever
+    stdout is not a real console - a redirect or a pipe is enough. cp1252 has
+    no mapping for characters this script prints (e.g. U+2192 "->"), so the
+    write raises UnicodeEncodeError instead of degrading. Force UTF-8; a no-op
+    where the stream does not support reconfiguring."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            pass
+
+
+_force_utf8_stdio()
+
 XML_ROOT = (
     Path(__file__).resolve().parent.parent
     / "references"
@@ -489,15 +505,6 @@ def cmd_check_anchors(book, args):
 
 
 def main():
-    # The rulebook prose is full of curly quotes, em-dashes and ellipses. On a
-    # cp1252 Windows console those get replaced with '?' on the way out, which
-    # would quietly corrupt the exact wording this script exists to deliver.
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")
-        except (AttributeError, OSError):
-            pass
-
     parser = argparse.ArgumentParser(
         description="Structured lookup into the Dungeon World rulebook XML.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

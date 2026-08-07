@@ -16,6 +16,7 @@ at the end. Exit 0 = clean, 1 = at least one error.
 """
 import ast
 import hashlib
+import os
 import re
 import subprocess
 import sys
@@ -192,10 +193,15 @@ def check_wikilinks():
             )
 
 
-def run(*args, stdin=None):
+def run(*args, stdin=None, env=None):
     """Run a skill script the way SKILL.md tells the model to: from the skill
     directory, with a scripts/-relative path. stdin carries yamledit's
-    operation script, which is where its edits come from."""
+    operation script, which is where its edits come from. env overlays extra
+    variables on the current environment (see check_encoding_safety)."""
+    child_env = None
+    if env:
+        child_env = dict(os.environ)
+        child_env.update(env)
     return subprocess.run(
         [sys.executable] + list(args),
         input=stdin,
@@ -204,6 +210,7 @@ def run(*args, stdin=None):
         encoding="utf-8",  # not text=True: the locale codec mangles non-ASCII output
         errors="replace",
         timeout=120,
+        env=child_env,
     )
 
 
@@ -273,19 +280,88 @@ def check_no_external_imports():
 
 
 def check_determinism():
-    """--seed is dev-only, but it is also the only handle CI has on these."""
-    script = SCRIPTS / "idea_gen.py"
-    if not script.is_file():
+    """--seed is dev-only, but it is also the only handle CI has on these.
+
+    Swept across several seeds and every generator rather than one seed of one
+    script: output is data-driven, so a single seed exercises only a sliver of
+    the tables and can miss a whole class of defect (a cp1252 crash hid behind
+    exactly this gap - see check_encoding_safety).
+    """
+    scripts = sorted(SCRIPTS.glob("*_gen.py"))
+    if not scripts:
         return
-    outputs = []
-    for _ in range(2):
-        result = run("scripts/" + script.name, "--seed", "7", "treasure")
+    for script in scripts:
+        for seed in ("3", "7", "11"):
+            outputs = []
+            for _ in range(2):
+                result = run("scripts/" + script.name, "--seed", seed)
+                if result.returncode != 0:
+                    fail(
+                        rel(script),
+                        "--seed {} exited {}: {}".format(
+                            seed,
+                            result.returncode,
+                            (result.stderr or "").strip().splitlines()[-1:],
+                        ),
+                    )
+                    break
+                outputs.append(result.stdout)
+            if len(outputs) == 2 and outputs[0] != outputs[1]:
+                fail(
+                    rel(script),
+                    "--seed {} produced different output on two runs".format(seed),
+                )
+
+
+def check_encoding_safety():
+    """Every generator must survive a legacy 8-bit stdout.
+
+    On Windows, sys.stdout falls back to the ANSI code page (cp1252) whenever
+    stdout is not a real console - a pipe or a redirect is enough. cp1252 has
+    only 256 slots, so printing a character outside it (U+2192 and U+2734 both
+    occur in this skill) raises UnicodeEncodeError and the script dies. That is
+    invisible on a Linux runner, where the locale is UTF-8 and the bug simply
+    cannot reproduce, so CI has to force the condition to test for it.
+
+    Seeds are swept because output is data-driven: any single seed may happen
+    to avoid the offending character, which is exactly how this shipped
+    broken (see the scripts' _force_utf8_stdio).
+    """
+    # NO_COLOR keeps Python 3.13+ colourised tracebacks from leaking ANSI
+    # escapes into the CI log.
+    env = {"PYTHONIOENCODING": "cp1252", "NO_COLOR": "1"}
+    seeds = [str(n) for n in range(1, 9)]
+
+    for script in sorted(SCRIPTS.glob("*_gen.py")):
+        for seed in seeds:
+            result = run("scripts/" + script.name, "--seed", seed, env=env)
+            if result.returncode == 0:
+                continue
+            detail = (result.stderr or "").strip().splitlines()
+            reason = detail[-1] if detail else "exit {}".format(result.returncode)
+            fail(
+                rel(script),
+                "dies with a cp1252 stdout (--seed {}): {}\n"
+                "      Call _force_utf8_stdio() at import, as the other "
+                "scripts do.".format(seed, reason),
+            )
+            break  # one report per script is enough
+
+    # rulebook.py is not seeded, but it renders rulebook prose containing
+    # characters no 8-bit code page can represent.
+    rulebook = SCRIPTS / "rulebook.py"
+    if rulebook.is_file():
+        result = run(
+            "scripts/rulebook.py", "--anchor", "moves#special-moves", env=env
+        )
         if result.returncode != 0:
-            fail(rel(script), "--seed run exited {}".format(result.returncode))
-            return
-        outputs.append(result.stdout)
-    if outputs[0] != outputs[1]:
-        fail(rel(script), "same --seed produced different output")
+            detail = (result.stderr or "").strip().splitlines()
+            fail(
+                rel(rulebook),
+                "dies with a cp1252 stdout: {}".format(
+                    detail[-1] if detail else "exit {}".format(result.returncode)
+                ),
+            )
 
 
 def check_session_roundtrip():
@@ -529,6 +605,7 @@ def main():
     check_scripts()
     check_no_external_imports()
     check_determinism()
+    check_encoding_safety()
     check_session_roundtrip()
     check_schemas(fastjsonschema, yaml_mod)
     check_digest()
