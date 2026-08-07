@@ -7,6 +7,11 @@
 Condensed from: the Dungeon World core rulebook (2012, Sage LaTorra & Adam Koebel, CC BY 3.0) -
 now fully digested, see `rulebook-digest/`
 
+`assets/monsters.json` (the bestiary) is extracted from the same rulebook via the official
+structured-text source (Sagelt/Dungeon-World `text/monster_settings/` on GitHub), rather than
+the OCR'd `rulebook-digest/source/`. See `tools/extract_monsters.py`'s docstring for the exact
+source commit and regeneration instructions.
+
 Dungeon World is the work of **Sage LaTorra** and **Adam Koebel**, and the text of the
 game is licensed under the **Creative Commons Attribution 3.0 Unported License**
 (CC BY 3.0). Per the license and the authors' own stated terms, this text may be used,
