@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.8.2"
+  version: "0.8.3"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -18,7 +18,7 @@ metadata:
 Condensed, LLM-friendly reference material distilled from the core rulebook and several
 fan-made supplements the user provided, plus scripts for various tasks, including dice. This is meant
 to be consulted _during play_ - reach for the specific reference file you need rather
-than re-reading everything. This is enough for a LLM to act as a GM or assist a human GM.
+than re-reading everything. This is enough for an LLM to act as a GM or assist a human GM.
 
 This skill is written to be model-agnostic - nothing here assumes a specific AI provider
 or product.
@@ -166,7 +166,7 @@ exactly this. Run `python3 scripts/yamledit.pyz --help-llm` to get the full refe
 (`hp.currnet`, `portents[0].chekced`) that would otherwise silently become a new field,
 which is the main way state files rot. This skill has two document types and a
 `yamledit.yaml` config can only name one schema, so the flag must be passed per call -
-there is no default that covers both:
+there is no default that covers both.
 
 Using `--schema` as the last option in `yamledit.pyz` is recommended but not required.
 
