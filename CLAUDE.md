@@ -96,15 +96,41 @@ still satisfy their schemas, the rulebook's page markers are contiguous, and
 has no pip dependencies — it borrows `ruamel.yaml` and `fastjsonschema` off the vendored
 pyz's `sys.path`, so keep it that way.
 
-Releasing: bump `metadata.version` and `updated` in SKILL.md, commit, then tag `vX.Y.Z`.
-The tag's version must equal the frontmatter's or the release job fails by design. A tag
+Releasing: the frontmatter version should already be current (see the next section — it is
+kept up to date with every skill edit, not bumped at release time), so releasing is just
+commit, then tag `vX.Y.Z` matching `metadata.version`. The tag's version must equal the
+frontmatter's or the release job fails by design. A tag
 with a suffix (`v0.8.0-rc1`) publishes as a prerelease against the same base version.
 **Tagging is a commit-class action — ask the user, never tag automatically.**
 
-## Versioning and licensing
+## Skill frontmatter — update it automatically, every time
 
-`SKILL.md` frontmatter carries `metadata.version`, `updated`, and `last-modified-by-model`. Bump the
-version and date on substantive changes and record the model that made them.
+**Any edit to anything under `skills/` requires updating that skill's `SKILL.md`
+frontmatter in the same change.** This is not a release-time step and it is not something to
+ask about — do it as part of the edit, whether you touched a reference file, a script, a
+schema, a template, or SKILL.md itself. If a change spans more than one skill, update each
+affected skill's own frontmatter.
+
+Three fields, always together:
+
+- `metadata.version` — bump per the policy below.
+- `metadata.updated` — today's date, `"YYYY-MM-DD"`.
+- `metadata.last-modified-by-model` — the model making the edit, in the existing
+  `Vendor Model Name (model-id)` form, e.g. `Anthropic Claude Opus 5 (claude-opus-5)`.
+  Overwrite it; it records who touched it last, not a history. Leave `creator-model` alone.
+
+Semver policy for `metadata.version`:
+
+| Part | When |
+|-------|------|
+| major | Only ever for major changes — a redesign, a break in how the skill is used or how campaign state is stored. |
+| minor | Any feature or functionality addition. |
+| patch | Any fix, or an extremely trivial addition. |
+
+Never bump more than one part, and never bump for a change that doesn't touch `skills/`
+(edits to `tools/`, workflows, or this file are not skill changes).
+
+## Licensing
 
 The skill is CC-BY-NC-SA-4.0 and distills the Dungeon World core rulebook plus fan supplements. All
 credit/copyright detail lives in `references/ATTRIBUTION.md`, deliberately isolated so it never

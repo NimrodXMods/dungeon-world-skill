@@ -14,10 +14,12 @@ CI needs nothing but a Python interpreter, exactly like the skill itself.
 Every check runs even after an earlier one fails; problems are reported together
 at the end. Exit 0 = clean, 1 = at least one error.
 """
+import ast
 import hashlib
 import re
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -215,6 +217,44 @@ def check_scripts():
                 )
 
 
+def check_no_external_imports():
+    """The skill must run in a sandbox with nothing pip-installed.
+
+    A stray `import yaml` passes on any dev machine that happens to have PyYAML
+    and then dies in the sandbox, which is how session_load.py once shipped
+    unable to resume a campaign at all. ruamel/fastjsonschema are allowed
+    because they are reached through the vendored yamledit.pyz, not pip.
+    """
+    stdlib = getattr(sys, "stdlib_module_names", None)
+    if not stdlib:
+        warn("python", "interpreter too old for stdlib_module_names - skipped the import check")
+        return
+
+    # Sibling scripts import each other (region_gen pulls npc_gen's name lists).
+    siblings = {path.stem for path in SCRIPTS.glob("*.py")}
+    allowed = set(stdlib) | siblings | {"ruamel", "fastjsonschema", "yamledit"}
+    for script in sorted(SCRIPTS.glob("*.py")):
+        try:
+            tree = ast.parse(script.read_text(encoding="utf-8"), str(script))
+        except SyntaxError:
+            continue  # already reported by check_scripts
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module] if node.level == 0 and node.module else []
+            else:
+                continue
+            for name in names:
+                root = name.split(".")[0]
+                if root not in allowed:
+                    fail(
+                        "{}:{}".format(rel(script), node.lineno),
+                        "imports '{}', which is neither stdlib nor bundled in "
+                        "yamledit.pyz - it will not exist in the sandbox".format(root),
+                    )
+
+
 def check_determinism():
     """--seed is dev-only, but it is also the only handle CI has on these."""
     script = SCRIPTS / "idea_gen.py"
@@ -229,6 +269,71 @@ def check_determinism():
         outputs.append(result.stdout)
     if outputs[0] != outputs[1]:
         fail(rel(script), "same --seed produced different output")
+
+
+def check_session_roundtrip():
+    """Save a throwaway campaign and load it back.
+
+    Resuming is the single most important thing the skill does, and it spans
+    three components - session_save.py, session_load.py and yamledit.pyz -
+    that agree only by convention about the campaign_slug key and the zip
+    naming. --help proves none of that, so this exercises it end to end.
+    """
+    save = SCRIPTS / "session_save.py"
+    load = SCRIPTS / "session_load.py"
+    template = ASSETS / "yaml_templates" / "gmsecret_template.yaml"
+    if not (save.is_file() and load.is_file() and template.is_file()):
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "work"
+        restored = Path(tmp) / "restored"
+        work.mkdir()
+        restored.mkdir()
+
+        secret = work / "roundtrip_gmsecret.yaml"
+        secret.write_bytes(template.read_bytes())
+        (work / "handoff.md").write_text("test handoff\n", encoding="utf-8")
+        (work / "someone_warrior.yaml").write_text("name: Someone\n", encoding="utf-8")
+
+        result = run(
+            "scripts/yamledit.pyz", str(secret),
+            "campaign_slug", "roundtrip", "session_number", "3",
+            "--schema", "assets/yaml_schemas/gmsecret.schema.yaml",
+        )
+        if result.returncode != 0:
+            fail(rel(secret), "yamledit could not set up the fixture ({})".format(result.stderr.strip()))
+            return
+
+        result = run("scripts/" + save.name, str(secret), "--kind", "session_end", "--outdir", str(work))
+        if result.returncode != 0:
+            fail(rel(save), "session_end save failed ({})".format(result.stderr.strip()))
+            return
+
+        # The slug has to survive into the filename, or a loaded campaign comes
+        # back as the generic "campaign" and the real name is lost.
+        archive = work / "roundtrip_s3.zip"
+        if not archive.is_file():
+            found = sorted(p.name for p in work.glob("*.zip"))
+            fail(
+                rel(save),
+                "expected roundtrip_s3.zip from campaign_slug + session_number, got {}".format(
+                    found or "no zip"
+                ),
+            )
+            return
+
+        result = run("scripts/" + load.name, str(archive), "--dir", str(restored))
+        if result.returncode != 0:
+            fail(rel(load), "could not load the zip back ({})".format(result.stderr.strip()))
+            return
+
+        if not (restored / "roundtrip_gmsecret.yaml").is_file():
+            fail(rel(load), "did not restore a plain roundtrip_gmsecret.yaml working copy")
+        if "roundtrip" not in result.stdout:
+            fail(rel(load), "summary does not report the campaign slug")
+        if (restored / "roundtrip_gmsecret.txt").exists():
+            fail(rel(load), "left the rot13 .txt behind after decoding")
 
 
 def check_schemas(fastjsonschema, yaml_mod):
@@ -349,7 +454,9 @@ def main():
     check_frontmatter(yaml_mod)
     check_wikilinks()
     check_scripts()
+    check_no_external_imports()
     check_determinism()
+    check_session_roundtrip()
     check_schemas(fastjsonschema, yaml_mod)
     check_digest()
     check_yamledit_pin(yaml_mod)

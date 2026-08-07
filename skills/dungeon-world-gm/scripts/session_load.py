@@ -31,7 +31,18 @@ import os
 import sys
 import zipfile
 
-import yaml
+# The YAML parser comes out of the vendored zipapp rather than a pip install:
+# the target sandbox has nothing installed, and yamledit.pyz is already the one
+# dependency this skill is guaranteed to have (session_save.py leans on it too).
+_YAMLEDIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yamledit.pyz")
+if not os.path.isfile(_YAMLEDIT):
+    sys.exit(f"ERROR: yamledit.pyz not found next to this script ({_YAMLEDIT})")
+sys.path.insert(0, _YAMLEDIT)
+from ruamel.yaml import YAML  # noqa: E402
+
+
+def _load_yaml(text):
+    return YAML(typ="safe").load(text)
 
 
 def main():
@@ -60,7 +71,7 @@ def main():
     with open(secret_path) as f:
         encoded_text = f.read()
     plain_text = codecs.encode(encoded_text, "rot13")
-    data = yaml.safe_load(plain_text)
+    data = _load_yaml(plain_text)
     slug = secret_files[0][: -len("_gmsecret.txt")]
     yaml_path = os.path.join(args.dir, f"{slug}_gmsecret.yaml")
     with open(yaml_path, "w") as f:
@@ -82,7 +93,8 @@ def main():
         n for n in names if n.endswith(".yaml") and not n.endswith("_gmsecret.yaml")
     )
 
-    print(f"Loaded campaign: {data.get('campaign', '(unnamed)')}")
+    campaign = data.get("campaign_slug") or data.get("campaign") or "(unnamed)"
+    print(f"Loaded campaign: {campaign}")
     # The number of the session this save came from. This script never advances
     # it - starting a new session is an explicit act by the GM, so loading is
     # read-only with respect to campaign state and safe to re-run.

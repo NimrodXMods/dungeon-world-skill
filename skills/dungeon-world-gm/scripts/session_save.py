@@ -7,7 +7,7 @@ Usage:
     python3 session_save.py CAMPAIGN_GMSECRET.yaml --kind checkpoint
 
 What it does:
-    1. Reads `campaign` and `session_number` from the gmsecret via
+    1. Reads `campaign_slug` and `session_number` from the gmsecret via
        yamledit.pyz, purely to build the output filename.
     2. Rot13-encodes a COPY of the gmsecret file's raw text and writes it into
        the zip as <slug>_gmsecret.txt. The working .yaml is left untouched on
@@ -28,7 +28,7 @@ It also never re-serialises the YAML. The gmsecret is treated as an opaque
 string, so the explanatory comments in the file survive a save/load round trip;
 dumping it through a YAML library would silently strip every one of them.
 
-The campaign "slug" is derived from the `campaign:` field in the YAML
+The campaign "slug" is derived from the `campaign_slug:` field in the YAML
 (lowercased, spaces -> underscores, non-alnum stripped) unless --slug is
 given explicitly.
 """
@@ -81,9 +81,15 @@ def main():
     ap.add_argument("--outdir", default=".", help="Where to write the zip (default: current dir)")
     args = ap.parse_args()
 
-    fields = read_fields(args.gmsecret, ["campaign", "session_number"])
+    # `campaign_slug` is the key the template and schema define; `campaign` is
+    # accepted as a fallback for files written before that was settled.
+    fields = read_fields(args.gmsecret, ["campaign_slug", "campaign", "session_number"])
 
-    slug = args.slug or slugify(fields["campaign"] or "campaign")
+    campaign = fields["campaign_slug"] or fields["campaign"]
+    if not campaign and not args.slug:
+        print("WARNING: gmsecret has no `campaign_slug`; falling back to "
+              "'campaign' in filenames. Set it, or pass --slug.", file=sys.stderr)
+    slug = args.slug or slugify(campaign or "campaign")
     char_dir = args.dir or (os.path.dirname(os.path.abspath(args.gmsecret)) or ".")
 
     if args.kind == "session_end":
