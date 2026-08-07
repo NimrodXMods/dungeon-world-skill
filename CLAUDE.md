@@ -73,7 +73,9 @@ python3 skills/dungeon-world-gm/scripts/<name>.py --help-llm   # check LLM docs 
 # check a template still validates against its schema
 python3 skills/dungeon-world-gm/scripts/yamledit.pyz \
   skills/dungeon-world-gm/assets/yaml_templates/character_template.yaml \
-  --get hp --schema skills/dungeon-world-gm/assets/yaml_schemas/character.schema.yaml
+  --schema skills/dungeon-world-gm/assets/yaml_schemas/character.schema.yaml <<'EOF'
+hp -> ?
+EOF
 ```
 
 Note: the Bash tool's working directory persists between calls — `cd` to the repo root explicitly

@@ -187,11 +187,13 @@ def check_wikilinks():
             )
 
 
-def run(*args):
+def run(*args, stdin=None):
     """Run a skill script the way SKILL.md tells the model to: from the skill
-    directory, with a scripts/-relative path."""
+    directory, with a scripts/-relative path. stdin carries yamledit's
+    operation script, which is where its edits come from."""
     return subprocess.run(
         [sys.executable] + list(args),
+        input=stdin,
         cwd=str(SKILL_DIR),
         capture_output=True,
         encoding="utf-8",  # not text=True: the locale codec mangles non-ASCII output
@@ -312,8 +314,8 @@ def check_session_roundtrip():
 
         result = run(
             "scripts/yamledit.pyz", str(secret),
-            "campaign_slug", "roundtrip", "session_number", "3",
             "--schema", "assets/yaml_schemas/gmsecret.schema.yaml",
+            stdin="campaign_slug -> roundtrip\nsession_number -> 3\n",
         )
         if result.returncode != 0:
             fail(rel(secret), "yamledit could not set up the fixture ({})".format(result.stderr.strip()))
