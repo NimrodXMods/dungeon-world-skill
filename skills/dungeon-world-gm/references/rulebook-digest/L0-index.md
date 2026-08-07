@@ -1,6 +1,6 @@
 ---
 source: Dungeon World core rulebook (1st ed., Nov 2012, Sage LaTorra & Adam Koebel)
-url: user-uploaded PDF (DungeonWorld.pdf), CC BY 3.0
+url: https://github.com/Sagelt/Dungeon-World (text/, @e67bd51c), CC BY 3.0
 date: 2026-07-31
 level: L0
 generated_by: Claude Sonnet 5
@@ -11,6 +11,11 @@ supersedes: null
 # L0 Index — Dungeon World Core Rulebook
 
 One line per chapter, with page range and status. Status updates as chunks complete.
+
+Page ranges here are a courtesy pointer for a human holding the printed 1st edition — they
+are not how text is retrieved. To read the source (L3), follow the `§s-NNN` link into
+`L1-digest.md` and use the `[xml:...]` anchor on that section header with
+`scripts/rulebook.py --anchor <ANCHOR>`.
 
 - Introduction (p6-17) — setting flavor, class flavor blurbs. tags: [setting, flavor] — DONE (chunk 1, L1 §s-001)
 - Playing the Game (p17-49) — core conversation, moves, HP/damage, XP, advancement. tags: [core-mechanics] — DONE (chunk 1, L1 §s-002 to §s-011)
@@ -43,8 +48,8 @@ One line per chapter, with page range and status. Status updates as chunks compl
 - Teaching the Game (p381-385) — advice for teaching new players. tags: [gm-advice] — DONE (chunk 11, L1 §s-040; folded into [[hacking-and-conversion]])
 - Adventure Conversion (p385-393) — converting other systems' adventures. tags: [gm-advice] — DONE (chunk 11, L1 §s-040; folded into [[hacking-and-conversion]], includes new Direct Conversion stat cheat-sheet)
 - Instant NPCs (p393-396) — quick NPC stat tables. tags: [npc] — DONE (chunk 11, L1 §s-041; confirms [[npc-tools]] Instincts/Knacks lists accurate)
-- Tag Reference (p396-400) — exact tag definitions (candidate for L3 verbatim). tags: [reference, tags] — DONE (chunk 11, L1 §s-042; new standalone file [[tag-reference]], confirms all scattered tag lists elsewhere in skill accurate)
+- Tag Reference (p396-400) — exact tag definitions. tags: [reference, tags] — DONE (chunk 11, L1 §s-042; new standalone file [[tag-reference]], confirms all scattered tag lists elsewhere in skill accurate). **No L3 available**: this appendix exists only in the print/PDF layout and has no counterpart in the XML source, so [[tag-reference]] is the authority — there is nothing to re-fetch.
 
-**DIGEST COMPLETE** (2026-07-31) - all chapters above are DONE. Additionally resolved: the long-open Hireling GAP (found on p36-39 via full-text search during chunk 11 - Order Hirelings move + Loyalty economics + all 7 skills, now in [[npc-tools]]). New files created during this digest: `rulebook-digest/` (this L0+L1), [[magic-items]], [[tag-reference]], [[hacking-and-conversion]]. Existing files corrected: [[gm-agenda-principles-moves]] and [[combat-and-custom-moves]] (multi-attacker damage formula), [[npc-tools]] (hireling mechanics), [[equipment-and-services]] (tag glossary + consumable effects), [[treasure-and-monster-building]] (monster tag glossary + monsters-without-stats), [[fronts-and-worldbuilding]] (campaign/adventure front split, step counts, 2nd worked example).
+**DIGEST COMPLETE** (2026-07-31) - all chapters above are DONE. Additionally resolved: the long-open Hireling GAP (found via full-text search during chunk 11, p36-39 - Order Hirelings move + Loyalty economics + all 7 skills, now in [[npc-tools]]). New files created during this digest: `rulebook-digest/` (this L0+L1), [[magic-items]], [[tag-reference]], [[hacking-and-conversion]]. Existing files corrected: [[gm-agenda-principles-moves]] and [[combat-and-custom-moves]] (multi-attacker damage formula), [[npc-tools]] (hireling mechanics), [[equipment-and-services]] (tag glossary + consumable effects), [[treasure-and-monster-building]] (monster tag glossary + monsters-without-stats), [[fronts-and-worldbuilding]] (campaign/adventure front split, step counts, 2nd worked example).
 
 **Skipped** (no play-relevant content): Thanks (p363-381, credits), Index (p400-410).

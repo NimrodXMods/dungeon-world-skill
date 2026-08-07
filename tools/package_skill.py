@@ -5,9 +5,9 @@ Layout inside the zip puts the skill directory at the top level, so SKILL.md
 lands at dungeon-world-gm/SKILL.md - what a skill loader expects after
 extraction, and what keeps the scripts/ and references/ paths in SKILL.md valid.
 
-The rulebook source text is included on purpose despite its size: SKILL.md's L3
-"re-fetch page N" lookups grep it by page marker, and without it the digest
-bottoms out at L2.
+The rulebook source XML (references/rulebook-digest/source/xml/) is included on
+purpose despite its size: it is the digest's L3 tier, read via scripts/rulebook.py
+by anchor, and without it the digest bottoms out at L2.
 """
 import argparse
 import hashlib

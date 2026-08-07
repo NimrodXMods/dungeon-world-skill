@@ -20,8 +20,10 @@ import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ElementTree
 import zipfile
 from pathlib import Path
+from textwrap import indent
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILL_DIR = ROOT / "skills" / "dungeon-world-gm"
@@ -54,7 +56,10 @@ SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
-PAGE_MARKER = re.compile(r"^===== PAGE (\d+) =====")
+
+# The vendored rulebook text: 24 chapters + appendices/ (4) + monster_settings/
+# (9). A short count means a partial copy, which would silently break L3.
+EXPECTED_XML_FILES = 37
 
 errors = []
 warnings = []
@@ -404,32 +409,57 @@ def check_schemas(fastjsonschema, yaml_mod):
 
 
 def check_digest():
+    """The digest bottoms out at L3 = the vendored rulebook XML. Verify the
+    source is intact and that every [xml:...] citation actually resolves - a
+    dangling citation silently drops a lookup back to L2 with no other signal."""
     digest = REFERENCES / "rulebook-digest"
+    present = []
     for required in ("L0-index.md", "L1-digest.md"):
-        if not (digest / required).is_file():
+        if (digest / required).is_file():
+            present.append(digest / required)
+        else:
             fail("references/rulebook-digest/" + required, "missing")
 
-    source = digest / "source" / "core-rulebook-full-text.txt"
-    if not source.is_file():
-        fail(rel(source), "missing - SKILL.md's L3 page lookups depend on it")
+    source = digest / "source" / "xml"
+    if not source.is_dir():
+        fail(rel(source), "missing - SKILL.md's L3 lookups depend on it")
         return
 
-    pages = []
-    with source.open(encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            match = PAGE_MARKER.match(line)
-            if match:
-                pages.append(int(match.group(1)))
-
-    if not pages:
-        fail(rel(source), "has no '===== PAGE N =====' markers - grep-by-page lookups would break")
+    xml_files = sorted(source.rglob("*.xml"))
+    if len(xml_files) != EXPECTED_XML_FILES:
+        fail(
+            rel(source),
+            "has {} .xml files, expected {} - the vendored copy looks partial "
+            "(see source/ATTRIBUTION.md to refresh)".format(
+                len(xml_files), EXPECTED_XML_FILES
+            ),
+        )
+    if not xml_files:
         return
-    if pages[0] != 1:
-        fail(rel(source), "first page marker is {}, expected 1".format(pages[0]))
-    for previous, current in zip(pages, pages[1:]):
-        if current != previous + 1:
-            fail(rel(source), "page markers jump from {} to {}".format(previous, current))
-            break
+
+    for path in xml_files:
+        try:
+            ElementTree.parse(path)
+        except ElementTree.ParseError as exc:
+            fail(rel(path), "is not well-formed XML ({})".format(exc))
+
+    if not present:
+        return
+
+    # rulebook.py owns anchor generation; shelling out keeps the validator from
+    # reimplementing it and drifting.
+    result = run(
+        "scripts/rulebook.py",
+        "--check-anchors",
+        *[str(path) for path in present],
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        fail(
+            "references/rulebook-digest",
+            "has [xml:...] citations that do not resolve:\n"
+            + indent(detail, "      "),
+        )
 
 
 def check_yamledit_pin(yaml_mod):
