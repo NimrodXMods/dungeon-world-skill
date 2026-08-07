@@ -53,6 +53,22 @@ import argparse
 import random
 import sys
 
+
+def _force_utf8_stdio():
+    """Windows defaults sys.stdout to the ANSI code page (cp1252) whenever
+    stdout is not a real console - a redirect or a pipe is enough. cp1252 has
+    no mapping for characters this script prints (e.g. U+2192 "->"), so the
+    write raises UnicodeEncodeError instead of degrading. Force UTF-8; a no-op
+    where the stream does not support reconfiguring."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            pass
+
+
+_force_utf8_stdio()
+
 NAMES = {
     "human": [
         "Aeron", "Ajax", "Alester", "Ash", "Aytor", "Azra", "Bartleby", "Brianne",
