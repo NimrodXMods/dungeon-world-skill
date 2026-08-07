@@ -39,9 +39,17 @@ agent that you'll be doing the rolling.
 
 ## Installation
 
-Download the .zip file and install it according to your agent provider's
+First check the requirements below, but it should work with Anthropic, SpaceX AI,
+or OpenAI's minimum subscription level services at the very least. (I'm unsure if
+free options from those providers will work though.)
+
+[Download the .zip file from releases here.](https://github.com/NimrodXMods/dungeon-world-skill/releases)
+
+Upload it to your agent of choice or nstall it according to your agent provider's
 skill installation procedure. It follows standard skill packaging convensions
 and should work with Anthropic Claude, xAI Grok, and OpenAI ChatGPT.
+
+Then just invoke the skill, usually with: `/dungeon-world-gm`
 
 **Requirements:**
 
