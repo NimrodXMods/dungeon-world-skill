@@ -19,7 +19,8 @@ Usage:
     python3 monster_gen.py cavern --party-levels 4        # ...scaled to the party
     python3 monster_gen.py undead --random 3 --party-levels 12
     python3 monster_gen.py woods --all --party-levels 8   # everything that fits
-    python3 monster_gen.py --custom --random              # old quick builder
+    python3 monster_gen.py --custom                       # quick builder, all rolled
+    python3 monster_gen.py --custom --org horde --theme woods
 
 Monsters are emitted as JSON, tab-indented. All warnings and reminders go to
 stderr so stdout stays parseable.
@@ -49,6 +50,156 @@ def _force_utf8_stdio():
 _force_utf8_stdio()
 
 BESTIARY = Path(__file__).resolve().parent.parent / "assets" / "monsters.json"
+LEXICON = Path(__file__).resolve().parent.parent / "assets" / "monster_words.json"
+
+# Word categories every theme must carry. Kept here rather than in the asset so
+# the script fails loudly on a malformed lexicon instead of quietly dropping a
+# category; tools/validate_skill.py checks the asset against this same list.
+WORD_CATEGORIES = (
+    "substance",
+    "bodypart",
+    "action",
+    "texture",
+    "drive",
+    "sound",
+    "quality",
+    "evocative",
+)
+
+# How many capabilities to offer in special_quality. It is a menu, not a
+# decision: picking one for you would make this the only seeded field that
+# commits, when everything else here hands over options and lets the model
+# choose. Three is enough to choose between without being a list to wade
+# through.
+QUALITY_OPTIONS = 3
+
+# How many of each to hand over. Enough to choose from, few enough that the
+# model is not just picking the first one it reads.
+SEEDS_PER_CATEGORY = 4
+
+DEADLINESS_TIERS = ("d4", "d6", "d8", "d10", "d12", "beyond", "cataclysmic")
+
+# --- behaviour scales -----------------------------------------------------
+#
+# These stay in Python rather than the lexicon: they are semantics, not
+# vocabulary. FLEE_BY_AGGRESSION in particular is a derivation, not a table to
+# roll on, and the nudge logic below indexes these lists positionally.
+
+AGGRESSION = [
+    (-2, "cowardly", "runs like a deer; fights only when cornered"),
+    (-1, "meek", "keeps its distance; flees given any chance"),
+    (0, "ambivalent", "stands its ground but will not chase"),
+    (1, "cautious", "waits in ambush and picks its moment"),
+    (2, "aggressive", "attacks with little patience"),
+    (3, "berserk", "attacks relentlessly and does not break off"),
+    (4, "horror", "exists to kill its target; nothing distracts it"),
+]
+
+# Derived from aggression, not rolled - the spec in
+# references/treasure-and-monster-building.md defines flee behaviour per
+# aggression level, so rolling it separately would manufacture contradictions
+# the spec has already resolved.
+FLEE_BY_AGGRESSION = {
+    -2: "flees whenever it can; fights only when cornered",
+    -1: "flees whenever it can; fights only when cornered",
+    0: "stands its ground unless clearly outmatched",
+    1: "may flee or hide if the fight turns against it",
+    2: "may flee or hide only if overwhelmed",
+    3: "never flees",
+    4: "never flees and cannot be drawn off its target",
+}
+
+HIDE_OR_RUN = [
+    ("ambusher", "hides in order to attack, never to escape"),
+    ("camouflaged", "true concealment; can go unseen in the open"),
+    ("terrain-hider", "gets behind or under cover to escape, not to stalk"),
+    ("bolter", "runs in the open; makes no attempt to hide"),
+    ("neither", "does not hide and does not run"),
+]
+
+INTELLIGENCE = [
+    (-1, "no reflexes", "jellyfish"),
+    (0, "reflex automaton", "ant: sense stimulus, react"),
+    (1, "barely reflexive", "eats its own young"),
+    (2, "clever reptile", "rat"),
+    (3, "average mammal", "cat or dog"),
+    (4, "smart mammal", "monkey"),
+    (5, "smartest animal", "great ape"),
+    (6, "dim human-like", "goblin"),
+    (7, "primitive human-like", ""),
+    (8, "human baseline", ""),
+    (9, "human or better", "use ordinary INT from here up"),
+]
+
+INTIMIDATION = [
+    (-1, "soothing", "friendly sounds and gestures even while killing you"),
+    (0, "silent", "no display at all, like a constricting snake"),
+    (1, "low-key", "quiet aggressive noises and posturing"),
+    (2, "wolf-like", "growls and bares its teeth"),
+    (3, "loud", "roaring and performative slashing"),
+    (4, "screaming", "screams, roars, attacks the air in front of it"),
+    (5, "frenzied", "extreme screeching and slashing at nothing"),
+    (6, "horror show", "maximum chaotic screaming, roaring and violence"),
+]
+
+TERRITORIALITY = [
+    ("lair-bound", "defends one place; leaving its ground ends the fight"),
+    ("patrol", "walks a route, so it can be timed and avoided"),
+    ("pursuer", "claims no ground but follows what it has marked"),
+    ("wanderer", "opportunistic, with nothing to defend"),
+    ("nomadic", "moves with its group, following food"),
+]
+
+SENSORY = [
+    ("sight", "keen eyes; fooled by darkness and by stillness"),
+    ("hearing", "hunts by sound; fooled by silence and misdirection"),
+    ("smell", "tracks by scent; fooled by water and strong odours"),
+    ("vibration", "feels movement through ground or water; fooled by stillness"),
+    ("heat", "senses warmth; fooled by cold, confused by fire"),
+    ("echolocation", "sounds the space out; fooled by silence and by noise"),
+    ("magic-sense", "feels enchantment and life; blind to the purely mundane"),
+]
+
+POST_INJURY = [
+    ("flees when hurt", "breaks off once meaningfully wounded"),
+    ("cautious when hurt", "withdraws, circles, tries again"),
+    ("calls for help", "signals or summons others once wounded"),
+    ("fights harder", "wounded-animal fury; worse the closer it is to death"),
+    ("indifferent", "damage does not change its behaviour until it drops"),
+]
+
+# A nudge shifts which end of a scale is likely, never which ends are possible.
+# Every option keeps at least MIN_WEIGHT, so a huge fearsome thing can still
+# roll timid and a coward can still posture like a horror - those combinations
+# are the interesting ones, and the model can reconcile them.
+MIN_WEIGHT = 0.25
+DISTANCE_PENALTY = 0.18
+
+# Weights for rolling unset categories. Uniform made one monster in five
+# magically armoured and one in four huge, which reads as a parade of
+# exceptions.
+#
+# These are BASE picks, and they are deliberately lower than the target: the
+# Shield, No-anatomy and Skill-in-defense options each add +1 on top, so the
+# armor a monster ends up with runs a step or so above what is rolled here.
+# Tuned so the FINAL spread lands near the bestiary's own (0:18 1:40 2:20
+# 3:11 4:9), with magical armor held down around 5% rather than the book's 9%
+# so it stays a find rather than a fixture. Measure the final spread, not
+# these numbers, if you retune.
+ARMOR_WEIGHTS = {"none": 30, "leather": 43, "mail": 15, "steel": 9, "magical": 3}
+SIZE_WEIGHTS = {"small": 40, "large": 28, "tiny": 20, "huge": 12}
+
+# Organization drives the damage die (horde d6 < group d8 < solitary d10), so
+# it is weighted down as power goes up, on the same principle. Note the
+# bestiary runs the other way - 46% of its ENTRIES are solitary - but an entry
+# is not an encounter: one solitary monster is one creature, where one horde
+# entry is a dozen. Weighted for what a single rolled monster should look like.
+ORG_WEIGHTS = {"horde": 40, "group": 35, "solitary": 25}
+
+# Monte Carlo cap when hunting for a difficulty target. Uniform rolls are used
+# for the search - deliberately not the weights above, because making powerful
+# stats rare would make a powerful target slow to hit for no benefit.
+DIFFICULTY_ATTEMPTS = 4000
 
 # The bestiary's `difficulty` is a per-CREATURE score. How many you field is the
 # GM's call, so the filter answers one question - "is a single one of these too
@@ -194,6 +345,177 @@ def load_bestiary():
             return json.load(handle)
     except (OSError, ValueError) as exc:
         sys.exit("error: cannot read {}: {}".format(BESTIARY, exc))
+
+
+def load_lexicon():
+    if not LEXICON.is_file():
+        sys.exit("error: seed lexicon not found at {}".format(LEXICON))
+    try:
+        with LEXICON.open(encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError) as exc:
+        sys.exit("error: cannot read {}: {}".format(LEXICON, exc))
+
+
+def theme_names(lexicon):
+    return sorted(k for k in lexicon.get("themes", {}) if not k.startswith("_"))
+
+
+def resolve_themes(lexicon, spec):
+    """'cavern,undead' -> a merged word pool. Unknown tags are fatal."""
+    themes = lexicon.get("themes", {})
+    wanted = [t.strip().lower() for t in (spec or "generic").split(",") if t.strip()]
+    if not wanted:
+        wanted = ["generic"]
+
+    unknown = [t for t in wanted if t not in themes]
+    if unknown:
+        sys.exit(
+            "error: unknown theme(s) %s. Known: %s"
+            % (", ".join(repr(u) for u in unknown), ", ".join(theme_names(lexicon)))
+        )
+
+    merged = {category: [] for category in WORD_CATEGORIES}
+    for name in wanted:
+        for category in WORD_CATEGORIES:
+            for word in themes[name].get(category, []):
+                if word not in merged[category]:
+                    merged[category].append(word)
+    return wanted, merged
+
+
+def deadliness_tier(die, dmg_bonus, advantage, special_count):
+    """Where this monster sits on the naming register.
+
+    Bump rules come from references/treasure-and-monster-building.md: +2 or
+    more damage bumps a tier, best-of-two bumps again, and defeat-resisting or
+    offence-boosting specials bump once more.
+    """
+    try:
+        index = DIE_LADDER.index(die)
+    except ValueError:
+        index = len(DIE_LADDER) - 1
+    if dmg_bonus >= 2:
+        index += 1
+    if advantage:
+        index += 1
+    if special_count >= 2:
+        index += 1
+    return DEADLINESS_TIERS[min(index, len(DEADLINESS_TIERS) - 1)]
+
+
+def seed_words(lexicon, pool, tier):
+    """A handful from each category, plus the deadliness register."""
+    picked = {}
+    for category in WORD_CATEGORIES:
+        words = pool.get(category) or []
+        picked[category] = random.sample(words, k=min(SEEDS_PER_CATEGORY, len(words)))
+    ladder = lexicon.get("deadliness", {}).get(tier) or []
+    picked["deadliness"] = {
+        "tier": tier,
+        "words": random.sample(ladder, k=min(SEEDS_PER_CATEGORY, len(ladder))),
+    }
+    return picked
+
+
+def nudged_choice(options, bias=0.0):
+    """Pick from a scale, leaning toward one end without ever excluding the other.
+
+    `bias` is an offset in index units applied to the centre of the scale. Every
+    option keeps at least MIN_WEIGHT, so no outcome is ever unreachable - which
+    is the point: an inconsistent-looking monster is usually a more interesting
+    one, and the model can always reconcile or override it.
+    """
+    target = (len(options) - 1) / 2.0 + bias
+    weights = [
+        max(MIN_WEIGHT, 1.0 - DISTANCE_PENALTY * abs(i - target))
+        for i in range(len(options))
+    ]
+    return random.choices(options, weights=weights, k=1)[0]
+
+
+def behaviour_bias(size, die, org, traits, known_for):
+    """Small stat-derived leanings, in index units. Deliberately gentle."""
+    traits = set(traits or [])
+    bias = {axis: 0.0 for axis in
+            ("aggression", "intimidation", "intelligence", "territoriality",
+             "post_injury", "hide_or_run", "sensory")}
+
+    if size == "huge":
+        bias["aggression"] += 1.0
+        bias["intimidation"] += 1.0
+    elif size == "large":
+        bias["aggression"] += 0.5
+    elif size == "tiny":
+        bias["aggression"] -= 1.0
+        bias["hide_or_run"] -= 0.5
+
+    if die >= 10:
+        bias["intimidation"] += 0.5
+    elif die <= 4:
+        bias["aggression"] -= 0.5
+
+    if "terrifying" in traits:
+        bias["intimidation"] += 1.5
+    if "intelligent" in traits:
+        bias["intelligence"] += 3.0
+    if "organized" in traits:
+        bias["intelligence"] += 1.0
+    if "stealthy" in traits:
+        bias["hide_or_run"] -= 1.0
+    if "devious" in traits:
+        bias["intelligence"] += 1.0
+    if "animated" in traits or "noanatomy" in traits:
+        bias["post_injury"] += 1.5
+    if "abhors" in known_for or "abhors" in traits:
+        bias["aggression"] -= 2.0
+
+    if org == "solitary":
+        bias["territoriality"] -= 1.0
+    elif org == "horde":
+        bias["intelligence"] -= 1.0
+        bias["territoriality"] += 1.0
+
+    return bias
+
+
+def roll_behaviour(size, die, org, traits, known_for):
+    bias = behaviour_bias(size, die, org, traits, known_for)
+
+    aggression = nudged_choice(AGGRESSION, bias["aggression"])
+    intelligence = nudged_choice(INTELLIGENCE, bias["intelligence"])
+    intimidation = nudged_choice(INTIMIDATION, bias["intimidation"])
+    hide = nudged_choice(HIDE_OR_RUN, bias["hide_or_run"])
+    territory = nudged_choice(TERRITORIALITY, bias["territoriality"])
+    sense = nudged_choice(SENSORY, bias["sensory"])
+    injury = nudged_choice(POST_INJURY, bias["post_injury"])
+
+    def scaled(entry):
+        value, label, note = entry
+        out = {"value": value, "label": label}
+        if note:
+            out["note"] = note
+        return out
+
+    def named(entry):
+        label, note = entry
+        return {"label": label, "note": note}
+
+    return {
+        "note": (
+            "Rolled at random and only lightly steered by the stats. Disregard "
+            "and rewrite any of these to fit the situation - a combination that "
+            "looks inconsistent is usually the interesting one, not a mistake."
+        ),
+        "aggression": scaled(aggression),
+        "flee": FLEE_BY_AGGRESSION[aggression[0]],
+        "hide_or_run": named(hide),
+        "intelligence": scaled(intelligence),
+        "intimidation": scaled(intimidation),
+        "territoriality": named(territory),
+        "sensory": named(sense),
+        "post_injury": named(injury),
+    }
 
 
 def ceiling_for(party_levels):
@@ -381,7 +703,12 @@ def custom_difficulty(hp, armor_val, die, dmg_bonus, special_count):
 
 
 def build_monster(org, size, armor, known_for, armament, traits, divine_bonus, name):
-    """Return (monster_dict, final_die) using the bestiary's own key names."""
+    """Return (monster_dict, final_die, meta) using the bestiary's own key names.
+
+    `meta` carries what the deadliness tier needs but the stat block does not
+    record: the final damage bonus, whether the monster rolls damage twice, and
+    how many special qualities it ended up with.
+    """
     org_data = ORG[org]
     size_data = SIZE[size]
 
@@ -472,7 +799,15 @@ def build_monster(org, size, armor, known_for, armament, traits, divine_bonus, n
         "difficulty": custom_difficulty(
             hp, armor_val, die, dmg_bonus, len(special_qualities)
         ),
-        "special_quality": "; ".join(special_qualities),
+        # Fictional capability, matching what the bestiary means by this key
+        # (Burrowing, Camouflage, Fiery blood). Filled from the themed lexicon
+        # in run_custom; the builder itself has no fiction to put here.
+        "special_quality": "",
+        # The builder's own arithmetic - which options produced the numbers
+        # above. This used to sit in special_quality, which put derivation
+        # bookkeeping in a field the bestiary uses for capability, so the two
+        # kinds of content are now separated.
+        "built_from": "; ".join(special_qualities),
         "hp": hp,
         "armor": armor_val,
         "tags": {
@@ -485,7 +820,12 @@ def build_monster(org, size, armor, known_for, armament, traits, divine_bonus, n
         "instinct": "(fill in - what does it want that causes problems for others?)",
         "moves": ["(write 1-3, describing its attack and any special qualities)"],
     }
-    return monster, die
+    meta = {
+        "dmg_bonus": dmg_bonus,
+        "advantage": "offense" in known_for,
+        "special_count": len(special_qualities),
+    }
+    return monster, die, meta
 
 
 DICE_EXPR = re.compile(r"^(\d+)d(\d+)(?:\*(\d+))?$")
@@ -741,8 +1081,85 @@ HOW --party-levels WORKS
       Skeleton               -> still offered, %(sk40)s
       Lich     (Solitary)    -> offered, min/typical/max 1/1/1
 
+SEED WORDS AND BEHAVIOUR (--custom only)
+  A custom monster has no flavour of its own, so instead of handing back a bare
+  "(write one)" the generator hands over raw material and says so. Two blocks:
+
+  "seed_words" - themed vocabulary to synthesise from. substance + bodypart
+  build a compound name (Mudscale, Rootfang), action gives agentive forms and
+  move ideas, drive primes the instinct, texture primes the description, sound
+  gives onomatopoeia, quality gives fictional capabilities, and "evocative" is
+  the catch-all: whole surprising details, the entries most likely to produce a
+  creature you would not have thought of. "deadliness" gives the naming
+  register for its damage tier. The name/instinct/moves/description fields
+  quote the relevant seeds back at you. NONE of it is meant to be used
+  verbatim - pick, discard, recombine.
+
+  "special_quality" arrives EMPTY, with the choice beside it:
+      "special_quality": "",
+      "special_quality_options": ["Burrowing", "Camouflage", "Drags under"],
+      "special_quality_note": "Pick one, or coin a new one of about the same
+                               length by combining two. ..."
+  Pick or coin one, write it into special_quality, and drop the other two keys
+  before the monster is used or saved. A stat block should not ship with its
+  own menu attached.
+
+  Options come from the theme's quality pool, in the register the bestiary
+  uses: a bare noun phrase, usually 1-3 words (Burrowing, Fiery blood, Looks
+  like a cloak). Whatever you write must match that FORM - not a sentence, and
+  with no clause explaining how the quality works. "Mimics voices" is a
+  quality; "Lures with a borrowed sound - mimics something it heard once to
+  draw prey off the path" is a paragraph about one.
+
+  special_quality itself stays a plain string, the same type bestiary monsters
+  give it, so both kinds of monster can be read the same way. With --no-seeds
+  none of the three keys is populated.
+
+  "built_from" (custom monsters only) records which builder options produced
+  the numbers - "Skill in defense (+1 armor); Bears a shield ...". That is
+  derivation bookkeeping, not fiction, which is why it is no longer mixed into
+  special_quality. Bestiary monsters have no such key.
+
+  "behavior" - eight rolled axes: aggression (-2..+4), the flee rule derived
+  from it, hide-or-run, intelligence (-1..9), intimidation (-1..6),
+  territoriality, sensory profile and post-injury behaviour. Rolled at random
+  and only lightly steered by the stats, so a huge terrifying thing can still
+  come back timid. THAT IS DELIBERATE - an odd combination is usually the
+  interesting one. Disregard and rewrite any of it to fit the situation.
+
+  --theme TAG[,TAG...]  Theme the seed words. Comma-separated tags UNION their
+                      pools, so --theme cavern,undead draws on both. Defaults
+                      to "generic". Run --list-themes for the list.
+  --list-themes       Print the available themes and exit.
+  --no-seeds          Omit seed words.
+  --no-behavior       Omit the behaviour block.
+
 CUSTOM OPTIONS (only with --custom)
-  --random            fill any unset category randomly
+  Unset categories are ROLLED BY DEFAULT. Set only the ones you care about and
+  the rest are filled in for you - `--custom --org horde` rolls size, armor,
+  known-for, armament and traits around that. --random is accepted and does
+  nothing; it used to be required for this and is kept so old calls still work.
+
+  --no-random         Do NOT roll unset categories. Falls back to the fixed
+                      baseline: solitary, small, no armor, no extras - which is
+                      always d10 damage, 12 HP, 0 armor. Only useful when you
+                      want that exact starting point to build up from by hand.
+
+  --party-levels L / --difficulty-min X / --difficulty-max X
+                      Work on custom monsters too. The builder rerolls until
+                      the result lands in the window (typically under 20 rolls)
+                      and reports it under "filter". --party-levels L alone
+                      targets a real fight rather than anything under the
+                      ceiling: %(solo)d%% of it up to the ceiling itself.
+                      Explicit --org/--size/--armor narrow what can be rolled,
+                      so pinning several plus a tight window may not be
+                      satisfiable - it warns and returns the closest it found.
+
+  Unset categories are weighted, not uniform: most monsters come out lightly
+  armoured and ordinary-sized, so a heavily armoured or huge one is a find
+  rather than a coin flip. The search for a difficulty target rolls uniformly
+  instead, since rare-by-design powerful stats would make a powerful target
+  slow to hit for no benefit.
   --org horde|group|solitary        --size tiny|small|large|huge
   --armor none|leather|mail|steel|magical
   --known-for strength,offense,defense,deft,endurance
@@ -840,6 +1257,18 @@ def main():
     # while giving standard mode a count.
     ap.add_argument("--random", nargs="?", type=int, const=1, default=None, metavar="N")
     ap.add_argument("--custom", action="store_true", help="use the quick builder")
+    ap.add_argument("--theme", default=None, metavar="TAG[,TAG...]",
+                    help="theme the seed words; comma-separated tags union their "
+                         "pools (default: generic)")
+    ap.add_argument("--list-themes", action="store_true", dest="list_themes",
+                    help="print the available seed-word themes and exit")
+    ap.add_argument("--no-random", action="store_true",
+                    help="--custom: do not roll unset categories; use the fixed "
+                         "baseline (solitary/small/none) instead")
+    ap.add_argument("--no-seeds", action="store_true",
+                    help="omit the seed words")
+    ap.add_argument("--no-behavior", "--no-behaviour", action="store_true",
+                    dest="no_behavior", help="omit the rolled behaviour block")
     ap.add_argument("--org", choices=list(ORG.keys()), default=None)
     ap.add_argument("--size", choices=list(SIZE.keys()), default=None)
     ap.add_argument("--armor", choices=list(ARMOR.keys()), default=None)
@@ -869,6 +1298,17 @@ def main():
             file=sys.stderr,
         )
         random.seed(args.seed)
+
+    if args.list_themes:
+        lexicon = load_lexicon()
+        print("Seed-word themes (--theme TAG, comma-separate to merge pools):\n")
+        for name in theme_names(lexicon):
+            theme = lexicon["themes"][name]
+            total = sum(len(theme.get(c) or []) for c in WORD_CATEGORIES)
+            print("  %-12s %-22s %3d words" % (name, theme.get("label", ""), total))
+        print("\nThemes only affect --custom monsters. Bestiary monsters come "
+              "with their own flavour already written.")
+        return 0
 
     if args.custom:
         return run_custom(args)
@@ -1057,11 +1497,20 @@ def run_named(book, args):
     return 0
 
 
-def run_custom(args):
-    random_fill = args.random is not None
-    org = args.org or (random.choice(list(ORG.keys())) if random_fill else "solitary")
-    size = args.size or (random.choice(list(SIZE.keys())) if random_fill else "small")
-    armor = args.armor or (random.choice(list(ARMOR.keys())) if random_fill else "none")
+def weighted_pick(weights, uniform=False):
+    keys = list(weights)
+    if uniform:
+        return random.choice(keys)
+    return random.choices(keys, weights=[weights[k] for k in keys], k=1)[0]
+
+
+def roll_custom_once(args, random_fill, uniform=False):
+    """One roll of the quick builder. Explicit flags always win over the dice."""
+    org = args.org or (weighted_pick(ORG_WEIGHTS, uniform) if random_fill else "solitary")
+    size = args.size or (weighted_pick(SIZE_WEIGHTS, uniform) if random_fill else "small")
+    armor = args.armor or (
+        weighted_pick(ARMOR_WEIGHTS, uniform) if random_fill else "none"
+    )
     known_for = [k.strip() for k in args.known_for.split(",") if k.strip()]
     armament = args.armament
     traits = [t.strip() for t in args.traits.split(",") if t.strip()]
@@ -1075,9 +1524,139 @@ def run_custom(args):
             pool = [t for t in TRAITS if t != "divine"] + ["divine"]
             traits = random.sample(pool, k=random.randint(0, 2))
 
-    monster, final_die = build_monster(
+    monster, final_die, meta = build_monster(
         org, size, armor, known_for, armament, traits, args.divine_bonus, args.name
     )
+    return monster, final_die, meta, org, size, traits, known_for
+
+
+def custom_difficulty_window(args):
+    """(lo, hi) the custom monster must land in, or (None, None) for anywhere."""
+    lo = args.difficulty_min
+    hi = args.difficulty_max
+    if args.party_levels is not None and hi is None:
+        hi = ceiling_for(args.party_levels)
+        if lo is None:
+            # Aim at a real fight rather than anything at or under the ceiling,
+            # which would usually return something trivially weak.
+            lo = SOLO_THREAT_FRACTION * hi
+    return lo, hi
+
+
+def run_custom(args):
+    # Unset categories are rolled unless --no-random. This used to be opt-in
+    # via --random, which meant a bare `--custom` returned the same monster
+    # every single time - solitary/small/none, i.e. d10, 12 HP, 0 armor - while
+    # the bestiary path randomised by default. Two halves of one script with
+    # opposite defaults, and the fixed one looked like a roll.
+    random_fill = not args.no_random
+    lo, hi = custom_difficulty_window(args)
+
+    attempts = 1
+    if lo is None and hi is None:
+        rolled = roll_custom_once(args, random_fill)
+    else:
+        # Monte Carlo: reroll until the difficulty lands in the window, using
+        # the same weighted rolls as an untargeted monster. Searching uniformly
+        # converges in fewer attempts, but it gets there by leaning on whatever
+        # single stat buys the most difficulty - typically maximum armor - so
+        # the monster that comes back is an armor-5 lump rather than something
+        # with its difficulty spread across the stat block. Measured cost of
+        # weighting: see DIFFICULTY_ATTEMPTS.
+        best = None
+        for attempts in range(1, DIFFICULTY_ATTEMPTS + 1):
+            candidate = roll_custom_once(args, random_fill)
+            score = candidate[0]["difficulty"]
+            if (lo is None or score >= lo) and (hi is None or score <= hi):
+                best = candidate
+                break
+            if best is None or abs(score - ((lo or 0) + (hi or 0)) / 2) < abs(
+                best[0]["difficulty"] - ((lo or 0) + (hi or 0)) / 2
+            ):
+                best = candidate
+        else:
+            print(
+                "Warning: no roll landed in the difficulty window %s-%s after "
+                "%d attempts; returning the closest (%s). Widen the window, or "
+                "unpin some categories - explicit --org/--size/--armor flags "
+                "limit what can be rolled."
+                % (lo, hi, DIFFICULTY_ATTEMPTS, best[0]["difficulty"]),
+                file=sys.stderr,
+            )
+        rolled = best
+
+    monster, final_die, meta, org, size, traits, known_for = rolled
+
+    themes_used = None
+    if not args.no_seeds:
+        lexicon = load_lexicon()
+        themes_used, pool = resolve_themes(lexicon, args.theme)
+        tier = deadliness_tier(
+            final_die, meta["dmg_bonus"], meta["advantage"], meta["special_count"]
+        )
+        seeds = seed_words(lexicon, pool, tier)
+        monster = dict(monster, seed_words=seeds)
+
+        # Offer capabilities rather than choosing one. Same contract as every
+        # other seeded field: the generator supplies material, the model
+        # decides.
+        #
+        # The options live in their own key rather than inside special_quality,
+        # so that field keeps the same type the bestiary gives it - a plain
+        # string. Cramming a menu into it (as an "A OR B OR C" string, or by
+        # making it a list) would mean custom and bestiary monsters disagree
+        # about what special_quality is, which is the exact problem that moving
+        # built_from out of it just fixed.
+        pool_qualities = pool.get("quality") or []
+        if pool_qualities:
+            monster["special_quality_options"] = random.sample(
+                pool_qualities, k=min(QUALITY_OPTIONS, len(pool_qualities))
+            )
+            # Constrain the FORM, not just the length. The failure this guards
+            # against is an explanatory tail - "Lures with a borrowed sound -
+            # mimics something it heard once (a call, a voice) to draw prey off
+            # the path" - which is a sentence about a quality, not a quality.
+            # A word cap alone would not catch it, and a hard cap of three
+            # would reject real bestiary entries: 90% are 1-3 words, but
+            # "Unerring sense of direction" and "Only killed by a blow to the
+            # heart" are both legitimate.
+            monster["special_quality_note"] = (
+                "Pick one as-is, or coin a new one by combining two. Match the "
+                "register: a bare noun phrase, 1-3 words (90% of the bestiary's "
+                "are), five at the very most. No sentence, no verb clause "
+                "explaining how it works, no parenthetical, no dash-tail. A "
+                "comma may join two qualities; hyphens are fine. Write it into "
+                "special_quality and drop these two keys - a stat block should "
+                "not ship with its own menu."
+            )
+
+        # Point the blank fields at the material rather than leaving them as a
+        # bare "(write one)". The generator supplies raw material and says so;
+        # it does not pretend to have authored anything.
+        monster["description"] = (
+            "(write one - seed textures: %s; detail to work in: %s)"
+            % (", ".join(seeds["texture"]), (seeds["evocative"] or ["-"])[0])
+        )
+        monster["instinct"] = "(write one - seed drives: %s)" % ", ".join(seeds["drive"])
+        monster["moves"] = [
+            "(write 1-3 - seed actions: %s)" % ", ".join(seeds["action"])
+        ]
+        if not monster["name"]:
+            monster["name"] = (
+                "(name it - combine %s + %s, register: %s. See the naming "
+                "patterns in references/treasure-and-monster-building.md)"
+                % (
+                    "/".join(seeds["substance"][:3]),
+                    "/".join(seeds["bodypart"][:3]),
+                    ", ".join(seeds["deadliness"]["words"][:3]),
+                )
+            )
+
+    if not args.no_behavior:
+        monster = dict(
+            monster,
+            behavior=roll_behaviour(size, final_die, org, traits, known_for),
+        )
 
     if not args.no_treasure:
         advantage, notes = treasure_tag_effects(monster)
@@ -1096,7 +1675,17 @@ def run_custom(args):
     payload = {
         "setting": None,
         "setting_name": "(custom monster - not from the bestiary)",
-        "filter": None,
+        "themes": themes_used,
+        "filter": (
+            None
+            if lo is None and hi is None
+            else {
+                "party_levels": args.party_levels,
+                "difficulty_window": [lo, hi],
+                "difficulty": monster["difficulty"],
+                "rolls_taken": attempts,
+            }
+        ),
         "monsters": [monster],
     }
     emit(payload)

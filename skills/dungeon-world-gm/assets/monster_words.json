@@ -1,0 +1,987 @@
+{
+	"_note": [
+		"Seed vocabulary for monster_gen.py --custom. These are PROMPTING MATERIAL, not",
+		"output: the script hands a few of them over so a model has something specific to",
+		"synthesise a name, instinct, moves and description from, instead of inventing from",
+		"a blank page. Nothing here is meant to be read aloud verbatim.",
+		"",
+		"Themes union when several are given (--theme cavern,undead). To add a theme -",
+		"including tone tags with no rulebook setting, like 'comical' or 'airborne' - add a",
+		"key under 'themes' with every category below filled in. tools/validate_skill.py",
+		"enforces that every theme carries every category and that none are empty.",
+		"",
+		"Categories, and what each feeds:",
+		"  substance  terrain/material, first half of a compound name (Mud-, Gravel-)",
+		"  bodypart   second half of a compound name (-scale, -fang, -maw)",
+		"  action     agentive forms (Bone-Eater) and move priming",
+		"  texture    adjectives for the description line",
+		"  drive      instinct priming - phrased to follow 'Instinct: '",
+		"  sound      onomatopoeia fragments for noises and Skree-Fang style names",
+		"  quality    terse fictional capability, bestiary style (Burrowing, Camouflage)",
+		"  evocative  whole surprising details - the catch-all for anything without its",
+		"             own table. These are the highest-surprisal entries and the most",
+		"             likely to produce a creature a model would not have converged on.",
+		"",
+		"",
+		"WHEN ADDING OR EDITING A THEME THAT MIRRORS A BESTIARY SETTING, READ THE",
+		"ROSTER FIRST. Every theme here was originally written from the setting's",
+		"NAME and every one of them came out skewed. 'Lower Depths' sounds oceanic,",
+		"so it was written as pressure and brine - but its roster is two dragons,",
+		"two fire creatures and three deep elves, with barely anything aquatic.",
+		"'Ravenous Hordes' was written as an insect hive; 15 of its 19 monsters are",
+		"orc, gnoll and triton warbands. 'Dark Woods' was written as trees; only 2",
+		"of 18 are plants. To check, list the setting's monsters and write toward",
+		"what is actually in it:",
+		"  monster_gen.py --setting-info <tag>",
+		"",
+		"Tone tags with no rulebook setting ('comical', 'airborne') have no roster",
+		"to check against, so that discipline does not apply - but they are also the",
+		"ones most likely to drift toward a single narrow reading, so pick a handful",
+		"of imagined creatures first and write toward the spread, not the label.",
+		"",
+		"Naming patterns these feed are documented in",
+		"references/treasure-and-monster-building.md."
+	],
+	"themes": {
+		"generic": {
+			"label": "Unthemed",
+			"substance": [
+				"ash",
+				"bone",
+				"iron",
+				"salt",
+				"tar",
+				"thorn",
+				"grime",
+				"cinder",
+				"chalk",
+				"husk",
+				"rust",
+				"brine"
+			],
+			"bodypart": [
+				"maw",
+				"fang",
+				"claw",
+				"hide",
+				"spine",
+				"gullet",
+				"talon",
+				"hackle",
+				"carapace",
+				"tendril",
+				"horn",
+				"sinew"
+			],
+			"action": [
+				"render",
+				"gnaw",
+				"throttle",
+				"harry",
+				"sunder",
+				"drag",
+				"rend",
+				"snare",
+				"batter",
+				"worry",
+				"crush",
+				"split"
+			],
+			"texture": [
+				"knotted",
+				"greasy",
+				"pitted",
+				"bristling",
+				"lopsided",
+				"weeping",
+				"scabbed",
+				"taut",
+				"flaking",
+				"mottled",
+				"wiry",
+				"dented"
+			],
+			"drive": [
+				"to feed",
+				"to claim",
+				"to punish",
+				"to spread",
+				"to guard",
+				"to unmake",
+				"to collect",
+				"to test the strong",
+				"to outlast",
+				"to drive off"
+			],
+			"sound": [
+				"skree",
+				"chuff",
+				"grind",
+				"rasp",
+				"klok",
+				"wheeze",
+				"thrum",
+				"clack",
+				"hiss",
+				"gurn"
+			],
+			"evocative": [
+				"it counts things",
+				"it hates open sky",
+				"it was fed by hand once",
+				"something is missing from it",
+				"it never blinks",
+				"it moves wrong downhill",
+				"it will not touch metal",
+				"it takes trophies nobody wants"
+			],
+			"quality": [
+				"Burrowing",
+				"Amphibious",
+				"Keen senses",
+				"Thick hide",
+				"Climbs sheer walls",
+				"Never sleeps",
+				"Swallows whole",
+				"Regenerates slowly",
+				"Ignores rough ground"
+			]
+		},
+		"cavern": {
+			"label": "Cavern Dwellers",
+			"substance": [
+				"limestone",
+				"gravel",
+				"guano",
+				"shale",
+				"quartz",
+				"rubble",
+				"silt",
+				"damp",
+				"coal",
+				"mine-tailings",
+				"cave-pearl",
+				"grit"
+			],
+			"bodypart": [
+				"mandible",
+				"feeler",
+				"boring-tooth",
+				"blind-eye",
+				"chitin",
+				"hook",
+				"pseudopod",
+				"stone-hide",
+				"snout",
+				"grasping tendril"
+			],
+			"action": [
+				"burrow",
+				"squeeze",
+				"undermine",
+				"engulf",
+				"grab",
+				"wall up",
+				"drop from above",
+				"gnaw through",
+				"collapse",
+				"ambush in the dark"
+			],
+			"texture": [
+				"chalk-dusted",
+				"slick",
+				"pallid",
+				"eyeless",
+				"crusted",
+				"calcified",
+				"rock-plated",
+				"glistening",
+				"soot-stained"
+			],
+			"drive": [
+				"to burrow",
+				"to hoard",
+				"to widen the tunnel",
+				"to drag below",
+				"to guard the deep road",
+				"to eat what falls",
+				"to feel out warmth"
+			],
+			"sound": [
+				"tik",
+				"scritch",
+				"drip-drip",
+				"clatter",
+				"shale-slide",
+				"pick-strike",
+				"low moan",
+				"chitter"
+			],
+			"quality": [
+				"Burrowing",
+				"Blind",
+				"Feels tremors",
+				"Squeezes through cracks",
+				"Clings to ceilings",
+				"Chews through stone",
+				"Engulfs",
+				"Made of stone",
+				"Hunts by echo"
+			],
+			"evocative": [
+				"it navigates by echo and hates its own voice",
+				"it has walled something in",
+				"it flinches from open air",
+				"it knows where the ceiling is weak",
+				"it was mining something and stopped",
+				"it mistook you for the last lot"
+			]
+		},
+		"depths": {
+			"label": "Lower Depths",
+			"substance": [
+				"black stone",
+				"magma",
+				"deep-iron",
+				"obsidian",
+				"old gold",
+				"cinder",
+				"sulphur",
+				"fossil",
+				"hoard-dust",
+				"ancient glass",
+				"bone-meal",
+				"lightless water"
+			],
+			"bodypart": [
+				"scale",
+				"horn",
+				"wing-membrane",
+				"furnace-gut",
+				"needle-tooth",
+				"coil",
+				"talon",
+				"ember-eye"
+			],
+			"action": [
+				"descend",
+				"burn",
+				"coil",
+				"hoard",
+				"crush",
+				"drag down",
+				"wake",
+				"outlast",
+				"char"
+			],
+			"texture": [
+				"heat-shimmering",
+				"ageless",
+				"obsidian-black",
+				"ash-dusted",
+				"gold-crusted",
+				"armour-scaled",
+				"unhurried",
+				"wrongly lit"
+			],
+			"drive": [
+				"to hoard",
+				"to sleep undisturbed",
+				"to burn",
+				"to rule the deep",
+				"to remember",
+				"to be worshipped",
+				"to test the surface"
+			],
+			"sound": [
+				"boom",
+				"long groan",
+				"roar",
+				"furnace-hiss",
+				"rockfall",
+				"a voice in an old tongue"
+			],
+			"quality": [
+				"Fire-blooded",
+				"Armoured in scale",
+				"Sees in the dark",
+				"Ancient",
+				"Crushing coils",
+				"Breathes flame",
+				"Older than the stone",
+				"Hoard-guarded"
+			],
+			"evocative": [
+				"it has not surfaced in an age",
+				"it treats light as an insult",
+				"it remembers a city that is gone",
+				"it will bargain if flattered",
+				"it counts its hoard nightly",
+				"you woke it"
+			]
+		},
+		"experiments": {
+			"label": "Twisted Experiments",
+			"substance": [
+				"suture",
+				"graft",
+				"brass",
+				"tallow",
+				"alloy",
+				"catgut",
+				"spare parts",
+				"chalk-sigil",
+				"borrowed blood",
+				"tank-fluid"
+			],
+			"bodypart": [
+				"wrong wings",
+				"extra arm",
+				"second jaw",
+				"mismatched limb",
+				"beak",
+				"seam",
+				"bolt",
+				"too many eyes",
+				"borrowed hand"
+			],
+			"action": [
+				"splice",
+				"reassemble",
+				"malfunction",
+				"replicate",
+				"over-correct",
+				"repeat",
+				"graft",
+				"obey",
+				"hunt what it was made for"
+			],
+			"texture": [
+				"stitched",
+				"ill-fitting",
+				"wrongly symmetrical",
+				"half-feathered",
+				"part-numbered",
+				"twitching",
+				"still warm",
+				"seam-weeping"
+			],
+			"drive": [
+				"to complete the task",
+				"to repair itself",
+				"to obey a dead voice",
+				"to make more of itself",
+				"to find what it was made for",
+				"to be finished"
+			],
+			"sound": [
+				"click-whirr",
+				"wet snap",
+				"ratchet",
+				"a cry from the wrong animal",
+				"servo-whine",
+				"bell-tone"
+			],
+			"quality": [
+				"Made of parts",
+				"Repairs itself",
+				"Feels no pain",
+				"Two natures",
+				"Mismatched limbs",
+				"Follows the last order",
+				"Winds down",
+				"Replicates"
+			],
+			"evocative": [
+				"it apologises while it works",
+				"part of it is still someone",
+				"it has two sets of instincts and they disagree",
+				"it stops when a bell rings",
+				"it was made to hunt something that no longer exists",
+				"it asks whether it did well"
+			]
+		},
+		"folk": {
+			"label": "Folk of the Realm",
+			"substance": [
+				"leather",
+				"wool",
+				"coin",
+				"ink",
+				"ale",
+				"bread",
+				"rope",
+				"ledger",
+				"censer",
+				"signet",
+				"sealing-wax",
+				"mail"
+			],
+			"bodypart": [
+				"fist",
+				"scarred knuckle",
+				"missing finger",
+				"cold eye",
+				"calloused hand",
+				"ringed finger",
+				"broad back"
+			],
+			"action": [
+				"extort",
+				"muster",
+				"betray",
+				"bargain",
+				"conscript",
+				"rally",
+				"preach",
+				"appraise",
+				"denounce",
+				"pick a pocket"
+			],
+			"texture": [
+				"road-worn",
+				"well-fed",
+				"ill-shaven",
+				"richly dressed",
+				"sun-cured",
+				"ink-stained",
+				"soot-blackened",
+				"too clean"
+			],
+			"drive": [
+				"to be paid",
+				"to be obeyed",
+				"to be feared",
+				"to be respected",
+				"to be left alone",
+				"to settle a debt",
+				"to serve the god",
+				"to rise above their birth"
+			],
+			"sound": [
+				"shout",
+				"whistle",
+				"laugh",
+				"oath",
+				"hand-bell",
+				"prayer",
+				"hammer-strike"
+			],
+			"quality": [
+				"Trained",
+				"Armed and armoured",
+				"Calls the watch",
+				"Knows the ground",
+				"Bribable",
+				"Has friends nearby",
+				"Rallies others",
+				"Reads and writes",
+				"Fights dirty"
+			],
+			"evocative": [
+				"it has a family waiting",
+				"it is following orders it disagrees with",
+				"it would rather be somewhere else",
+				"it recognises one of the party",
+				"it is owed money by someone important",
+				"it is much better at this than it looks"
+			]
+		},
+		"hordes": {
+			"label": "Ravenous Hordes",
+			"substance": [
+				"warpaint",
+				"banner",
+				"spoil",
+				"pheromone",
+				"mound",
+				"tide",
+				"trophy-rack",
+				"war-drum",
+				"brine",
+				"refuse"
+			],
+			"bodypart": [
+				"tusk",
+				"crest",
+				"antenna",
+				"warhorn",
+				"drone-jaw",
+				"many legs",
+				"scarred hide",
+				"fin"
+			],
+			"action": [
+				"swarm",
+				"overrun",
+				"raid",
+				"encircle",
+				"muster",
+				"relay",
+				"flood",
+				"take slaves",
+				"replace the fallen",
+				"signal"
+			],
+			"texture": [
+				"numberless",
+				"close-packed",
+				"war-painted",
+				"uniformed",
+				"boiling",
+				"trophy-hung",
+				"chitin-clicking",
+				"battle-scarred"
+			],
+			"drive": [
+				"to expand",
+				"to raid",
+				"to obey the chieftain",
+				"to feed the nest",
+				"to take the ground",
+				"to prove itself",
+				"to carry word back"
+			],
+			"sound": [
+				"massed chitter",
+				"war-drum",
+				"horn-call",
+				"roar in unison",
+				"scuttling",
+				"a chant"
+			],
+			"quality": [
+				"Numberless",
+				"Alerts the others",
+				"Replaced when killed",
+				"Shared senses",
+				"Swarms over obstacles",
+				"Takes prisoners",
+				"Fights as a unit",
+				"Amphibious"
+			],
+			"evocative": [
+				"they do not care about individuals, including their own",
+				"they leave a trail anyone could follow",
+				"killing one alerts all of them",
+				"they are running from something worse",
+				"they take prisoners and nobody knows why",
+				"there is a pecking order and you can see it"
+			]
+		},
+		"planes": {
+			"label": "Planar Powers",
+			"substance": [
+				"brimstone",
+				"chain",
+				"cold flame",
+				"aether",
+				"borrowed fire",
+				"contract-ink",
+				"mirror",
+				"sulphur",
+				"name-stuff",
+				"ash"
+			],
+			"bodypart": [
+				"barb",
+				"hook",
+				"too many wings",
+				"halo",
+				"unfixed face",
+				"burning eye",
+				"cloven hoof",
+				"absence"
+			],
+			"action": [
+				"tempt",
+				"bargain",
+				"judge",
+				"unmake",
+				"enforce",
+				"corrupt",
+				"witness",
+				"cross over",
+				"collect what is owed"
+			],
+			"texture": [
+				"brimstone-reeking",
+				"painful to look at",
+				"geometrically wrong",
+				"unlit but bright",
+				"casting no shadow",
+				"edgeless",
+				"chain-wound"
+			],
+			"drive": [
+				"to collect a debt",
+				"to tempt",
+				"to enforce a law",
+				"to return home",
+				"to corrupt",
+				"to witness",
+				"to be worshipped"
+			],
+			"sound": [
+				"a chord",
+				"a single tone",
+				"your own name",
+				"chain-rattle",
+				"laughter",
+				"no sound at all"
+			],
+			"quality": [
+				"Insubstantial",
+				"Bound by a rule",
+				"Unmakes what it touches",
+				"Cannot lie",
+				"Casts no shadow",
+				"Wreathed in cold flame",
+				"Knows your name",
+				"Keeps its bargains"
+			],
+			"evocative": [
+				"it is bound by a rule it will state if asked",
+				"it does not lie, but it will mislead",
+				"it wants something specific from one of you",
+				"it has met you before, from its side",
+				"the bargain is real and the price is strange",
+				"it is not permitted to strike first"
+			]
+		},
+		"swamp": {
+			"label": "Swamp Denizens",
+			"substance": [
+				"peat",
+				"mire",
+				"algae",
+				"rot-gas",
+				"silt",
+				"reed",
+				"brackish water",
+				"leech",
+				"scale",
+				"bog-iron"
+			],
+			"bodypart": [
+				"sucker",
+				"gill-slit",
+				"webbed claw",
+				"bloat-belly",
+				"barbel",
+				"slime-coat",
+				"lashing tail",
+				"fang"
+			],
+			"action": [
+				"drown",
+				"mire",
+				"ambush from below",
+				"entangle",
+				"lure",
+				"drag under",
+				"rot",
+				"wait",
+				"coil",
+				"mimic"
+			],
+			"texture": [
+				"sodden",
+				"slick",
+				"bloated",
+				"algae-furred",
+				"reeking",
+				"half-submerged",
+				"scaled",
+				"leech-pocked",
+				"glistening"
+			],
+			"drive": [
+				"to drown",
+				"to drag under",
+				"to rot what it touches",
+				"to guard the water",
+				"to lure the unwary",
+				"to spread the sickness",
+				"to be fed without moving"
+			],
+			"sound": [
+				"bloop",
+				"croak",
+				"sucking mud",
+				"reed-rustle",
+				"wet slap",
+				"a voice calling for help"
+			],
+			"quality": [
+				"Amphibious",
+				"Camouflage",
+				"Drags under",
+				"Rotting touch",
+				"Holds its breath",
+				"Silent in water",
+				"Petrifying gaze",
+				"Ambushes from below",
+				"Regenerates"
+			],
+			"evocative": [
+				"it is patient past all reason",
+				"it drowns things it has no intention of eating",
+				"the water goes quiet before it moves",
+				"it has been mistaken for a log for years",
+				"the light ahead is not a lantern",
+				"it wears a face it took from someone"
+			]
+		},
+		"undead": {
+			"label": "Undead Legions",
+			"substance": [
+				"grave-dirt",
+				"shroud",
+				"bone-dust",
+				"coffin-nail",
+				"cold",
+				"rot",
+				"ash",
+				"dried blood",
+				"crypt-stone",
+				"funeral gold"
+			],
+			"bodypart": [
+				"rictus",
+				"bare rib",
+				"grasping hand",
+				"hollow socket",
+				"loose jaw",
+				"grave-wound",
+				"withered heart"
+			],
+			"action": [
+				"reach",
+				"remember",
+				"drag down",
+				"cling",
+				"mourn",
+				"repeat",
+				"refuse to stop",
+				"drain",
+				"command"
+			],
+			"texture": [
+				"desiccated",
+				"grave-cold",
+				"unravelling",
+				"waxen",
+				"still dressed",
+				"wrongly preserved",
+				"richly shrouded",
+				"quietly wrong"
+			],
+			"drive": [
+				"to remember",
+				"to take the living down",
+				"to finish what it was doing",
+				"to be laid to rest",
+				"to spread the cold",
+				"to rule from the crypt",
+				"to feed"
+			],
+			"sound": [
+				"dry rattle",
+				"no breath at all",
+				"grave-moan",
+				"bone-click",
+				"a whisper in the wrong voice",
+				"a name repeated"
+			],
+			"quality": [
+				"Insubstantial",
+				"Feels no pain",
+				"Grave-cold",
+				"Rises again",
+				"Rotting touch",
+				"Drains the living",
+				"Commands lesser dead",
+				"Never tires",
+				"Cannot be reasoned with"
+			],
+			"evocative": [
+				"it repeats one gesture from its life",
+				"it does not know it is dead",
+				"it recognises someone in the party",
+				"it is still wearing what it died in",
+				"it stops if you say its name",
+				"it remembers being obeyed"
+			]
+		},
+		"woods": {
+			"label": "Dark Woods",
+			"substance": [
+				"loam",
+				"bramble",
+				"antler",
+				"pelt",
+				"feather",
+				"hoof",
+				"moss",
+				"moonlight",
+				"thorn",
+				"wild honey",
+				"riverstone",
+				"fen-mist"
+			],
+			"bodypart": [
+				"antler",
+				"hoof",
+				"pelt",
+				"talon",
+				"muzzle",
+				"wing",
+				"tusk",
+				"hackles",
+				"bark-hide",
+				"ear-tuft"
+			],
+			"action": [
+				"stalk",
+				"run down",
+				"lure deeper",
+				"entangle",
+				"circle",
+				"spook",
+				"charm",
+				"drive off",
+				"snatch",
+				"mimic"
+			],
+			"texture": [
+				"moss-furred",
+				"rain-slick",
+				"briar-scarred",
+				"dappled",
+				"rangy",
+				"glossy-pelted",
+				"antler-crowned",
+				"leaf-littered",
+				"bright-eyed"
+			],
+			"drive": [
+				"to hunt",
+				"to run down what flees",
+				"to drive out intruders",
+				"to lure deeper",
+				"to test travellers",
+				"to protect the grove",
+				"to be given tribute",
+				"to keep the old bargain"
+			],
+			"sound": [
+				"howl",
+				"creak",
+				"rustle",
+				"hoofbeat",
+				"wingbeat",
+				"birdsong slightly wrong",
+				"a laugh with no one there",
+				"snap"
+			],
+			"quality": [
+				"Camouflage",
+				"Silent on leaves",
+				"Knows the wood",
+				"Mimics voices",
+				"Charmed gaze",
+				"Faster than a horse",
+				"Scent-tracker",
+				"Moves the path",
+				"Bark-hided"
+			],
+			"evocative": [
+				"the path behind you has changed",
+				"it mimics a sound it heard once",
+				"it will not cross running water",
+				"it lets one of you leave",
+				"the locals have been feeding it for generations",
+				"it wants a name, not a fight",
+				"it is beautiful and that is the problem",
+				"it is following you home"
+			]
+		}
+	},
+	"deadliness": {
+		"_note": "Naming register by damage die. Bump one tier for +2 or more damage, another for best-of-two rolls, another for defeat-resisting or offence-boosting specials.",
+		"d4": [
+			"meek",
+			"puny",
+			"scrawny",
+			"nuisance",
+			"pest",
+			"wretch",
+			"runt",
+			"mite"
+		],
+		"d6": [
+			"biting",
+			"snappish",
+			"feral",
+			"nasty",
+			"quick",
+			"spiteful",
+			"scrapper",
+			"sharp-tempered"
+		],
+		"d8": [
+			"dangerous",
+			"mean",
+			"savage",
+			"brutal",
+			"hungry",
+			"mauler",
+			"breaker",
+			"harrier"
+		],
+		"d10": [
+			"killer",
+			"deadly",
+			"merciless",
+			"ravenous",
+			"grim",
+			"terror",
+			"butcher",
+			"slaughterer"
+		],
+		"d12": [
+			"annihilator",
+			"doom-bringer",
+			"unstoppable",
+			"horror",
+			"obliterator",
+			"ruin",
+			"render"
+		],
+		"beyond": [
+			"ravager",
+			"reaper",
+			"eradicator",
+			"devourer",
+			"executioner",
+			"harrower",
+			"scourge",
+			"bonebreaker",
+			"skullcrusher",
+			"gravemaker",
+			"wrath-bound",
+			"blood-sated"
+		],
+		"cataclysmic": [
+			"worldender",
+			"godslayer",
+			"deathless",
+			"cataclysm-born",
+			"armageddon",
+			"undying",
+			"inexorable",
+			"relentless"
+		]
+	}
+}
