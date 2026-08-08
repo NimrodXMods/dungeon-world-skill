@@ -62,11 +62,96 @@ so no single configured default works.
 ## Script conventions
 
 Every script carries a `--help-llm` flag printing a dense LLM-facing reference; this is the
-canonical interface documentation, intentionally *not* duplicated as examples in `SKILL.md` (which
-would drift). **A new or changed script must keep `--help-llm` accurate.**
+canonical interface documentation. **A new or changed script must keep `--help-llm` accurate.**
+
+### All script documentation goes in `--help-llm`, not `SKILL.md`
+
+`--help-llm` is the **single source of truth** for how a script is invoked. Do not put script
+documentation in `SKILL.md` unless it genuinely cannot live in `--help-llm`.
+
+The reason is drift, and it is one-directional: `--help-llm` ships inside the script, so changing
+the code and the help together is a single edit that CI can smoke-test. Anything copied into
+`SKILL.md` is a second copy with nothing tying it to the code — it goes stale silently, and a
+stale instruction in `SKILL.md` is worse than no instruction, because the model reads `SKILL.md`
+unconditionally and trusts it.
+
+`SKILL.md` may say **when to reach for a script** — that is routing, and it belongs there because
+the model needs it before it has run anything. It must not say **how to call one**:
+
+| Belongs in `SKILL.md` | Belongs in `--help-llm` |
+|---|---|
+| "Use `monster_gen.py` when the party runs into creatures" | flag names, arguments, defaults |
+| "Never use `--seed` during play" (a play-time prohibition) | what `--seed` does |
+| "Run `--help-llm` before first use each session" | output format, examples, exit codes |
+| which script supersedes which reference file | how options interact, tuning constants |
+
+Concretely: no flag lists, no usage examples, no output-format descriptions, no parameter
+semantics in `SKILL.md`. If you catch yourself explaining an option there, the explanation belongs
+in `--help-llm` and `SKILL.md` should point at it instead.
+
+The rare genuine exception is a **safety or policy rule the model must know before it ever runs
+the script** — the `--seed` prohibition is the archetype, since by the time `--help-llm` explains
+the flag the model may already have used it. Keep such entries to one line and state the rule, not
+the interface.
 
 `*_gen.py` scripts take `--seed` for reproducibility. That flag is development-only — SKILL.md
 forbids the model from using it at play time, so don't add gameplay guidance that relies on it.
+
+### The monster difficulty formula is duplicated — keep it in sync by hand
+
+`difficulty` is not in the upstream rulebook; it is invented by this repo. The formula lives in
+**two places that CI cannot compare**, because `tools/` is not shipped inside the skill and the
+skill's scripts may not import from it:
+
+- `tools/extract_monsters.py` — `DIE_FACTOR` + `compute_difficulty()`, run once at extraction
+  time to bake a `difficulty` number into every monster in `assets/monsters.json`.
+- `skills/dungeon-world-gm/scripts/monster_gen.py` — `DIE_FACTOR` + `custom_difficulty()`, run at
+  play time so a `--custom` monster carries a score on the same scale and can be compared against
+  a `--party-levels` band.
+
+```
+difficulty = hp * (1 + armor*0.3) * DIE_FACTOR[die] * (1 + 0.2*flat_mod) * (1 + 0.3*special_count)
+DIE_FACTOR = {4: 0.5, 6: 0.8, 8: 1.0, 10: 1.2, 12: 1.5}   # unlisted dice -> 2.0
+```
+
+**If you retune the extractor, `monster_gen.py` drifts silently.** Nothing errors: custom monsters
+just start being scored on a different scale from bestiary monsters, so `--party-levels` filtering
+quietly mismatches for one of the two. Change both together, and re-run `extract_monsters.py`
+(diffing `monsters.json`) whenever the extractor side moves.
+
+The two are *not* identical by nature and shouldn't be forced to be: the extractor reads Special
+Qualities prose out of the source XML, whereas `custom_difficulty()` can only count the builder's
+chosen qualities. It is deliberately an approximation — what must stay aligned is the **scale**,
+not the exact number.
+
+Consuming code — `CEILING_PER_LEVEL`, `ORG_MAX_COUNT` and `SOLO_THREAT_FRACTION` in
+`monster_gen.py` — is calibrated against the *current* scale, so retuning the formula invalidates
+that calibration too.
+
+### monster_gen's difficulty filter is a ceiling, not a band
+
+`--party-levels L` keeps a monster when `difficulty <= CEILING_PER_LEVEL * L`. There is
+deliberately **no lower bound**, and organization plays no part in the filter.
+
+An earlier version got this wrong twice over, and the reasoning is worth keeping so it isn't
+reintroduced:
+
+- It filtered on a `2L..8L` **band**, so options *slid* instead of accumulating. A level-10 party
+  could not be offered a bandit — the whole `folk` setting emptied out at high level.
+- It multiplied difficulty by an organization weight (Horde ×6). That pushed the classic
+  low-level enemies *above* the ceiling: Skeleton (7.28 × 6 = 43.7) vanished for starting
+  parties, the opposite of the intent.
+
+The correct model: difficulty is **per creature**, and how many to field is the GM's call. So the
+filter answers only "is a single one of these too much for this party?", and organization instead
+drives `suggested_number` — how many make a real fight, capped by `ORG_MAX_COUNT` so a Solitary
+monster never comes back as "bring seven". A strong party keeps access to weak monsters; they are
+simply easy, which is what lets a GM run one straggling skeleton *and* know that ten would be a
+threat.
+
+`--solo-threat` (alias `--no-horde`) keeps only monsters worth `SOLO_THREAT_FRACTION` of the
+ceiling on their own. Note it is *not* "needs exactly one to reach the ceiling" — by that test a
+Lich fails against a level-10 party and the flag empties the setting.
 
 ## Working commands
 
@@ -109,6 +194,21 @@ locally before pushing — it is the pre-flight command for this repo:
 ```bash
 python tools/validate_skill.py
 ```
+
+For a fast loop while iterating, `--quick` trims it from ~25s to ~8s:
+
+```bash
+python tools/validate_skill.py --quick
+```
+
+`--quick` cuts the per-seed sweeps to a single seed and skips the session save/load round-trip
+(the most expensive single check). It prints exactly what it gave up and tags the result
+`[QUICK - PARTIAL RUN]`. **It is not the pre-flight command** — a passing `--quick` run is not
+evidence the build is green, because CI always runs the full sweep. Run the plain command before
+pushing.
+
+Nearly all of the runtime is subprocess spawning, not analysis, so if the validator gets slow
+again look for a check that shells out per-seed or per-script rather than for slow logic.
 
 It enforces the conventions described above that nothing else can: wikilinks resolve, no
 reference file is orphaned from the index, generators still answer `--help-llm`, templates

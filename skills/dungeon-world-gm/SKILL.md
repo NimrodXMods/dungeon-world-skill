@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.11.1"
+  version: "0.12.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -135,8 +135,11 @@ Available generator scripts and "trigger" situations for using them:
   For example, when the characters meet a new NPC friend, enemy, or someone neutral they may repeatedly
   communicate with such as a tradesman or shop keeper. It is also used when they seek out followers to
   aid them.
-- `monster_gen.py` (monster stat blocks) - Use this when player characters are running into troublesome
-  creatures of some sort. The characters run into creatures, but what sort? This will help answer.
+- `monster_gen.py` (official bestiary picker, and a custom stat-block builder) - Use this when player
+  characters are running into troublesome creatures of some sort. The characters run into creatures,
+  but what sort? This will help answer. By default it returns a real monster from the core rulebook
+  bestiary, with its written description, instinct and moves already filled in, but it can help with custom
+  monster generation.
 - `idea_gen.py` (general-purpose ideas: treasure, discoveries, dangers, creatures, equipment tags,
   GM moves, DR/Spout Lore miss tricks, named magic items, misc details) - For every other question that
   arises about the PC party and what they discover, or questions about anything requiring a creative
@@ -183,12 +186,11 @@ which is the main way state files rot. This skill has two document types and a
 `yamledit.yaml` config can only name one schema, so the flag must be passed per call -
 there is no default that covers both.
 
-Using `--schema` as the last option in `yamledit.pyz` is recommended but not required.
-
-For on-the-fly flexibility, all schemas are _selectively_ open: fixed shapes (`hp`, `stats.str`, a portent, a
-`current_location` entry) are closed so a misspelling is an error, while regions, NPCs,
+For on-the-fly flexibility, all schemas are _selectively_ open:
+fixed shapes (`hp`, `stats.str`, a portent, a `current_location` entry) are closed
+so a misspelling is an error, while regions, NPCs,
 fronts and the top level stay open so the campaign can grow new fields freely. Adding a
-genuinely new field is fine and needs `--create`.
+genuinely new field is fine but needs explicit flags as a safeguard.
 
 **Note:** Warn the user if direct editing of a yaml file is needed because `yamledit.pyz`
 can't perform a desired editing function. Always store a report in memory when `yamledit.pyz`
@@ -228,7 +230,7 @@ the user ever requests GM assistant mode.
 - **[[equipment-and-services]]** - weapons, armor, gear, poisons, tags, services, transport, land prices, bribes, gifts, plus specific consumable in-use effects.
 - **[[magic-items]]** - ~30 named official magic items with unique mechanical effects, ready to hand out or use as homebrew templates.
 - **[[tag-reference]]** - the official complete alphabetical tag glossary (equipment + monster + steading tags in one place) for fast lookup.
-- **[[treasure-and-monster-building]]** - prefer using `monster_gen.py`. Only use this when full description of options is needed: the treasure roll table and a modular "pick from each category" monster stat builder for improvising enemies on the spot.
+- **[[treasure-and-monster-building]]** - for monsters prefer using `monster_gen.py`, which now returns official rulebook monsters by default (complete with description, instinct and moves). Use this [[treasure-and-monster-building]] guide when fiction needs special custom monsters and a full description of the options is needed: it helps with the modular "pick from each category" builder behind custom `monster_gen.py` for improvising an enemy that isn't in the bestiary. Also read this if you need to generate from the treasure roll table; make sure there's always some treasure for defeating monsters and it's occasionally something good. Sometimes random generation from `monster_gen.py` may be lacking sufficient treasure.
 - **[[weather]]** - only read this if bad weather is used as part of story or a GM move.
 - **[[hacking-and-conversion]]** - only read this for _writing custom moves_, building new classes, and converting non-DW adventures/monsters into Dungeon World terms (includes a Direct Conversion stat cheat-sheet).
 - **rulebook-digest** - a hierarchical (L0/L1/L2) digest of the full 410-page core rulebook, built as an `advanced-digest`. `L0-index.md` tracks chapter-by-chapter coverage; `L1-digest.md` holds one paragraph per section plus ~60 atomic L2 facts (`F-NNN`) and full catalogs for anything genuinely precise a paraphrase would lose - including the complete bestiary (9 chapters, ~130 monsters/NPCs), all 8 playbooks, and the full Wizard/Cleric spell lists. Several durable findings were also folded directly into the other reference files above (corrections are noted inline where that happened) - read `L0-index.md` first for an overview of what's where. For anything that would require L3, use the `[xml:...]` anchor on the relevant `L1-digest.md` section header with `scripts/rulebook.py`, as described below.
@@ -241,8 +243,9 @@ the user ever requests GM assistant mode.
 
 It is important to retrieve only as many lines as needed. When seeking information or answering a question from a digest:
 
+0. Make sure you have run `scripts/rulebook.py --help-llm` first for the query options if needed.
 1. **Start at L0.** Scan tags/titles for the matching source(s). This narrows scope for free — don't open L1 files you don't need.
-2. **Read the matching L1 section(s) first.** Most questions resolve here. Only descend to L2 if the L1 paragraph doesn't contain the specific figure, name, or claim being asked about, and only open L3 if exact wording (not just the fact) matters. For L3, take the `[xml:...]` anchor off that section's header and run `scripts/rulebook.py --anchor <ANCHOR>`; prefer the narrowest anchor that answers the question (`--outline --file X --depth 4` finds an individual move, monster, or spell) over a whole-chapter one.
+2. **Read the matching L1 section(s) first.** Most questions resolve here. Only descend to L2 if the L1 paragraph doesn't contain the specific figure, name, or claim being asked about, and only open L3 if exact wording (not just the fact) matters. For L3, take the `[xml:...]` anchor off that section's header and run `scripts/rulebook.py` with an anchor query; prefer the narrowest anchor that answers the question over a whole-chapter one.
 3. **Climb back up for context when starting from a fact.** If a search or link lands you on an L2 fact or L3 quote, read its `[s-NNN]` parent for surrounding context before answering — a fact line is self-contained but not context-complete.
 4. **Decompress on the way out, don't quote the digest verbatim.** L1/L2 are deliberately lossy — surprisal-only residue, not prose meant to be read aloud to the user. When using a digest to answer a question, re-expand the kept residue using your own general knowledge to reconstruct full, natural context, the same way you'd explain a topic you knew well, rather than pasting the compressed paragraph as the answer. The digest tells you _what_ was worth keeping; you still supply the connective tissue.
    - **Mind the decoder.** Because a digest is lossy compression _against the authoring model's weights as a shared dictionary_ the `generated_by` model in the frontmatter records the dictionary the drops assumed. Decoding with a _different_ model still works, but reliability is **capability-relative, not identity-relative**: a decoder at least as capable as — and as knowledgeable in this domain as — the author can trust the drops, whereas a **weaker or differently-specialized** decoder may hit residue the author cut as "common knowledge" that it can't actually reconstruct. When decoding a digest authored by a stronger model, treat thin spots as possible gaps and lean harder on the Verification procedure / re-fetch. (Effort affects _authoring_ quality, not the decoder's dictionary, so it's secondary to model identity here.)

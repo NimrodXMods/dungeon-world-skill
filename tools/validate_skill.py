@@ -14,8 +14,10 @@ CI needs nothing but a Python interpreter, exactly like the skill itself.
 Every check runs even after an earlier one fails; problems are reported together
 at the end. Exit 0 = clean, 1 = at least one error.
 """
+import argparse
 import ast
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -37,6 +39,37 @@ LOCK = ROOT / "tools" / "yamledit.lock"
 # Scripts that intentionally have --help only. Everything else in scripts/ is
 # reached by the model through --help-llm, which is the canonical interface doc.
 NO_HELP_LLM = {"session_load.py", "session_save.py"}
+
+# Arguments a generator needs before it actually generates anything. Most take
+# none. monster_gen.py requires a bestiary setting tag - run bare it prints its
+# setting menu and exits 0, which would leave check_determinism and
+# check_encoding_safety passing while exercising nothing at all. Each entry is
+# a list of argument lists; every one is run.
+GENERATOR_INVOCATIONS = {
+    "monster_gen.py": [["cavern"], ["--custom", "--random"]],
+}
+DEFAULT_INVOCATION = [[]]
+
+
+def invocations_for(name):
+    return GENERATOR_INVOCATIONS.get(name, DEFAULT_INVOCATION)
+
+
+# --quick is a fast local loop, not a pre-push check. Almost all runtime here is
+# subprocess spawning, so it trims the per-seed sweeps and skips the save/load
+# round-trip (the single most expensive check at ~8s). Whatever it gives up is
+# listed back to the user by name - a reduced run must never be mistakable for
+# a full one.
+QUICK = False
+skipped = []
+
+# (full, quick) seed sets for the two sweeping checks.
+DETERMINISM_SEEDS = (("3", "7", "11"), ("3",))
+ENCODING_SEEDS = (tuple(str(n) for n in range(1, 9)), ("1",))
+
+
+def seeds_for(pair):
+    return pair[1] if QUICK else pair[0]
 
 # Documents that must keep validating against their schema.
 TEMPLATE_SCHEMA_PAIRS = [
@@ -291,26 +324,30 @@ def check_determinism():
     if not scripts:
         return
     for script in scripts:
-        for seed in ("3", "7", "11"):
-            outputs = []
-            for _ in range(2):
-                result = run("scripts/" + script.name, "--seed", seed)
-                if result.returncode != 0:
+        for extra in invocations_for(script.name):
+            for seed in seeds_for(DETERMINISM_SEEDS):
+                args = ["scripts/" + script.name] + extra + ["--seed", seed]
+                outputs = []
+                for _ in range(2):
+                    result = run(*args)
+                    if result.returncode != 0:
+                        fail(
+                            rel(script),
+                            "{} --seed {} exited {}: {}".format(
+                                " ".join(extra) or "(no args)",
+                                seed,
+                                result.returncode,
+                                (result.stderr or "").strip().splitlines()[-1:],
+                            ),
+                        )
+                        break
+                    outputs.append(result.stdout)
+                if len(outputs) == 2 and outputs[0] != outputs[1]:
                     fail(
                         rel(script),
-                        "--seed {} exited {}: {}".format(
-                            seed,
-                            result.returncode,
-                            (result.stderr or "").strip().splitlines()[-1:],
-                        ),
+                        "{} --seed {} produced different output on two "
+                        "runs".format(" ".join(extra) or "(no args)", seed),
                     )
-                    break
-                outputs.append(result.stdout)
-            if len(outputs) == 2 and outputs[0] != outputs[1]:
-                fail(
-                    rel(script),
-                    "--seed {} produced different output on two runs".format(seed),
-                )
 
 
 def check_encoding_safety():
@@ -330,22 +367,28 @@ def check_encoding_safety():
     # NO_COLOR keeps Python 3.13+ colourised tracebacks from leaking ANSI
     # escapes into the CI log.
     env = {"PYTHONIOENCODING": "cp1252", "NO_COLOR": "1"}
-    seeds = [str(n) for n in range(1, 9)]
+    seeds = seeds_for(ENCODING_SEEDS)
 
     for script in sorted(SCRIPTS.glob("*_gen.py")):
-        for seed in seeds:
-            result = run("scripts/" + script.name, "--seed", seed, env=env)
-            if result.returncode == 0:
-                continue
-            detail = (result.stderr or "").strip().splitlines()
-            reason = detail[-1] if detail else "exit {}".format(result.returncode)
-            fail(
-                rel(script),
-                "dies with a cp1252 stdout (--seed {}): {}\n"
-                "      Call _force_utf8_stdio() at import, as the other "
-                "scripts do.".format(seed, reason),
-            )
-            break  # one report per script is enough
+        broken = False
+        for extra in invocations_for(script.name):
+            if broken:
+                break
+            for seed in seeds:
+                args = ["scripts/" + script.name] + extra + ["--seed", seed]
+                result = run(*args, env=env)
+                if result.returncode == 0:
+                    continue
+                detail = (result.stderr or "").strip().splitlines()
+                reason = detail[-1] if detail else "exit {}".format(result.returncode)
+                fail(
+                    rel(script),
+                    "dies with a cp1252 stdout ({} --seed {}): {}\n"
+                    "      Call _force_utf8_stdio() at import, as the other "
+                    "scripts do.".format(" ".join(extra) or "(no args)", seed, reason),
+                )
+                broken = True  # one report per script is enough
+                break
 
     # rulebook.py is not seeded, but it renders rulebook prose containing
     # characters no 8-bit code page can represent.
@@ -362,6 +405,56 @@ def check_encoding_safety():
                     detail[-1] if detail else "exit {}".format(result.returncode)
                 ),
             )
+
+
+def check_monster_json():
+    """monster_gen.py promises JSON on stdout; prove stdout stays parseable.
+
+    Warnings, the seed notice and the yaml reminder all go to stderr precisely
+    so a caller can pipe stdout straight into a parser. That contract is easy
+    to break with a stray print(), and nothing else here would notice.
+    """
+    script = SCRIPTS / "monster_gen.py"
+    if not script.is_file():
+        return
+
+    cases = [
+        (["cavern", "--seed", "3"], "setting"),
+        (["cavern", "--party-levels", "4", "--random", "2", "--seed", "3"], "setting"),
+        (["--custom", "--random", "--treasure", "--seed", "3"], "custom"),
+    ]
+    for extra, label in cases:
+        result = run("scripts/monster_gen.py", *extra)
+        if result.returncode != 0:
+            fail(rel(script), "{} exited {}".format(" ".join(extra), result.returncode))
+            continue
+        try:
+            payload = json.loads(result.stdout)
+        except ValueError as exc:
+            fail(
+                rel(script),
+                "stdout is not valid JSON for '{}' ({}) - something is "
+                "printing to stdout that belongs on stderr".format(
+                    " ".join(extra), exc
+                ),
+            )
+            continue
+        if not payload.get("monsters"):
+            fail(rel(script), "'{}' returned no monsters".format(" ".join(extra)))
+            continue
+        if label == "setting":
+            missing = [
+                m.get("name", "?")
+                for m in payload["monsters"]
+                if not m.get("instinct") or not m.get("moves")
+            ]
+            if missing:
+                fail(
+                    rel(script),
+                    "bestiary monsters came back without instinct/moves: {} - "
+                    "the whole point of preferring official monsters is that "
+                    "these are already written".format(", ".join(missing)),
+                )
 
 
 def check_session_roundtrip():
@@ -590,7 +683,21 @@ def check_tracked_files():
                 fail(tracked, "is campaign state or a session package and must not be committed")
 
 
-def main():
+def main(argv=None):
+    global QUICK
+    parser = argparse.ArgumentParser(
+        description="Validate the dungeon-world-gm skill.",
+    )
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="trim the per-seed sweeps to a single seed for a fast local loop. "
+        "Every check still runs, but with less coverage - CI must run the full "
+        "sweep, so do not use this as your pre-push check.",
+    )
+    args = parser.parse_args(argv)
+    QUICK = args.quick
+
     fastjsonschema, yaml_mod = load_bundled_deps()
     if yaml_mod is None:
         print("FAIL: " + errors[0])
@@ -606,7 +713,11 @@ def main():
     check_no_external_imports()
     check_determinism()
     check_encoding_safety()
-    check_session_roundtrip()
+    check_monster_json()
+    if QUICK:
+        skipped.append("session save/load round-trip (check_session_roundtrip)")
+    else:
+        check_session_roundtrip()
     check_schemas(fastjsonschema, yaml_mod)
     check_digest()
     check_yamledit_pin(yaml_mod)
@@ -617,10 +728,17 @@ def main():
     for error in errors:
         print("error:   " + error)
 
+    suffix = " [QUICK - PARTIAL RUN]" if QUICK else ""
     if errors:
-        print("\n{} error(s), {} warning(s)".format(len(errors), len(warnings)))
+        print("\n{} error(s), {} warning(s){}".format(len(errors), len(warnings), suffix))
         return 1
-    print("\nskill validation passed ({} warning(s))".format(len(warnings)))
+    print("\nskill validation passed ({} warning(s)){}".format(len(warnings), suffix))
+    if QUICK:
+        print("  --quick reduced this run:")
+        print("    - seed sweeps cut to 1 seed (determinism, encoding safety)")
+        for item in skipped:
+            print("    - skipped: " + item)
+        print("  Run without --quick before pushing; CI always runs the full sweep.")
     return 0
 
 
