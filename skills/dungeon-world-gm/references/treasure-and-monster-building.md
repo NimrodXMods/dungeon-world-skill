@@ -131,48 +131,54 @@ species/type names. Most good results take one of these forms:
   minor, non-dangerous creatures; breaks down for anything meant to read as
   threatening.
 
-## Deadliness word ladder (tentative, base die only — see caveat)
+## Deadliness word ladder
 
-These are some guides as to what terms to use for description and naming of
-custom creatures. If a die has +2 or more, bump it's "die" description level.
-Bump another level if it's "best out of two rolls". Bump yet again for
-especially resistant to defeat immunities and offensive increasing special
-abilities.
+**The ladder now lives in the generator**, at `assets/monster_words.json` under
+`deadliness`, with tiers `d4 / d6 / d8 / d10 / d12 / beyond / cataclysmic`.
+`monster_gen.py --custom` works out the tier and hands back words from it in
+`seed_words.deadliness`, so you don't need to look anything up here. It used to
+be duplicated on this page; one copy is enough.
 
-| Die | Words |
-|---|---|
-| d4 | meek, puny, scrawny, nuisance, pest, try to come up with similar but better ones |
-| d6 | biting, snappish, feral, nasty, quick, also try to come up with similar bit better |
-| d8 | dangerous, mean, savage, brutal, hungry, also need to improve on these |
-| d10 | killer, deadly, vicious, merciless, ravenous, grim, terror, Butcher |
-| d12 | annihilator, doom-, doom-bringer, unstoppable, horror , Obliterator |
+The bump rules it applies, kept here because they are judgement you may want to
+override:
 
-Beyond d12: Ravager, Reaper, Eradicator, Devourer, Executioner, Harrower, Extinguisher, Scourge, Bonebreaker, Skullcrusher, Gravemaker, Wrath-Bound, Blood-Sated, Cataclysm-Born, Inexorable, Undying, Relentless
+- **+2 or more damage** bumps one tier.
+- **Best-of-two damage rolls** bumps another.
+- **Defeat-resisting or offence-boosting specials** bump once more.
 
-Cataclysmic and beyond even the previous level, possibly un-killable: Worldender, Godslayer, Deathless, Cataclysm-Born, Cataclysmic, Armageddon, Undying
+To retune the register, edit the JSON — no code change needed.
 
-## Adjacent design notes (not naming, but gathered alongside it)
+## Behaviour axes — implemented
 
-Behavioral generation gaps identified alongside naming — not yet
-implemented, needs design work of its own:
+These were design notes; they are now generated. `monster_gen.py --custom`
+returns a `behavior` block with eight axes: **aggression** (-2 to +4), the
+**flee rule** derived from it, **hide-or-run**, **intelligence** (-1 to 9),
+**intimidation** (-1 to 6), **territoriality**, **sensory profile** and
+**post-injury behaviour**. Each comes with a label and a one-line gloss, so
+there is nothing to look up here.
 
-- **Aggression scale** (-2 to +4): cowardly/runs like a deer → meek/keeps
-  distance → ambivalent/raccoon-like (stands ground, doesn't chase) →
-  cautiously aggressive/ambush-waits → aggressive/no patience → berserk →
-  horror (100% all-out, exists only to kill target).
-- **Flee/engage thresholds** per aggression level: negative levels flee
-  always if possible and only fight when cornered; 0 stands ground unless
-  outmatched; +1 may flee/hide if needed; +2 may flee/hide if overwhelmed;
-  +3/+4 never flee, +4 never even gets distracted from the target.
-- **Hide vs. run preference**, independent axis: some creatures only have
-  "hide under/behind terrain," not true camouflage. +1/+2 use hiding to
-  ambush; low/negative levels use hiding (or running) to escape; +3/+4
-  don't hide to flee at all (only to ambush, if ever).
+Two things worth knowing about how they are rolled:
+
+- **The flee rule is derived from aggression, not rolled separately.** The two
+  are not independent, and rolling both would manufacture contradictions.
+- **The stats only nudge the result, they never constrain it.** A huge
+  terrifying monster leans aggressive, but can still come back timid — roughly
+  one time in seventeen. That is deliberate. A creature whose behaviour cuts
+  against its stat block (the huge thing that ignores you until provoked, the
+  coward that postures wildly and then bolts) is usually more interesting than
+  one that matches. Rewrite any of it that doesn't suit the scene; the output
+  says as much.
 
 ## How to use this in practice
 
-When generating a name: take the seed words (noun/verb/adjective or
-similar), cross-reference the stat block's die-tier + relevant traits, and
-synthesize using one of the ✅ patterns above. Never default to "The + noun"
-or "The + phrase" for a type/species name. Reject and regenerate anything
-matching an ❌ pattern above before presenting it.
+`monster_gen.py --custom` hands you the seed words already themed and picked —
+`seed_words.substance` and `.bodypart` for the compound halves, `.deadliness`
+for the register. Cross-reference them against the stat block's traits and
+synthesize using one of the ✅ patterns above. Never default to "The + noun" or
+"The + phrase" for a type/species name. Reject and regenerate anything matching
+an ❌ pattern above before presenting it.
+
+The seeds are raw material, not a menu — recombine and discard freely. Use
+`--theme` to match the vocabulary to where the creature lives
+(`--list-themes` for the options; tags merge, so `--theme swamp,undead` draws
+on both).

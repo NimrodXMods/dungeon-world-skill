@@ -46,7 +46,11 @@ NO_HELP_LLM = {"session_load.py", "session_save.py"}
 # check_encoding_safety passing while exercising nothing at all. Each entry is
 # a list of argument lists; every one is run.
 GENERATOR_INVOCATIONS = {
-    "monster_gen.py": [["cavern"], ["--custom", "--random"]],
+    "monster_gen.py": [
+        ["cavern"],
+        ["--custom", "--random"],
+        ["--custom", "--random", "--theme", "swamp,undead"],
+    ],
 }
 DEFAULT_INVOCATION = [[]]
 
@@ -407,6 +411,93 @@ def check_encoding_safety():
             )
 
 
+def _literal_constant(script, name):
+    """Read a module-level constant out of a script without importing it.
+
+    The skill's scripts are not importable from here (different tree, and they
+    run side effects at import), but the validator needs monster_gen's category
+    list to check the lexicon against. Parsing it keeps the script the single
+    source of truth instead of duplicating the list here.
+    """
+    try:
+        tree = ast.parse(script.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return None
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == name:
+                try:
+                    return ast.literal_eval(node.value)
+                except ValueError:
+                    return None
+    return None
+
+
+def check_lexicon():
+    """monster_gen's seed vocabulary must be complete for every theme.
+
+    A theme missing a category would not crash - random.sample of an empty list
+    returns [] - it would just quietly stop seeding that field, which is
+    exactly the blank-page problem the lexicon exists to solve.
+    """
+    lexicon_path = ASSETS / "monster_words.json"
+    script = SCRIPTS / "monster_gen.py"
+    if not lexicon_path.is_file():
+        fail(rel(lexicon_path), "missing - monster_gen.py --custom needs it for seed words")
+        return
+
+    try:
+        lexicon = json.loads(lexicon_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        fail(rel(lexicon_path), "is not valid JSON ({})".format(exc))
+        return
+
+    categories = _literal_constant(script, "WORD_CATEGORIES")
+    if not categories:
+        fail(rel(script), "WORD_CATEGORIES could not be read - cannot check the lexicon")
+        return
+
+    themes = {k: v for k, v in lexicon.get("themes", {}).items() if not k.startswith("_")}
+    if not themes:
+        fail(rel(lexicon_path), "has no themes")
+        return
+    if "generic" not in themes:
+        fail(rel(lexicon_path), "has no 'generic' theme, which is the default")
+
+    for name in sorted(themes):
+        theme = themes[name]
+        if not isinstance(theme, dict):
+            fail(rel(lexicon_path), "theme {!r} is not an object".format(name))
+            continue
+        for category in categories:
+            words = theme.get(category)
+            if not words:
+                fail(
+                    rel(lexicon_path),
+                    "theme {!r} is missing or has an empty {!r} - every theme "
+                    "must carry every category".format(name, category),
+                )
+            elif not all(isinstance(w, str) and w.strip() for w in words):
+                fail(
+                    rel(lexicon_path),
+                    "theme {!r} has a non-string or blank entry in {!r}".format(
+                        name, category
+                    ),
+                )
+
+    tiers = _literal_constant(script, "DEADLINESS_TIERS") or ()
+    ladder = lexicon.get("deadliness", {})
+    for tier in tiers:
+        if not ladder.get(tier):
+            fail(
+                rel(lexicon_path),
+                "deadliness ladder is missing tier {!r} - monster_gen names "
+                "monsters off it".format(tier),
+            )
+
+
 def check_monster_json():
     """monster_gen.py promises JSON on stdout; prove stdout stays parseable.
 
@@ -713,6 +804,7 @@ def main(argv=None):
     check_no_external_imports()
     check_determinism()
     check_encoding_safety()
+    check_lexicon()
     check_monster_json()
     if QUICK:
         skipped.append("session save/load round-trip (check_session_roundtrip)")
