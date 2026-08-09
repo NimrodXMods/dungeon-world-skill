@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 idea_gen.py – RPG random generation tables
-(Treasure Finder, Finding-treasure detail, Discovery, Danger, Creature, Details)
+(Treasure Finder, Discovery, Danger, Creature, and misc prompt tables)
 
 For a generic NPC appearance/personality/quirk trait, see npc_gen.py
 instead - it's rolled there by default for every NPC (see --no-traits/
@@ -10,8 +10,7 @@ instead - it's rolled there by default for every NPC (see --no-traits/
 Usage:
   python idea_gen.py                  # one result from every table
   python idea_gen.py treasure         # only treasure
-  python idea_gen.py danger creature details
-  python idea_gen.py details
+  python idea_gen.py danger creature discovery
   python idea_gen.py equipment-tag -n 2   # roll 2 equipment tags at once
   python idea_gen.py -n 3 gmmove        # a GM move prompt
   python idea_gen.py drsl-miss          # a Discern Realities/Spout Lore miss trick
@@ -98,32 +97,6 @@ def roll_treasure(depth: int = 0, max_depth: int = 3) -> str:
             result.append(extra)
     result_str = "\n".join(result)
     return f"{result_str}"
-
-# ---------------------------------------------------------------------------
-# Finding-treasure detail (utility / art item)
-# ---------------------------------------------------------------------------
-
-UTILITY = [
-    "key/lockpick", "potion/food", "clothing/cloak", "decanter/vessel/cup",
-    "cage/box/coffer", "instrument/tool", "book/scroll", "weapon/staff/wand",
-    "armor/shield/helm", "mirror/hourglass", "pet/mount", "device/construct"
-]
-
-ART = [
-    "trinket/charm", "painting/pottery", "ring/gloves", "carpet/tapestry",
-    "statuette/idol", "flag/banner", "bracelet/armband", "necklace/amulet",
-    "belt/harness", "hat/mask", "orb/sigil/rod", "crown/scepter"
-]
-
-def roll_item_detail() -> str:
-    cat_roll = d(12)
-    if cat_roll <= 8:
-        category = "utility item"
-        specific = UTILITY[d(12) - 1]
-    else:
-        category = "art item"
-        specific = ART[d(12) - 1]
-    return f"{category} → {specific} (1d12 category={cat_roll})"
 
 # ---------------------------------------------------------------------------
 # Discovery (1d12 × 3 nested tables)
@@ -612,264 +585,6 @@ def roll_creature() -> str:
         return f"Creature → humanoid → {sub} → {detail}"
 
 # ---------------------------------------------------------------------------
-# Details (alphabetical prompt tables)
-# ---------------------------------------------------------------------------
-
-DETAILS = {
-    "aberrance": [
-        (1, 1, "multicephalous"),
-        (2, 2, "profuse sensory organs"),
-        (3, 4, "anatomical oddity"),
-        (5, 5, "many limbs/digits"),
-        (6, 6, "acephalous/decentralized"),
-        (7, 7, "tentacles/feelers"),
-        (8, 8, "gibbering/babbling"),
-        (9, 9, "exudes chaos/blight"),
-        (10, 10, "shapechanging"),
-        (11, 12, "roll 1d10 twice"),
-    ],
-    "ability": [
-        (1, 1, "bless/curse"),
-        (2, 2, "entrap/paralyze"),
-        (3, 3, "levitate/fly/teleport"),
-        (4, 4, "telepathy/mind control"),
-        (5, 5, "mimic/camouflage"),
-        (6, 6, "seduce/hypnotize"),
-        (7, 7, "dissolve/disintegrate"),
-        (8, 8, "based on aspect"),
-        (9, 9, "based on element"),
-        (10, 10, "drain life/drain magic"),
-        (11, 11, "magic type"),
-        (12, 12, "roll 1d10+1 twice"),
-    ],
-    "activity": [
-        (1, 1, "laying trap/ambush"),
-        (2, 2, "fighting/at war"),
-        (3, 3, "prowling/on patrol"),
-        (4, 4, "hunting/foraging"),
-        (5, 5, "eating/resting/camping"),
-        (6, 6, "arguing/infighting"),
-        (7, 7, "traveling/exploring"),
-        (8, 8, "trading/negotiating"),
-        (9, 9, "fleeing/running away"),
-        (10, 10, "building/excavating"),
-        (11, 11, "sleeping/unconscious"),
-        (12, 12, "nursing injury/dying"),
-    ],
-    "adjective": [
-        (1, 1, "slick/slimy"),
-        (2, 2, "rough/hard/sharp"),
-        (3, 3, "smooth/soft/dull"),
-        (4, 4, "corroded/rusty"),
-        (5, 5, "rotten/decaying"),
-        (6, 6, "broken/brittle"),
-        (7, 7, "stinking/smelly"),
-        (8, 8, "weak/thin/drained"),
-        (9, 9, "strong/fat/full"),
-        (10, 10, "pale/poor/shallow"),
-        (11, 11, "dark/rich/deep"),
-        (12, 12, "colorful"),
-    ],
-    "age": [
-        (1, 1, "unborn/nascent"),
-        (2, 2, "being born/budding"),
-        (3, 3, "newborn/blossoming"),
-        (4, 6, "young/green"),
-        (7, 9, "mature/ripe"),
-        (10, 10, "old/going soft"),
-        (11, 11, "dead/withered/ancient"),
-        (12, 12, "dust/pre-historic"),
-    ],
-    "alignment": [
-        (1, 2, "evil"),
-        (3, 4, "chaotic"),
-        (5, 8, "neutral"),
-        (9, 10, "lawful"),
-        (11, 12, "good"),
-    ],
-    "aspect": [
-        (1, 1, "war/discord"),
-        (2, 2, "hate/envy"),
-        (3, 3, "power/strength"),
-        (4, 4, "trickery/dexterity"),
-        (5, 5, "time/constitution"),
-        (6, 6, "lore/intelligence"),
-        (7, 7, "nature/wisdom"),
-        (8, 8, "culture/charisma"),
-        (9, 9, "luck/fortune"),
-        (10, 10, "love/admiration"),
-        (11, 11, "peace/balance"),
-        (12, 12, "glory/divinity"),
-    ],
-    "color": [
-        (1, 1, "white/bright/pale"),
-        (2, 2, "red/pink/maroon"),
-        (3, 3, "orange/peach"),
-        (4, 4, "yellow/mustard/ochre"),
-        (5, 5, "green/chartreuse/sage"),
-        (6, 6, "blue/aquamarine/indigo"),
-        (7, 7, "violet/purple"),
-        (8, 8, "gray/slate"),
-        (9, 9, "brown/beige/tan"),
-        (10, 10, "black/dark"),
-        (11, 11, "metallic/prismatic"),
-        (12, 12, "transparent/clear"),
-    ],
-    "condition": [
-        (1, 1, "being built/born"),
-        (2, 4, "intact/healthy"),
-        (5, 7, "active/alert"),
-        (8, 9, "weathered/tired/weak"),
-        (10, 10, "vacant/lost"),
-        (11, 11, "damaged/hurt/dying"),
-        (12, 12, "broken/missing/dead"),
-    ],
-    "damage type": [
-        (1, 2, "blunt/bludgeoning"),
-        (3, 3, "edged/slashing"),
-        (4, 5, "pointed/piercing"),
-        (6, 6, "constricting/crushing"),
-        (7, 7, "poison/toxic"),
-        (8, 8, "acid/dissolving"),
-        (9, 9, "choking/asphyxiating"),
-        (10, 10, "element"),
-        (11, 12, "roll 1d10 twice"),
-    ],
-    "design": [
-        (1, 1, "blank/plain"),
-        (2, 2, "floral/organic"),
-        (3, 3, "circular/curvilinear"),
-        (4, 4, "geometric/triangular"),
-        (5, 5, "asymmetrical"),
-        (6, 6, "square/rectilinear"),
-        (7, 7, "meandering/labyrinthine"),
-        (8, 8, "oceanic/wavelike"),
-        (9, 9, "astrological/cosmic"),
-        (10, 10, "balanced/harmonious"),
-        (11, 11, "erratic/chaotic/random"),
-        (12, 12, "roll 1d10+1 twice"),
-    ],
-    "disposition": [
-        (1, 1, "attacking"),
-        (2, 4, "hostile/aggressive"),
-        (5, 6, "cautious/doubtful"),
-        (7, 7, "fearful/fleeing"),
-        (8, 10, "neutral"),
-        (11, 11, "curious/hopeful"),
-        (12, 12, "friendly"),
-    ],
-    "element": [
-        (1, 1, "void"),
-        (2, 2, "death/darkness"),
-        (3, 4, "fire/metal/smoke"),
-        (5, 6, "earth/stone/vegetation"),
-        (7, 8, "water/ice/mist"),
-        (9, 10, "air/wind/storm"),
-        (11, 11, "life/light"),
-        (12, 12, "stars/cosmos"),
-    ],
-    "magic type": [
-        (1, 1, "necromancy"),
-        (2, 3, "evocation/destruction"),
-        (4, 4, "conjuration/summoning"),
-        (5, 5, "illusion/glamour"),
-        (6, 6, "enchantment/artifice"),
-        (7, 7, "transformation"),
-        (8, 8, "warding/binding"),
-        (9, 10, "elemental"),
-        (11, 11, "restoration/healing"),
-        (12, 12, "divination/scrying"),
-    ],
-    "no. appearing": [
-        (1, 2, "horde (4d6 per wave)"),
-        (3, 8, "group (1d6+2)"),
-        (9, 12, "solitary (1)"),
-    ],
-    "oddity": [
-        (1, 1, "bright/garish/harsh"),
-        (2, 2, "geometric/concentric"),
-        (3, 3, "web/network"),
-        (4, 4, "crystalline/glassy"),
-        (5, 5, "fungal/slimy/moldy"),
-        (6, 6, "gaseous/misty/illusory"),
-        (7, 7, "volcanic/explosive"),
-        (8, 8, "magnetic/repellant"),
-        (9, 9, "multilevel/tiered"),
-        (10, 10, "absurd/impossible"),
-        (11, 12, "roll 1d10 twice"),
-    ],
-    "orientation": [
-        (1, 2, "down/earthward"),
-        (3, 3, "north"),
-        (4, 4, "northeast"),
-        (5, 5, "east"),
-        (6, 6, "southeast"),
-        (7, 7, "south"),
-        (8, 8, "southwest"),
-        (9, 9, "west"),
-        (10, 10, "northwest"),
-        (11, 12, "up/skyward"),
-    ],
-    "ruination": [
-        (1, 1, "arcane disaster"),
-        (2, 2, "damnation/curse"),
-        (3, 4, "earthquake/fire/flood"),
-        (5, 6, "plague/famine/drought"),
-        (7, 8, "overrun by monsters"),
-        (9, 10, "war/invasion"),
-        (11, 11, "depleted resources"),
-        (12, 12, "emigration"),
-    ],
-    "size": [
-        (1, 1, "tiny"),
-        (2, 3, "small"),
-        (4, 9, "medium-sized"),
-        (10, 11, "large"),
-        (12, 12, "huge"),
-    ],
-    "tag": [
-        (1, 1, "amorphous"),
-        (2, 2, "cautious"),
-        (3, 3, "construct"),
-        (4, 4, "devious"),
-        (5, 5, "intelligent"),
-        (6, 6, "magical"),
-        (7, 7, "organized"),
-        (8, 8, "planar"),
-        (9, 9, "stealthy"),
-        (10, 10, "terrifying"),
-        (11, 12, "roll 1d10 twice"),
-    ],
-    "terrain": [
-        (1, 1, "sea/ocean"),
-        (2, 2, "wasteland/desert"),
-        (3, 5, "lowland/plains"),
-        (6, 6, "wetland/swamp"),
-        (7, 8, "woodland/jungle"),
-        (9, 10, "highland/hills"),
-        (11, 11, "mountains"),
-        (12, 12, "roll 1d10+1, +oddity"),
-    ],
-    "visibility": [
-        (1, 2, "buried/hidden/invisible"),
-        (3, 6, "obscured/overgrown"),
-        (7, 9, "obvious/in plain sight"),
-        (10, 11, "visible at near distance"),
-        (12, 12, "visible at far distance"),
-    ],
-}
-
-def roll_details(specific: str = None) -> str:
-    """Roll one random detail table (or a named one)."""
-    if specific and specific in DETAILS:
-        name = specific
-    else:
-        name = random.choice(list(DETAILS.keys()))
-    table = DETAILS[name]
-    result = pick_range(table, d(12))
-    return f"Details → {name} → {result}"
-
-# ---------------------------------------------------------------------------
 # Equipment Tags (this skill's own addition - a random prompt over the
 # equipment tags already defined in references/tag-reference.md, useful
 # when improvising a new item's tags on the fly rather than picking by hand)
@@ -1011,11 +726,9 @@ def roll_std_magicitem() -> str:
 
 TABLES = {
     "treasure":  ("Treasure Table", roll_treasure),
-    "detail":    ("Treasure detail (utility/art)", roll_item_detail),
     "discovery": ("Discovery", roll_discovery),
     "danger":    ("Danger", roll_danger),
     "creature":  ("Creature", roll_creature),
-    "details":   ("Random Details Prompt", roll_details),
     "equipment-tag": ("Equipment Tag", roll_equipment_tag),
     "gmmove":    ("GM Move", roll_gm_move),
     "drsl-miss": ("DR/Spout Lore Miss", roll_drsl_miss),
@@ -1025,8 +738,8 @@ TABLES = {
 HELP_LLM = """\
 idea_gen.py - general-purpose RPG random-idea tables (treasure, discoveries,
 dangers, creatures, equipment tags, GM moves, Discern Realities/Spout Lore
-miss tricks, named magic items, misc detail prompts), useful any time a
-random prompt would help creativity, independent of the other generators.
+miss tricks, named magic items), useful any time a random prompt would help
+creativity, independent of the other generators.
 For a generic NPC appearance/personality/quirk trait, use npc_gen.py instead
 (rolled there by default for every NPC - see its --no-traits/--full-traits).
 
@@ -1035,11 +748,9 @@ USAGE
 
 TABLE (zero or more; default: every table, one result each)
   treasure         Treasure Table (1-18 finding-treasure roll)
-  detail           Treasure detail (a rolled item's utility/art description)
   discovery        Discovery prompt
   danger           Danger prompt
   creature         Creature prompt
-  details          Random Details Prompt (generic scene-detail seed)
   equipment-tag     a random equipment tag (see references/tag-reference.md)
   gmmove            a GM move prompt (which move to make, not how to word it)
   drsl-miss         a Discern Realities / Spout Lore miss trick
@@ -1062,7 +773,7 @@ counteracts an LLM's tendency to repeat its own priors when improvising.
 EXAMPLES
   idea_gen.py                        one result from every table
   idea_gen.py treasure                only treasure
-  idea_gen.py danger creature details  all three of the listed tables
+  idea_gen.py danger creature discovery  all three of the listed tables
   idea_gen.py equipment-tag -n 2       roll 2 equipment tags at once
   idea_gen.py -n 3 gmmove               3 GM move prompts
   idea_gen.py drsl-miss
