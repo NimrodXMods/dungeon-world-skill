@@ -49,6 +49,9 @@ def _force_utf8_stdio():
 
 _force_utf8_stdio()
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _treasure  # noqa: E402  (sibling module - the treasure table and its objects)
+
 BESTIARY = Path(__file__).resolve().parent.parent / "assets" / "monsters.json"
 LEXICON = Path(__file__).resolve().parent.parent / "assets" / "monster_words.json"
 
@@ -433,37 +436,13 @@ DESCRIPTIVE_ONLY = {"stealthy", "organized", "intelligent", "terrifying"}
 # trees because tools/ is not shipped inside the skill.
 DIE_FACTOR = {4: 0.5, 6: 0.8, 8: 1.0, 10: 1.2, 12: 1.5}
 
-# (template, {placeholder: dice expression}). The dice are rolled here and the
-# concrete number substituted in, so a caller never gets "2d8 or so" back and
-# never has to make a second tool call to find out what it actually got.
-TREASURE_TABLE = {
-    1: ("A few coins: {coins} coins", {"coins": "2d8"}),
-    2: ("An item useful to the current situation", {}),
-    3: ("Several coins: {coins} coins", {"coins": "4d10"}),
-    4: ("A small valuable item (gem or art) worth {value} coins, 0 weight",
-        {"value": "2d10*10"}),
-    5: ("A minor magical trinket", {}),
-    6: ("Useful information (clues, notes, etc.)", {}),
-    7: ("A bag of {coins} coins, {weight} weight", {"coins": "1d4*100"}),
-    8: ("A very valuable small item worth {value} coins, 0 weight",
-        {"value": "2d6*100"}),
-    9: ("A chest of coins and valuables worth {value} coins, 1 weight",
-        {"value": "3d6*100"}),
-    10: ("A magical item or effect", {}),
-    11: ("Many bags of coins: {coins} coins, {weight} weight",
-         {"coins": "2d4*100"}),
-    12: ("A sign of office worth {value} coins", {"value": "3d4*100"}),
-    13: ("A large art item worth {value} coins, 1 weight", {"value": "4d4*100"}),
-    14: ("A unique item worth {value} coins", {"value": "5d4*100"}),
-    15: ("Information leading to a new spell", {}),
-    16: ("A portal or secret path", {}),
-    17: ("Something relating to one of the characters", {}),
-    18: ("A hoard: {coins} coins, plus {gems} gems worth {gem_value} coins each",
-         {"coins": "1d10*1000", "gems": "1d10*10", "gem_value": "2d6*100"}),
-}
+# The 1-18 table itself lives in assets/treasure.json and is reached through
+# _treasure - idea_gen.py needs the same entries for treasure that no monster
+# owns, and the copy that used to sit here had already drifted from that one.
+# What stays here is the part that is genuinely monster-specific: rolling the
+# creature's own damage die, and the tag bonuses below.
 
 # 15, 16 and 17 each give their own result AND send you back for another roll.
-ROLL_AGAIN = (15, 16, 17)
 MAX_REROLLS = 5  # a d12 with +1d4s cannot realistically chain, but do not hang
 
 # Bonus-dice triggers that exist as monster tags in the bestiary. The rulebook
@@ -1130,21 +1109,7 @@ def build_monster(org, size, armor, known_for, armament, traits, divine_bonus, n
     return monster, die, meta
 
 
-DICE_EXPR = re.compile(r"^(\d+)d(\d+)(?:\*(\d+))?$")
 DAMAGE_DIE = re.compile(r"[bw]?\[?\s*\d*d(\d+)")
-
-
-def roll_expr(expr):
-    """'2d8' -> a rolled total; '2d10*10' -> that total times 10."""
-    match = DICE_EXPR.match(expr)
-    if not match:
-        raise ValueError("bad dice expression: %r" % expr)
-    count, sides, mult = (
-        int(match.group(1)),
-        int(match.group(2)),
-        int(match.group(3) or 1),
-    )
-    return sum(random.randint(1, sides) for _ in range(count)) * mult
 
 
 def parse_damage_die(attack):
@@ -1161,12 +1126,20 @@ def parse_damage_die(attack):
 
 
 def describe_treasure(roll):
-    """One table entry, with its dice already rolled into real numbers."""
-    template, spec = TREASURE_TABLE[min(max(roll, 1), 18)]
-    values = {name: roll_expr(expr) for name, expr in spec.items()}
-    if "{weight}" in template and "coins" in values:
-        values["weight"] = max(1, values["coins"] // 100)
-    return template.format(**values)
+    """One table entry, with its dice already rolled into real numbers.
+
+    Entries the table leaves abstract about appearance ("a small valuable item
+    worth 140 coins") come back with a short menu of looks under "looks_like".
+    The value was rolled once and is shared by all of them, so picking a
+    different option never changes what the thing is worth - only what it is.
+    """
+    text, is_object = _treasure.value_entry(roll)
+    result = {"text": text}
+    if is_object:
+        result["looks_like"] = _treasure.describe_options(
+            exclude_traits=_treasure.VALUE_EXCLUDED
+        )
+    return result
 
 
 def treasure_tag_effects(monster):
@@ -1202,7 +1175,7 @@ def roll_treasure(die, advantage=False, bonus_d4=0):
         value += sum(random.randint(1, 4) for _ in range(bonus_d4))
         rolls.append(value)
         results.append(describe_treasure(value))
-        if value not in ROLL_AGAIN:
+        if value not in _treasure.roll_again_values():
             break
     return rolls, results
 
@@ -1324,6 +1297,19 @@ TREASURE
   The shape is:
       "treasure": {"rolled_for": 7, "note": "...", "hauls": [ {"creature": 1,
                    "die": 6, "rolls": [...], "results": [...]}, ... ]}
+
+  Each entry in "results" is {"text": "...", "looks_like": [...]}, and each
+  option in "looks_like" is {"text": "...", "categories": [...]}.
+  "looks_like" appears only on entries the table leaves abstract about
+  appearance - "A small valuable item worth 140 coins" says what it is worth
+  but not what it IS. It is a MENU: pick the one that suits the scene, or mix
+  them. The value was rolled once and is shared by every option, so choosing
+  between them never changes what the treasure is worth. Entries that are not
+  objects ("Useful information", "A magical item or effect") have no
+  "looks_like" - those are yours to invent.
+  "categories" names the axes an option was rolled on, and they double as
+  idea_gen.py table names: "idea_gen.py treasure-object:motif" rerolls just
+  that axis when one detail is wrong and the rest of the object is fine.
 
   IMPORTANT - do not hand out loot nobody earned. Hauls are rolled for
   suggested_number.max, so there are usually MORE hauls than creatures you will

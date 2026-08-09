@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 idea_gen.py – RPG random generation tables
-(Treasure Finder, Discovery, Danger, Creature, and misc prompt tables)
+(Treasure, Treasure Objects, Discovery, Danger, Creature, and misc prompts)
+
+Treasure here is treasure no monster owns. A monster's own haul comes from
+monster_gen.py --treasure, which rolls the creature's damage die against the
+same shared table in assets/treasure.json.
 
 For a generic NPC appearance/personality/quirk trait, see npc_gen.py
 instead - it's rolled there by default for every NPC (see --no-traits/
@@ -10,7 +14,7 @@ instead - it's rolled there by default for every NPC (see --no-traits/
 Usage:
   python idea_gen.py                  # one result from every table
   python idea_gen.py treasure         # only treasure
-  python idea_gen.py danger creature discovery
+  python idea_gen.py danger discovery
   python idea_gen.py equipment-tag -n 2   # roll 2 equipment tags at once
   python idea_gen.py -n 3 gmmove        # a GM move prompt
   python idea_gen.py drsl-miss          # a Discern Realities/Spout Lore miss trick
@@ -19,6 +23,7 @@ Usage:
 
 import random
 import argparse
+import os
 import sys
 from typing import List, Tuple, Dict, Any
 
@@ -38,6 +43,9 @@ def _force_utf8_stdio():
 
 _force_utf8_stdio()
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _treasure  # noqa: E402  (sibling module - the treasure table and its objects)
+
 # ---------------------------------------------------------------------------
 # Dice helpers
 # ---------------------------------------------------------------------------
@@ -49,54 +57,95 @@ def nd(n: int, sides: int) -> int:
     return sum(d(sides) for _ in range(n))
 
 # ---------------------------------------------------------------------------
-# Treasure table (1–18)
+# Treasure (1–18)
+#
+# The table itself lives in assets/treasure.json, shared with monster_gen.py -
+# it used to be copied here and the copy drifted. What stays here is the roll,
+# which has to differ: monster_gen.py rolls the monster's damage die, and
+# treasure that no monster owns has no damage die to roll.
 # ---------------------------------------------------------------------------
 
-TREASURE = {
-    1:  "A few coins, 2d8 or so",
-    2:  "A useful item worth 2d6 coins or so",
-    3:  "Several coins, about 4d10",
-    4:  "A small valuable (gem, art), worth 2d10x10 coins, 0 weight",
-    5:  "Some minor magical trinket",
-    6:  "Useful clue (map, note, etc.)",
-    7:  "Bag of coins, 1d4x100, 1 weight per 100",
-    8:  "A small item (gem, art) of great value (2d6x100 coins, 0 weight)",
-    9:  "A chest of coins and other small valuables (worth 3d6x100 coins, 1 weight per 100)",
-    10: "A magical item or magical effect",
-    11: "Many bags of coins, 2d4x100 or so",
-    12: "The useful clue is also highly valuable and worth 3d4x100 coins (1 weight)",
-    13: "It's also unusually heavy but worth +2d4x100 more coins (+1 weight)",
-    14: "Unique item worth at least 5d4x100 coins",
-    15: "Everything needed to learn a new spell, and roll again",
-    16: "A portal or secret path (or directions to one), and roll again",
-    17: "Something relating to one of the characters, and roll again",
-    18: "A hoard: 1d10x1000 coins (1 weight per 100), and 1d10x10 gems worth 2d6x100 each",
-}
+def _render_options(options, indent: str) -> List[str]:
+    """A numbered menu, each option followed by the categories that built it.
+
+    The category line is not decoration: it is a runnable token. Printing it in
+    the comma form that roll_treasure_object accepts means rerolling one axis,
+    or a few, is a copy-paste of the line rather than something the reader has
+    to remember is possible.
+    """
+    lines = []
+    for i, opt in enumerate(options, 1):
+        lines.append(f"{indent}{i}. {opt['text']}")
+        lines.append("{}   rolled with treasure-object:{}".format(
+            indent, ",".join(opt["categories"])
+        ))
+    return lines
+
+
+def _render_value(value: int) -> List[str]:
+    """One table entry, plus a menu of looks when the entry leaves them open."""
+    text, is_object = _treasure.value_entry(value)
+    lines = [text]
+    if is_object:
+        options = _treasure.describe_options(exclude_traits=_treasure.VALUE_EXCLUDED)
+        lines.append("  looks like (pick one, or mix them):")
+        lines.extend(_render_options(options, "    "))
+    return lines
+
 
 def roll_treasure(depth: int = 0, max_depth: int = 3) -> str:
-    """Roll 1d6, +1d6 on 6 up to 3d6 total  Recurse on 'roll again'."""
+    """Roll 1d6, +1d6 on a 6, up to 3d6 total. Recurse on 'roll again'.
+
+    A 6 counts as its own result and sends you higher up the table, which is
+    what lets a monster-free roll reach the top of a table the rulebook expects
+    to be reached with a damage die.
+    """
     total = d(6)
-    result = []
+    hits = []
     # on 6, count the 6 but add another d6
     if total == 6:
-        result.append(TREASURE[total])
+        hits.append(6)
         next_roll = d(6)
         total += next_roll
         # on another 6, count 12 but add another d6
         if next_roll == 6:
-            result.append(TREASURE[total])
+            hits.append(12)
             total += d(6)
 
     # clamp to table range just in case
-    total = max(1, min(18, total))
-    result.append(TREASURE[total])
-    for i in range(0, len(result)):
-        if "and roll again" in result[i] and depth < max_depth:
-            result[i] = result[i].replace(", and roll again", "")
-            extra = roll_treasure(depth + 1, max_depth)
-            result.append(extra)
-    result_str = "\n".join(result)
-    return f"{result_str}"
+    hits.append(max(1, min(18, total)))
+
+    lines: List[str] = []
+    for value in hits:
+        lines.extend(_render_value(value))
+        if value in _treasure.roll_again_values() and depth < max_depth:
+            lines.append(roll_treasure(depth + 1, max_depth))
+    return "\n".join(lines)
+
+
+def roll_treasure_object(spec: str = None) -> str:
+    """A whole object as a menu, or one roll from each named category.
+
+    `spec` is one or more category names separated by commas. That is the same
+    shape the "rolled with" line prints, deliberately: a caller can lift that
+    line out of a result and rerun any part of it verbatim, without having to
+    know that the comma form exists.
+
+    Named categories return one result each rather than a menu - the caller has
+    already narrowed the axis, and -n covers wanting several.
+    """
+    if spec:
+        names = [name.strip() for name in spec.split(",") if name.strip()]
+        unknown = [name for name in names if name not in _treasure.categories()]
+        if unknown or not names:
+            return ("Unknown treasure-object category: {}. Valid categories, "
+                    "usable singly or comma-separated: {}".format(
+                        ", ".join(unknown) or "(none given)",
+                        ",".join(_treasure.categories())))
+        return "\n".join(
+            f"{name} → {_treasure.roll_category(name)}" for name in names
+        )
+    return "\n".join(_render_options(_treasure.describe_options(), "  "))
 
 # ---------------------------------------------------------------------------
 # Discovery (1d12 × 3 nested tables)
@@ -312,7 +361,8 @@ def roll_discovery() -> str:
         return f"Discovery → evidence → {sub} → {detail}"
 
     elif main == "creature":
-        return f"Discovery → creature → Not an immediate threat, but it might become one: " + roll_creature()
+        return (f"Discovery → creature → Not an immediate threat, but it might become one: "
+                + _creature_seed() + "  (seed only - stat it with monster_gen.py)")
 
     else:  # structure
         sub_roll = d(12)
@@ -414,7 +464,8 @@ def roll_danger() -> str:
         return f"Danger → hazard → {sub} → {detail}"
 
     else:  # creature
-        return f"Danger → creature →  immediate threat: " + roll_creature()
+        return (f"Danger → creature →  immediate threat: " + _creature_seed()
+                + "  (seed only - stat it with monster_gen.py)")
 
 # ---------------------------------------------------------------------------
 # Creature (full nested table)
@@ -541,7 +592,18 @@ CREATURE_HUMANOID_COMMON = [
     (9, 12, "halfling (or 2nd most populous demi-human)"),
 ]
 
-def roll_creature() -> str:
+def _creature_seed() -> str:
+    """A vague "what sort of thing is it" seed, for discovery and danger only.
+
+    NOT exposed as a table of its own. monster_gen.py answers "what creature?"
+    with a real stat block - HP, damage, instinct, moves - and having a second
+    entry point here that returns only a category ("beast -> earthbound ->
+    vole/rat/weasel") invites a model to take this as the answer and improvise
+    stats it did not need to invent. It survives because the discovery and
+    danger tables both branch into "there is a creature here" and need
+    something to say next; treat that as a prompt for which monster to look up,
+    not as a substitute for looking one up.
+    """
     main_roll = d(12)
     main = pick_range(CREATURE_MAIN, main_roll)
 
@@ -726,31 +788,72 @@ def roll_std_magicitem() -> str:
 
 TABLES = {
     "treasure":  ("Treasure Table", roll_treasure),
+    "treasure-object": ("Treasure Object", roll_treasure_object),
     "discovery": ("Discovery", roll_discovery),
     "danger":    ("Danger", roll_danger),
-    "creature":  ("Creature", roll_creature),
     "equipment-tag": ("Equipment Tag", roll_equipment_tag),
     "gmmove":    ("GM Move", roll_gm_move),
     "drsl-miss": ("DR/Spout Lore Miss", roll_drsl_miss),
     "std-magicitem": ("Standard Magic Item", roll_std_magicitem),
 }
 
+def resolve_table(name: str):
+    """(title, callable) for a requested table, or None if there is no such one.
+
+    "treasure-object:material" asks for one category of a composed object. The
+    colon keeps that to a single positional token, so it needs no flag of its
+    own and -n keeps working; the categories come from assets/treasure.json
+    rather than being listed here, so adding one to the asset is enough.
+    """
+    if name in TABLES:
+        return TABLES[name]
+    prefix = "treasure-object:"
+    if name.startswith(prefix):
+        category = name[len(prefix):]
+        return ("Treasure Object: " + category, lambda: roll_treasure_object(category))
+    return None
+
+
 HELP_LLM = """\
-idea_gen.py - general-purpose RPG random-idea tables (treasure, discoveries,
-dangers, creatures, equipment tags, GM moves, Discern Realities/Spout Lore
-miss tricks, named magic items), useful any time a random prompt would help
+idea_gen.py - general-purpose RPG random-idea tables (treasure and what it looks
+like, discoveries, dangers, equipment tags, GM moves, Discern Realities/Spout
+Lore miss tricks, named magic items), useful any time a random prompt would help
 creativity, independent of the other generators.
 For a generic NPC appearance/personality/quirk trait, use npc_gen.py instead
 (rolled there by default for every NPC - see its --no-traits/--full-traits).
+For "what creature is it?", use monster_gen.py - it answers with a real stat
+block rather than a category, so there is no creature table here.
 
 USAGE
   idea_gen.py [TABLE ...] [-n N] [--seed N]
 
 TABLE (zero or more; default: every table, one result each)
-  treasure         Treasure Table (1-18 finding-treasure roll)
+  treasure         Treasure Table (1-18 finding-treasure roll) for treasure that
+                   no monster owns - a cache, a reward, something washed up. For
+                   a monster's own haul use monster_gen.py --treasure instead,
+                   which rolls the creature's damage die against the same table.
+                   All dice are resolved, so you get "A bag of 300 coins" rather
+                   than "1d4x100".
+  treasure-object  three ways one piece of treasure could look, to choose
+                   between. Roll this when you know a thing is valuable but not
+                   what it IS. You rarely need to ask for it directly: a
+                   "treasure" roll that lands on an actual object already brings
+                   its own menu (see OUTPUT).
+  treasure-object:CATEGORY[,CATEGORY...]
+                   one roll from each named axis, when you do not want a whole
+                   object - or want to redo part of one. Comma-separated, no
+                   spaces: treasure-object:material,motif. The seven axes:
+                     object_type   what kind of thing it is
+                     material      what it is made of
+                     gem_type      which stone
+                     color         what colour the stone is
+                     condition     what shape it is in
+                     provenance    who made it, and where from
+                     motif         what is shown or engraved
+                   Every composed object prints the exact token it was rolled
+                   with, so rerolling part of one is a copy-paste.
   discovery        Discovery prompt
   danger           Danger prompt
-  creature         Creature prompt
   equipment-tag     a random equipment tag (see references/tag-reference.md)
   gmmove            a GM move prompt (which move to make, not how to word it)
   drsl-miss         a Discern Realities / Spout Lore miss trick
@@ -762,8 +865,23 @@ TABLE (zero or more; default: every table, one result each)
 --seed N   reproducible output - dev/debug only, NEVER during play
 
 OUTPUT
-  For each requested table (in the order given), a "=== Title ===" header
-  followed by -n result(s).
+  For each requested table (in the order given), a header carrying the exact
+  token that produced it - "=== Treasure Object: material === [ TABLE=
+  treasure-object:material ]" - followed by -n result(s). Reuse the TABLE=
+  value verbatim to ask for more of the same.
+  Every composed object is followed by a "rolled with treasure-object:a,b,c"
+  line. That line IS a runnable table token - pass it back, whole or trimmed to
+  the axes you want, when one detail is wrong and the rest of the object is
+  fine.
+  A treasure roll that lands on an actual object whose appearance the table
+  leaves open ("A small valuable item worth 140 coins") is followed by an
+  indented "looks like (pick one, or mix them)" menu. The value is rolled once
+  and shared by every option, so which one you pick never changes what the
+  treasure is worth - only what it is.
+  Results that are not objects get NO menu, deliberately: coins are coins, and
+  "Useful information", "A portal or secret path" and "A magical item or
+  effect" are yours to invent (for the last of those, see
+  references/magic-items.md or the std-magicitem table).
   Always ends with a reminder to update yaml files if anything changed.
 
 Err on the side of using this script too much rather than not enough - even
@@ -773,7 +891,10 @@ counteracts an LLM's tendency to repeat its own priors when improvising.
 EXAMPLES
   idea_gen.py                        one result from every table
   idea_gen.py treasure                only treasure
-  idea_gen.py danger creature discovery  all three of the listed tables
+  idea_gen.py danger discovery         both of the listed tables
+  idea_gen.py treasure-object          three looks for one valuable thing
+  idea_gen.py treasure-object:material -n 3   three materials, nothing else
+  idea_gen.py treasure-object:material,motif  redo just those two axes
   idea_gen.py equipment-tag -n 2       roll 2 equipment tags at once
   idea_gen.py -n 3 gmmove               3 GM move prompts
   idea_gen.py drsl-miss
@@ -801,15 +922,21 @@ def main():
         print("Warning: Do not use --seed in a real game! If you did then re-read gameplay-loop.md now!")
         random.seed(args.seed)
 
-    unknown = [t for t in args.tables if t not in TABLES]
+    resolved = [(name, resolve_table(name)) for name in args.tables]
+    unknown = [name for name, entry in resolved if entry is None]
     if unknown:
         print(f"Unknown table(s): {unknown}")
         print("Available:", ", ".join(TABLES))
+        print("Plus treasure-object:CATEGORY for one axis of an object -",
+              ", ".join(_treasure.categories()))
         return
 
-    for name in args.tables:
-        title, fn = TABLES[name]
-        print(f"=== {title} ===")
+    for name, (title, fn) in resolved:
+        # The tag repeats the exact token that produced this block. Without it a
+        # reader sees "=== Treasure Object: material ===" and has to guess the
+        # spelling to ask again - and the colon forms are the easiest to guess
+        # wrong, since nothing else in the output shows they exist.
+        print(f"=== {title} === [ TABLE={name} ]")
         if name == "equipment-tag":
             print(fn(args.n))
         else:
