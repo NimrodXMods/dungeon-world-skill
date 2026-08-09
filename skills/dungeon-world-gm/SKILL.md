@@ -4,11 +4,11 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.15.0"
+  version: "0.15.1"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
-  last-modified-by-model: Anthropic Claude Opus 5 (claude-opus-5)
+  last-modified-by-model: xAI Grok 4.5 (grok-4.5)
   updated: "2026-08-09"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
