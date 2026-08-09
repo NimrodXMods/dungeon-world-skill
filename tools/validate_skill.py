@@ -459,6 +459,19 @@ def check_lexicon():
         fail(rel(script), "WORD_CATEGORIES could not be read - cannot check the lexicon")
         return
 
+    # Read the form vocabularies the same way and for the same reason: a theme's
+    # favour lists name morphologies and physiologies, and a typo in one would
+    # silently never match rather than erroring.
+    form_vocab = {}
+    for key, const in (("morphology_favour", "MORPHOLOGY"),
+                       ("physiology_favour", "PHYSIOLOGY")):
+        entries = _literal_constant(script, const)
+        if entries:
+            form_vocab[key] = {entry[0] for entry in entries}
+        else:
+            fail(rel(script), "{} could not be read - cannot check the theme "
+                              "favour lists".format(const))
+
     themes = {k: v for k, v in lexicon.get("themes", {}).items() if not k.startswith("_")}
     if not themes:
         fail(rel(lexicon_path), "has no themes")
@@ -486,6 +499,19 @@ def check_lexicon():
                         name, category
                     ),
                 )
+
+        # Unlike the word categories these are OPTIONAL - a theme without them
+        # simply rolls form unbiased - so only the values are checked, never
+        # their presence. That is what lets a new theme be added without
+        # touching monster_gen.py.
+        for key, allowed in form_vocab.items():
+            for value in theme.get(key) or []:
+                if value not in allowed:
+                    fail(
+                        rel(lexicon_path),
+                        "theme {!r} lists {!r} in {!r}, which is not a value "
+                        "monster_gen.py offers".format(name, value, key),
+                    )
 
     tiers = _literal_constant(script, "DEADLINESS_TIERS") or ()
     ladder = lexicon.get("deadliness", {})

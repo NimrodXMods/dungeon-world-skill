@@ -169,6 +169,45 @@ Two things worth knowing about how they are rolled:
   one that matches. Rewrite any of it that doesn't suit the scene; the output
   says as much.
 
+## Morphology and physiology — implemented
+
+Also generated, in a `form` block: **morphology** (the body — shape, limb count
+and integument) and **physiology** (what it is made of). These exist because
+behaviour without a body is unnarratable — `hide_or_run: bolter` means one
+thing for a kangaroo and something else entirely for a worm — and because a
+monster with neither gets narrated as an abstraction that vaguely approaches
+and vaguely attacks.
+
+Four things worth knowing:
+
+- **It is a menu, not a decision.** Three morphologies and three physiologies
+  are offered; pick one of each, write it into the description, and drop the
+  block. Fitting a form to the scene should not cost a re-roll.
+- **Morphology is shape and locomotion only — never ecology.** "Worm" means
+  *shaped like a worm and moving by peristalsis*, not living in soil. "Bat"
+  means *flying mammal — fur and skin wings*, not caves or echolocation.
+  "Snake" means *elongate and slithering*, not venom or even scales. Where the
+  creature lives and how it senses are the behaviour block's business, and it
+  has already decided them. An echolocating blob is therefore not a mistake to
+  correct — having a choice of three is what lets you reconcile it.
+- **Each offered body already agrees with itself.** Integument follows the body
+  plan rather than being rolled against it, so a bird is always feathered and a
+  centipede is always chitinous, while a quadruped could be anything. Past
+  about a dozen, limbs stop being counted and are reported as *dozens* or
+  *hundreds* — nobody perceives "47 legs".
+- **Traits win over the dice.** Where a builder trait already settles the
+  answer, nothing is rolled and a single value is returned with the trait that
+  decided it: `animated` gives a construct (or the undead under an undead
+  theme), `divine` gives divine, `noanatomy` gives a blob. Same reasoning as
+  the flee rule above — offering alternatives beside a determination would turn
+  the override into a suggestion.
+
+Physiology leans deliberately ordinary — animal biology about half the time,
+plant biology a fifth, everything stranger sharing what is left — so a menu
+usually reads *animal, plant, something odder*. If all three come back strange,
+a grounded option is appended as an escape route, so there is always something
+ordinary to retreat to.
+
 ## How to use this in practice
 
 `monster_gen.py --custom` hands you the seed words already themed and picked —

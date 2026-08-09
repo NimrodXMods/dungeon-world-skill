@@ -149,6 +149,8 @@
 		},
 		"cavern": {
 			"label": "Cavern Dwellers",
+			"morphology_favour": ["worm", "many-legged crawler", "insectoid", "blob"],
+			"physiology_favour": ["animal biology", "mineral-based"],
 			"substance": [
 				"limestone",
 				"gravel",
@@ -239,6 +241,8 @@
 		},
 		"depths": {
 			"label": "Lower Depths",
+			"morphology_favour": ["flying lizard", "quadruped", "bipedal walker"],
+			"physiology_favour": ["elemental", "magical biology"],
 			"substance": [
 				"black stone",
 				"magma",
@@ -322,6 +326,8 @@
 		},
 		"experiments": {
 			"label": "Twisted Experiments",
+			"morphology_favour": ["exotic", "blob", "symmetric multipod", "tentacled"],
+			"physiology_favour": ["magic construct", "alien biology", "magical biology"],
 			"substance": [
 				"suture",
 				"graft",
@@ -403,6 +409,8 @@
 		},
 		"folk": {
 			"label": "Folk of the Realm",
+			"morphology_favour": ["bipedal walker"],
+			"physiology_favour": ["animal biology"],
 			"substance": [
 				"leather",
 				"wool",
@@ -489,6 +497,8 @@
 		},
 		"hordes": {
 			"label": "Ravenous Hordes",
+			"morphology_favour": ["bipedal walker", "quadruped"],
+			"physiology_favour": ["animal biology"],
 			"substance": [
 				"warpaint",
 				"banner",
@@ -571,6 +581,8 @@
 		},
 		"planes": {
 			"label": "Planar Powers",
+			"morphology_favour": ["magical floater", "geometric", "exotic", "buoyant flyer"],
+			"physiology_favour": ["extraplanar", "immaterial spirit", "divine"],
 			"substance": [
 				"brimstone",
 				"chain",
@@ -651,6 +663,8 @@
 		},
 		"swamp": {
 			"label": "Swamp Denizens",
+			"morphology_favour": ["worm", "snake", "fish", "tentacled", "blob"],
+			"physiology_favour": ["animal biology", "plant biology"],
 			"substance": [
 				"peat",
 				"mire",
@@ -735,6 +749,8 @@
 		},
 		"undead": {
 			"label": "Undead Legions",
+			"morphology_favour": ["bipedal walker", "blob"],
+			"physiology_favour": ["undead", "immaterial spirit"],
 			"substance": [
 				"grave-dirt",
 				"shroud",
@@ -816,6 +832,8 @@
 		},
 		"woods": {
 			"label": "Dark Woods",
+			"morphology_favour": ["quadruped", "bird", "spider", "bipedal walker"],
+			"physiology_favour": ["animal biology", "magical biology"],
 			"substance": [
 				"loam",
 				"bramble",

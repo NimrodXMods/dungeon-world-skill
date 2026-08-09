@@ -168,6 +168,149 @@ POST_INJURY = [
     ("indifferent", "damage does not change its behaviour until it drops"),
 ]
 
+# --- form: morphology and physiology ---------------------------------------
+#
+# What the thing IS, as against how hard it hits (the stat block) and how it
+# acts (the behaviour block). Without a body the model narrates "the creature
+# moves toward you and attacks", and a rolled behaviour is unreadable on its
+# own - hide_or_run "bolter" means something entirely different for a kangaroo
+# than for a worm.
+#
+# Offered as a MENU, not rolled and committed, on the same contract as
+# special_quality_options: the generator supplies material, the model decides.
+# A few more words of output is cheaper than a re-rolled tool call, and it lets
+# a GM fit the monster to the scene without starting over.
+#
+# Because nothing here commits, form deliberately does NOT feed behaviour_bias.
+# An echolocating blob is not a bug to engineer around - the model simply picks
+# whichever offered form suits the sensory result it already has, which is what
+# having a menu is for.
+#
+# Morphology is SHAPE AND LOCOMOTION ONLY, never ecology. "worm" means shaped
+# like a worm and moving by peristalsis, not living in soil; "bat" means flying
+# mammal - fur and skin wings - not caves and echolocation; "snake" means
+# elongate and slithering, not venom or even scales. Ecology already has axes
+# of its own (SENSORY, TERRITORIALITY), and letting morphology imply it would
+# contradict axes that have already committed.
+
+FORM_OPTIONS = 3
+
+# How much a theme's favour list raises the odds of an option. A multiplier and
+# not a filter: a favour list says "more of this here", never "only this here".
+FAVOUR_BOOST = 4.0
+
+# Past this many limbs nobody counts. "47 legs" is not something anyone
+# perceives, so the figure is reported as a magnitude band instead.
+LIMB_COUNTABLE = 12
+LIMB_BANDS = ("dozens of", "hundreds of", "thousands of")
+
+# What a body plan's limbs are called. "2 limbs" undercounts a biped, which has
+# two legs and its forelimbs free; a squid does not have legs at all. Bodies
+# with no earthly analogue keep the vague word, because that is the honest one.
+LIMB_NOUN = {
+    "tentacled": "tentacles",
+    "buoyant flyer": "limbs",
+    "magical floater": "limbs",
+    "geometric": "limbs",
+    "exotic": "limbs",
+    "blob": "limbs",
+}
+DEFAULT_LIMB_NOUN = "legs"
+
+# Drawn from whenever a body plan does not fix its own covering.
+INTEGUMENT_POOL = (
+    "fur", "coarse hair", "hide", "bare skin", "slick skin", "scales",
+    "chitin", "feathers", "quills", "shell plate", "bone plate",
+    "stone plating", "crystal facets", "bark", "moss and creeper",
+    "slime", "beaten metal", "no covering at all",
+)
+
+# (label, shape, limb spec, integument spec)
+#
+# Integument is a property of the body plan rather than an axis of its own: a
+# bird is always feathered, a snake is snakeskin four times in five, a
+# quadruped could be anything. One spec covers all three cases -
+# (covering, probability), where 1.0 always holds and a fraction holds that
+# often and otherwise draws from the pool; None always draws from the pool.
+#
+# Limb specs: ("fixed", n), ("range", lo, hi), ("weighted", {n: weight}) where
+# the key "many" means an uncountable band, and ("open",) for bodies with no
+# earthly analogue, which may have anything from none to uncountable.
+MORPHOLOGY = [
+    ("quadruped", "four-legged walker, built like a wolf or a bear",
+     ("fixed", 4), None),
+    ("bipedal walker", "upright on two legs, forelimbs free",
+     ("fixed", 2), None),
+    ("bipedal hopper", "two-legged bounder, kangaroo-like; crosses ground in leaps",
+     ("fixed", 2), None),
+    ("worm", "limbless cylinder moving by peristalsis",
+     ("fixed", 0), ("wormskin", 0.8)),
+    ("snake", "elongate and slithering",
+     ("fixed", 0), ("snakeskin", 0.8)),
+    ("fish", "fusiform swimmer driven by its own body, finned",
+     ("fixed", 0), ("scales and slick skin", 0.8)),
+    ("bird", "winged biped",
+     ("fixed", 2), ("feathers", 1.0)),
+    ("bat", "flying mammal - skin wings stretched on long fingers",
+     ("fixed", 2), ("hide and fur", 1.0)),
+    ("flying lizard", "winged reptile, leathery and long-tailed",
+     ("fixed", 2), ("scales", 1.0)),
+    ("insectoid", "segmented body carried on jointed legs",
+     ("weighted", {6: 40, 8: 30, 9: 6, 10: 6, 11: 5, 12: 5, "many": 8}),
+     ("chitin", 0.8)),
+    ("spider", "compact body slung between long jointed legs",
+     ("fixed", 8), ("chitin", 0.8)),
+    ("many-legged crawler", "long segmented ribbon of a body, centipede-like",
+     ("weighted", {12: 15, "many": 85}), ("chitin", 0.8)),
+    ("symmetric multipod", "radially symmetric; no front and no back",
+     ("range", 3, 12), None),
+    ("tentacled", "squid- or octopus-like, boneless grasping arms",
+     ("weighted", {4: 8, 5: 6, 6: 20, 8: 30, 10: 20, 12: 10, "many": 6}),
+     ("squidlike skin", 0.8)),
+    ("blob", "amorphous puddle or ball with no fixed shape at all",
+     ("fixed", 0), ("slime", 0.8)),
+    ("buoyant flyer", "drifts and bobs, gas-filled or lighter than air",
+     ("open",), None),
+    ("magical floater", "hangs in the air by no visible means",
+     ("open",), None),
+    ("geometric", "impossible solid - flat faces and sharp corners, or a "
+                  "sphere, spheroid, prism or platonic solid",
+     ("open",),
+     ("flat plastic-metal sheen, closer to something rendered than grown", 0.8)),
+    ("exotic", "no earthly analogue; build it out of the seed words",
+     ("open",), None),
+]
+
+# (label, note, weight). Animal 50, plant 20, the remaining ten sharing 30, so
+# a typical menu reads "animal, plant, something stranger" rather than three
+# things nobody can picture.
+PHYSIOLOGY = [
+    ("animal biology", "ordinary flesh, blood and bone; it bleeds and it starves", 50),
+    ("plant biology", "grown rather than born; sap, fibre and root", 20),
+    ("magical biology", "alive, but beyond physical law (Magical)", 3),
+    ("alien biology", "alive by rules nobody here has worked out", 3),
+    ("undead", "was alive once and is not now", 3),
+    ("magic construct", "made, not born, and animated by magic (Construct)", 3),
+    ("mechanical construct", "made, not born, and driven by mechanism (Construct)", 3),
+    ("immaterial spirit", "presence without substance; no body to speak of", 3),
+    ("mineral-based", "stone or metal that lives", 3),
+    ("extraplanar", "not of this world (Planar)", 3),
+    ("elemental", "fire, water, air or earth given a will", 3),
+    ("divine", "of the gods, for good or for ill (Divine)", 3),
+]
+
+# The escape route. If neither grounded option comes up in the three, one is
+# appended, so a menu never arrives all-exotic with nothing ordinary to fall
+# back to.
+MUNDANE_PHYSIOLOGY = (("animal biology", 70), ("plant biology", 30))
+
+# Traits settle these outright; see derive_form. Only traits the quick builder
+# actually offers can appear here - TRAITS has no `magical` or `planar` key,
+# those being bestiary tags rather than builder options, so they cannot serve
+# as overrides however well they would map.
+MORPHOLOGY_BY_TRAIT = {"noanatomy": "blob"}
+ANIMATED_CONSTRUCT = (("magic construct", 70), ("mechanical construct", 30))
+
 # A nudge shifts which end of a scale is likely, never which ends are possible.
 # Every option keeps at least MIN_WEIGHT, so a huge fearsome thing can still
 # roll timid and a coward can still posture like a horror - those combinations
@@ -516,6 +659,165 @@ def roll_behaviour(size, die, org, traits, known_for):
         "sensory": named(sense),
         "post_injury": named(injury),
     }
+
+
+def _weighted_label(pairs):
+    """Pick a label from ((label, weight), ...)."""
+    return random.choices([p[0] for p in pairs],
+                          weights=[p[1] for p in pairs], k=1)[0]
+
+
+def favoured_sample(entries, favour, k, weight_of=None):
+    """Draw k distinct entries, leaning toward a favoured subset.
+
+    The nominal counterpart to nudged_choice: that one weights by distance
+    along an ordered scale, which is meaningless here - a cavern favours worm
+    AND crawler AND blob, at indices with no relation to one another. Favour
+    multiplies the odds and never gates the pool, so nothing is unreachable,
+    which is the same contract every other axis in this script keeps.
+    """
+    favour = set(favour or ())
+    pool = list(entries)
+    weights = [
+        (weight_of(entry) if weight_of else 1.0)
+        * (FAVOUR_BOOST if entry[0] in favour else 1.0)
+        for entry in pool
+    ]
+    chosen = []
+    for _ in range(min(k, len(pool))):
+        index = random.choices(range(len(pool)), weights=weights, k=1)[0]
+        chosen.append(pool.pop(index))
+        weights.pop(index)
+    return chosen
+
+
+def roll_limbs(spec, noun=DEFAULT_LIMB_NOUN):
+    """A body plan's limb count, as text. Most plans fix it; a few genuinely
+    vary. Past LIMB_COUNTABLE it stops being a count and becomes a magnitude."""
+    kind = spec[0]
+    if kind == "fixed":
+        count = spec[1]
+    elif kind == "range":
+        count = random.randint(spec[1], spec[2])
+    elif kind == "weighted":
+        table = spec[1]
+        count = random.choices(list(table), weights=list(table.values()), k=1)[0]
+    else:  # "open" - no earthly analogue, so anything from none to uncountable
+        count = random.choices(
+            [0, 1, 2, 3, 4, 5, 6, 8, 10, LIMB_COUNTABLE, "many"],
+            weights=[14, 6, 10, 8, 10, 6, 8, 6, 5, 4, 8], k=1)[0]
+
+    if count == "many":
+        return "%s %s" % (random.choice(LIMB_BANDS), noun)
+    if count == 0:
+        return "no %s" % noun
+    if count == 1:
+        singular = noun[:-1] if noun.endswith("s") else noun
+        return "1 %s" % singular
+    return "%d %s" % (count, noun)
+
+
+def roll_integument(spec):
+    """A covering. None means the plan fixes nothing, so draw from the pool."""
+    if spec is None:
+        return random.choice(INTEGUMENT_POOL)
+    covering, probability = spec
+    if random.random() < probability:
+        return covering
+    return random.choice(INTEGUMENT_POOL)
+
+
+def derive_form(traits, themes):
+    """What the traits already settle. Returns (morphology, why, physiology, why).
+
+    Traits win over the dice, and a settled value is emitted alone rather than
+    beside alternatives - offering "animal biology" next to a construct would
+    turn the override into a suggestion. Same reasoning as FLEE_BY_AGGRESSION:
+    rolling something the rest of the build has already decided only
+    manufactures contradictions.
+    """
+    traits = set(traits or [])
+    themes = set(themes or [])
+    forced_morph = source_morph = forced_phys = source_phys = None
+
+    for trait, label in MORPHOLOGY_BY_TRAIT.items():
+        if trait in traits:
+            forced_morph = label
+            source_morph = "determined by trait %s" % trait
+            break
+
+    if "divine" in traits:
+        forced_phys = "divine"
+        source_phys = "determined by trait divine"
+    elif "animated" in traits:
+        forced_phys = "undead" if "undead" in themes else _weighted_label(ANIMATED_CONSTRUCT)
+        source_phys = "determined by trait animated"
+
+    return forced_morph, source_morph, forced_phys, source_phys
+
+
+def morphology_options(favour=(), forced=None):
+    if forced:
+        entries = [entry for entry in MORPHOLOGY if entry[0] == forced]
+    else:
+        entries = favoured_sample(MORPHOLOGY, favour, FORM_OPTIONS)
+    return [
+        {
+            "morphology": label,
+            "shape": shape,
+            "limbs": roll_limbs(limbs, LIMB_NOUN.get(label, DEFAULT_LIMB_NOUN)),
+            "integument": roll_integument(integument),
+        }
+        for label, shape, limbs, integument in entries
+    ]
+
+
+def physiology_options(favour=(), forced=None):
+    if forced:
+        entries = [entry for entry in PHYSIOLOGY if entry[0] == forced]
+        return [{"physiology": label, "note": note} for label, note, _ in entries]
+
+    picked = favoured_sample(PHYSIOLOGY, favour, FORM_OPTIONS,
+                             weight_of=lambda entry: entry[2])
+    options = [{"physiology": label, "note": note} for label, note, _ in picked]
+
+    chosen = {option["physiology"] for option in options}
+    if not any(label in chosen for label, _ in MUNDANE_PHYSIOLOGY):
+        label = _weighted_label(MUNDANE_PHYSIOLOGY)
+        note = next(entry[1] for entry in PHYSIOLOGY if entry[0] == label)
+        options.append({"physiology": label, "note": note, "escape_route": True})
+    return options
+
+
+def roll_form(traits, themes, morphology_favour=(), physiology_favour=()):
+    forced_morph, source_morph, forced_phys, source_phys = derive_form(traits, themes)
+
+    form = {
+        "note": (
+            "Options, not decisions - pick one of each, write it into the "
+            "description, and drop this block. Morphology is shape and "
+            "movement only: it says nothing about where the thing lives or how "
+            "it senses, which the behaviour block has already settled."
+        ),
+        "morphology_options": morphology_options(morphology_favour, forced_morph),
+        "physiology_options": physiology_options(physiology_favour, forced_phys),
+    }
+    if source_morph:
+        form["morphology_source"] = source_morph
+    if source_phys:
+        form["physiology_source"] = source_phys
+    return form
+
+
+def favour_lists(lexicon, themes, key):
+    """Union the named themes' favour lists. Absent keys are fine - the lists
+    are optional, so a theme can be added without touching any of this."""
+    if not lexicon:
+        return []
+    found = []
+    for name in themes or ():
+        found.extend(lexicon.get("themes", {}).get(name, {}).get(key) or [])
+    return found
 
 
 def ceiling_for(party_levels):
@@ -1081,9 +1383,10 @@ HOW --party-levels WORKS
       Skeleton               -> still offered, %(sk40)s
       Lich     (Solitary)    -> offered, min/typical/max 1/1/1
 
-SEED WORDS AND BEHAVIOUR (--custom only)
+SEED WORDS, FORM AND BEHAVIOUR (--custom only)
   A custom monster has no flavour of its own, so instead of handing back a bare
-  "(write one)" the generator hands over raw material and says so. Two blocks:
+  "(write one)" the generator hands over raw material and says so. Three
+  blocks:
 
   "seed_words" - themed vocabulary to synthesise from. substance + bodypart
   build a compound name (Mudscale, Rootfang), action gives agentive forms and
@@ -1120,6 +1423,31 @@ SEED WORDS AND BEHAVIOUR (--custom only)
   derivation bookkeeping, not fiction, which is why it is no longer mixed into
   special_quality. Bestiary monsters have no such key.
 
+  "form" - what the thing IS, as against how it hits or how it acts. A MENU,
+  not a decision: three "morphology_options" and three "physiology_options",
+  of which you pick one of each, write it into the description and drop the
+  block. Each morphology option is a complete body - shape, limb count and
+  integument already agreeing, so a bird is feathered and two-legged and a
+  centipede has hundreds of legs rather than an unreadable number. Morphology
+  is SHAPE AND LOCOMOTION ONLY and implies nothing about habitat or senses:
+  "worm" means it is shaped like one and moves like one, not that it lives in
+  soil; "bat" means flying mammal, not echolocation. Habitat and senses are
+  the behaviour block's business, and it has already decided them - so an
+  echolocating blob is not a contradiction to fix, it is why you get a choice.
+
+  Physiology leans ordinary on purpose - animal biology half the time, plant
+  biology a fifth, everything stranger sharing the rest - so a menu usually
+  reads "animal, plant, something odder". If all three come back strange, a
+  grounded fourth is appended and marked "escape_route", so there is always
+  something ordinary to retreat to.
+
+  Where a builder trait already settles the answer, NOTHING is rolled: the
+  single determined value is emitted with a "morphology_source" or
+  "physiology_source" saying which trait decided it. `animated` gives a
+  construct, or the undead under an undead theme; `divine` gives divine;
+  `noanatomy` gives a blob. Offering alternatives beside a determination would
+  turn the override into a suggestion.
+
   "behavior" - eight rolled axes: aggression (-2..+4), the flee rule derived
   from it, hide-or-run, intelligence (-1..9), intimidation (-1..6),
   territoriality, sensory profile and post-injury behaviour. Rolled at random
@@ -1129,10 +1457,14 @@ SEED WORDS AND BEHAVIOUR (--custom only)
 
   --theme TAG[,TAG...]  Theme the seed words. Comma-separated tags UNION their
                       pools, so --theme cavern,undead draws on both. Defaults
-                      to "generic". Run --list-themes for the list.
+                      to "generic". Run --list-themes for the list. Themes also
+                      bias which forms come up: a swamp leans to worms and
+                      snakes, the planes to floaters and impossible solids. A
+                      lean, never a filter - any form can appear anywhere.
   --list-themes       Print the available themes and exit.
   --no-seeds          Omit seed words.
   --no-behavior       Omit the behaviour block.
+  --no-form           Omit the morphology/physiology block.
 
 CUSTOM OPTIONS (only with --custom)
   Unset categories are ROLLED BY DEFAULT. Set only the ones you care about and
@@ -1269,6 +1601,8 @@ def main():
                     help="omit the seed words")
     ap.add_argument("--no-behavior", "--no-behaviour", action="store_true",
                     dest="no_behavior", help="omit the rolled behaviour block")
+    ap.add_argument("--no-form", action="store_true",
+                    help="omit the morphology/physiology block")
     ap.add_argument("--org", choices=list(ORG.keys()), default=None)
     ap.add_argument("--size", choices=list(SIZE.keys()), default=None)
     ap.add_argument("--armor", choices=list(ARMOR.keys()), default=None)
@@ -1587,10 +1921,28 @@ def run_custom(args):
 
     monster, final_die, meta, org, size, traits, known_for = rolled
 
+    # Themes drive the seed words and the form favour lists alike, so resolve
+    # them once if either block is going to run.
     themes_used = None
-    if not args.no_seeds:
+    lexicon = None
+    pool = {}
+    if not (args.no_seeds and args.no_form):
         lexicon = load_lexicon()
         themes_used, pool = resolve_themes(lexicon, args.theme)
+
+    # Rolled before the seed words so the blank-field hints can point at a body,
+    # and outside the difficulty search above because form has no bearing on
+    # difficulty - rolling it in there would be work thrown away on every retry.
+    form = None
+    if not args.no_form:
+        form = roll_form(
+            traits, themes_used,
+            favour_lists(lexicon, themes_used, "morphology_favour"),
+            favour_lists(lexicon, themes_used, "physiology_favour"),
+        )
+        monster = dict(monster, form=form)
+
+    if not args.no_seeds:
         tier = deadliness_tier(
             final_die, meta["dmg_bonus"], meta["advantage"], meta["special_count"]
         )
@@ -1633,9 +1985,22 @@ def run_custom(args):
         # Point the blank fields at the material rather than leaving them as a
         # bare "(write one)". The generator supplies raw material and says so;
         # it does not pretend to have authored anything.
+        # Naming the body first is the whole point of the form block: a
+        # description written from textures alone is what produced vague
+        # creatures that abstractly moved and abstractly attacked.
+        body_hint = ""
+        if form:
+            body_hint = " settle a body first from form.morphology_options (%s) and a substance from form.physiology_options;" % (
+                "; ".join(
+                    "%s, %s, %s" % (option["morphology"], option["limbs"],
+                                    option["integument"])
+                    for option in form["morphology_options"]
+                )
+            )
         monster["description"] = (
-            "(write one - seed textures: %s; detail to work in: %s)"
-            % (", ".join(seeds["texture"]), (seeds["evocative"] or ["-"])[0])
+            "(write one -%s seed textures: %s; detail to work in: %s)"
+            % (body_hint, ", ".join(seeds["texture"]),
+               (seeds["evocative"] or ["-"])[0])
         )
         monster["instinct"] = "(write one - seed drives: %s)" % ", ".join(seeds["drive"])
         monster["moves"] = [
