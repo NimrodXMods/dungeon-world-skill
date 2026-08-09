@@ -64,6 +64,33 @@ so no single configured default works.
 Every script carries a `--help-llm` flag printing a dense LLM-facing reference; this is the
 canonical interface documentation. **A new or changed script must keep `--help-llm` accurate.**
 
+### Script output is also a memory aid — seed it with clues about what to do next
+
+The model reading a script's output is hours into a session and its attention has drifted. It
+read `--help-llm` once, long ago, and `SKILL.md` before that. **Assume it has forgotten what
+else the script can do, and what the result is meant to be used for.** Output is the only
+channel that reaches it at the moment it is actually deciding something, so spend a little of
+that output reminding it.
+
+In practice, results should carry small pointers to the next or alternative action:
+
+- **Echo the exact token that produced a block**, so asking again does not require recalling
+  the spelling: `=== Treasure Object: material === [ TABLE=treasure-object:material ]`.
+- **Name the sub-options a result was built from**, which advertises axes the model would
+  otherwise never learn existed — `idea_gen.py`'s composed objects print a `rolled on:` line
+  listing the `treasure-object:CATEGORY` tokens behind them, so rerolling one detail instead of
+  the whole object becomes an obvious move rather than a documented one.
+- **Route to the right tool when the result is only a seed**, e.g. `idea_gen.py`'s discovery and
+  danger creature lines end with `(seed only - stat it with monster_gen.py)`.
+- **Restate standing obligations** the model drifts away from — the yaml-update and
+  re-roll-is-allowed reminders every `idea_gen.py` run ends with are the oldest example.
+
+This is a real cost in tokens and in visual noise, so it buys the most where a capability is
+*invisible* from the output alone. A hint nobody needs is clutter; keep them terse, keep them
+next to the thing they describe, and prefer one line over a paragraph. Note the tension with
+the rule above: `--help-llm` remains the canonical *interface* documentation, and these hints
+are not a second copy of it — they are pointers, not explanations.
+
 ### All script documentation goes in `--help-llm`, not `SKILL.md`
 
 `--help-llm` is the **single source of truth** for how a script is invoked. Do not put script

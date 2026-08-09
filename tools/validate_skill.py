@@ -38,7 +38,9 @@ LOCK = ROOT / "tools" / "yamledit.lock"
 
 # Scripts that intentionally have --help only. Everything else in scripts/ is
 # reached by the model through --help-llm, which is the canonical interface doc.
-NO_HELP_LLM = {"session_load.py", "session_save.py"}
+# _treasure.py is not a CLI at all - it is a sibling module imported by
+# monster_gen.py and idea_gen.py, and has no interface for a model to read.
+NO_HELP_LLM = {"session_load.py", "session_save.py", "_treasure.py"}
 
 # Arguments a generator needs before it actually generates anything. Most take
 # none. monster_gen.py requires a bestiary setting tag - run bare it prints its
@@ -524,6 +526,86 @@ def check_lexicon():
             )
 
 
+def check_treasure_asset():
+    """The shared treasure table and its appearance tables must be whole.
+
+    This asset exists because the 1-18 table used to be copied into both
+    monster_gen.py and idea_gen.py and the copies drifted at entries 12 and 13.
+    Nothing here can tell you an entry is WORDED wrong against the rulebook -
+    that stays a human job - but a missing entry, an unrollable dice expression
+    or an empty category all fail silently at play time, which is worse: the
+    generator keeps working and quietly stops describing something.
+    """
+    path = ASSETS / "treasure.json"
+    module = SCRIPTS / "_treasure.py"
+    if not path.is_file():
+        fail(rel(path), "missing - monster_gen.py and idea_gen.py both roll on it")
+        return
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        fail(rel(path), "is not valid JSON ({})".format(exc))
+        return
+
+    table = data.get("value_table") or {}
+    for roll in range(1, 19):
+        entry = table.get(str(roll))
+        if not entry:
+            fail(rel(path), "value_table is missing entry {} - the rulebook table "
+                            "is 1-18 and callers clamp into it".format(roll))
+            continue
+        template = entry.get("template", "")
+        dice = entry.get("dice") or {}
+        for name in dice:
+            if "{%s}" % name not in template:
+                fail(rel(path), "entry {} rolls {!r} but never uses it in its "
+                                "template".format(roll, name))
+        for name in re.findall(r"\{(\w+)\}", template):
+            # {weight} is derived from the coin count, not rolled.
+            if name not in dice and name != "weight":
+                fail(rel(path), "entry {} uses {{{}}} but nothing rolls it - "
+                                "format() will raise at play time".format(roll, name))
+        for name, expr in dice.items():
+            if not re.match(r"^\d+d\d+(\*\d+)?$", str(expr)):
+                fail(rel(path), "entry {} has dice expression {!r} for {!r}, which "
+                                "_treasure.roll_expr cannot parse".format(roll, expr, name))
+
+    if not data.get("roll_again"):
+        fail(rel(path), "has no roll_again entries - 15/16/17 give a result AND "
+                        "send the roller back for another")
+
+    objects = data.get("objects") or {}
+    for category in ("object_type", "material", "gem_type", "color", "condition",
+                     "provenance", "motif"):
+        if not objects.get(category):
+            fail(rel(path), "objects is missing or has an empty {!r}".format(category))
+    for tier in ("mundane", "exotic"):
+        if not (objects.get("material") or {}).get(tier):
+            fail(rel(path), "material is missing its {!r} tier".format(tier))
+
+    # Every trait the composer branches on must be carried by some object, or
+    # that branch is dead code and the objects it was written for read as bland
+    # rather than as broken.
+    known = _literal_constant(module, "KNOWN_TRAITS") or ()
+    if not known:
+        fail(rel(module), "KNOWN_TRAITS could not be read - cannot check object traits")
+    used = set()
+    for entry in objects.get("object_type") or []:
+        if not entry.get("name"):
+            fail(rel(path), "an object_type entry has no name")
+        for trait in entry.get("traits") or []:
+            used.add(trait)
+            if known and trait not in known:
+                fail(rel(path), "object_type {!r} carries trait {!r}, which "
+                                "_treasure.py does not understand and will "
+                                "ignore".format(entry.get("name"), trait))
+    for trait in known:
+        if trait not in used:
+            fail(rel(module), "KNOWN_TRAITS lists {!r} but no object_type in "
+                              "treasure.json uses it".format(trait))
+
+
 def check_monster_json():
     """monster_gen.py promises JSON on stdout; prove stdout stays parseable.
 
@@ -831,6 +913,7 @@ def main(argv=None):
     check_determinism()
     check_encoding_safety()
     check_lexicon()
+    check_treasure_asset()
     check_monster_json()
     if QUICK:
         skipped.append("session save/load round-trip (check_session_roundtrip)")

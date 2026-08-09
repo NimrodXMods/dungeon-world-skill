@@ -15,6 +15,9 @@ venv/
 handoff.md
 *.zip
 
+# Local working notes (design specs, scratch) - not part of the deliverable
+.claude/docs/
+
 # Editor / OS
 .vscode/
 .idea/
