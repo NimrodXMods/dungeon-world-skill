@@ -1,13 +1,12 @@
-# Dungeon World LLM Skill(s)
+# Dungeon World Agent Skill
 
-Have you ever wanted to _not_ be the GM, but nobody else around seemed to be
-willing or able to GM either? Well here's your solution!
+Have you ever wanted to _not_ be the GM, but nobody else around wanted to GM either? Well here's your solution!
 
 Have you ever just wanted some assistance with being a GM to keep the
-game moving? Well, this may be your solution as well.
+game moving? Well, this could be your solution as well.
 
-Does it work? Well, LLMs aren't the most creative but it's not unplayable.
-LLMs will do a better job as GM assistants.
+> Does it work? Well, LLMs aren't the most creative but it does work.
+LLMs will do a better job as GM assistants, but they can act as GMs.
 
 ## What is Dungeon World?
 
@@ -20,42 +19,53 @@ everyone else plays their adventuresome character.
 Play moves through conversation: when a character tries something risky, the
 player rolls 2d6 plus a stat, and the result (strong hit, partial success, or a
 miss) shapes what happens next. No map grid, no turn tracker — just fiction,
-moves, and dice.
+moves, and dice. This makes it less complex and less formal than more wargame-like "d20" systems.
 
 ## dungeon-world-gm
 
-This is an LLM "skill" designed to either act entirely as the Game Master (GM)
-or assisting the human game master by generating random stuff, looking up
-rules, or keeping track of things.
+This is a standard [Agent Skill](https://agentskills.io/home) designed to
+either act entirely as the Game Master (GM) or assist a human GM by generating
+random stuff, looking up rules, or keeping track of things.
 
 Since LLMs aren't really known for being the best at creativity, a large
-number of random generation scripts are provided to assist them. They still
-aren't that great at creativity, but having a random way to generate almost
-everything 10 times over at least helps made them somewhat passable, and they
-can also use the same scripts when assisting a GM.
+number of random procedural generation scripts are provided to assist them.
+They still aren't the best at creativity, but having a random way to generate
+almost everything 10 times over at least helps made them somewhat passable by
+themselves, and they can also use the same inference + procedure approach
+when assisting a human who can better filter and modify the output.
 
 ### Features
 
-- Be the GM and just use an LLM as an assistant for as much or as little as you want.
-- Be a solo player and get the LLM to be the GM.
-- Be yourself and group of other players and get the LLM to be the GM.
-- Hierarchical digest of all DW rules built-in, plus the skill feeds a bunch of "GM screen" reference material to the model up front.
-- Full LLM-optimized rules available for exact wording when needed (ugly LLM text not recommended for direct human consumption).
+- Be the GM and just use an LLM as an assistant for as much or as little as you
+  want.
+- Be a solo player with one or more characters and get the LLM to be the GM.
+- Be a player with a group of other human players and get the LLM to be the GM.
+- Hierarchical digest of all DW rules built-in, plus the skill feeds a bunch of
+  "GM screen" reference material to the model up front.
+- Full LLM-optimized rules available for exact wording when needed (ugly LLM
+  text not recommended for direct human consumption).
 - "Suddenly Ogres" style roll miss handling gets applied as needed.
-- For dice rolls in the game, you can still roll your own dice. Just tell the agent that you'll be doing the rolling.
-- A dice rolling script using `os.urandom()` to seed the RNG every time is included so the agent can roll the dice for you as well.
-- Random generation material from _The Perilous Wilds_ included.
-- Six different LLM-optimized `*_gen.py` scripts for randomly generating the stuff that LLMs suck at being creative about on their own:
+- For dice rolls in the game, you can still roll your own dice. Just tell the
+  agent that you'll be doing the rolling.
+- A dice rolling script using `os.urandom()` to seed the PRNG every time is
+  included so the agent can roll the dice for you as well.
+- Major random generation material from _The Perilous Wilds_ included.
+- Different LLM-optimized `*_gen.py` scripts for randomly generating the
+  stuff that LLMs aren't sufficiently creative about on their own:
   - Regions/Areas
   - Dungeons/Sites
   - Steadings (Villages/Cities)
   - NPCs (including "followers")
-  - Monsters
-  - Various "ideas": treasure, detail, discovery, danger, creature, details, equipment-tag, gmmove, drsl-miss, std-magicitem
-- Game data stored in yaml format: one file per character sheet as plain readable YAML and a "GM Secrets" yaml file rot13 encoded.
+  - Monsters (standard and random procedural)
+  - Various random "ideas": treasures, details, discoveries, dangers, etc.
+- Game data stored in yaml format: one file per character sheet as plain
+  readable YAML and a "GM Secrets" yaml file rot13 encoded.
 - A `story.md` file is generated by default describing your party's exploits.
-- All of the above is zipped up and presented for download when you say "checkpoint" or make the "End of Session" move.
-- Campaigns can be resumed by invoking the skill and uploading the previously described zip archive, or the archive can be stored elsewhere depending on what file stores your agent has access to.
+- All of the above is zipped up and presented for download when you say
+  "checkpoint" or make the "End of Session" move.
+- Campaigns can be resumed by invoking the skill and uploading the previously
+  described zip archive, or the archive can be stored elsewhere depending on
+  what file stores your agent has access to.
 
 ### Installation
 
