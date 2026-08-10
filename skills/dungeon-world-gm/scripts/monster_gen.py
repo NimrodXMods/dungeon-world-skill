@@ -22,8 +22,9 @@ Usage:
     python3 monster_gen.py --custom                       # quick builder, all rolled
     python3 monster_gen.py --custom --org horde --theme woods
 
-Monsters are emitted as JSON, tab-indented. All warnings and reminders go to
-stderr so stdout stays parseable.
+Monsters are emitted as compact JSON on one line. Pass -p/--pretty for a
+plain-text dump (labels, colons, parentheses; not JSON) when debugging by
+hand. All warnings and reminders go to stderr so stdout stays parseable.
 """
 import argparse
 import json
@@ -31,26 +32,14 @@ import math
 import random
 import re
 import sys
+import textwrap
 from pathlib import Path
 
+from _util import apply_seed, force_utf8_stdio
 
-def _force_utf8_stdio():
-    """Windows defaults sys.stdout to the ANSI code page (cp1252) whenever
-    stdout is not a real console - a redirect or a pipe is enough. cp1252 has
-    no mapping for characters this script prints (e.g. U+2192 "->"), so the
-    write raises UnicodeEncodeError instead of degrading. Force UTF-8; a no-op
-    where the stream does not support reconfiguring."""
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")
-        except (AttributeError, OSError):
-            pass
+force_utf8_stdio()
 
-
-_force_utf8_stdio()
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _treasure  # noqa: E402  (sibling module - the treasure table and its objects)
+import _treasure  # sibling module - the treasure table and its objects
 
 BESTIARY = Path(__file__).resolve().parent.parent / "assets" / "monsters.json"
 LEXICON = Path(__file__).resolve().parent.parent / "assets" / "monster_words.json"
@@ -493,7 +482,9 @@ def resolve_themes(lexicon, spec):
     unknown = [t for t in wanted if t not in themes]
     if unknown:
         sys.exit(
-            "error: unknown theme(s) %s. Known: %s"
+            "error: unknown theme(s) %s. Known: %s\n"
+            "  Pass --theme TAG (comma-separate to merge, e.g. --theme cavern,undead). "
+            "Run --list-themes for labels and word counts."
             % (", ".join(repr(u) for u in unknown), ", ".join(theme_names(lexicon)))
         )
 
@@ -1492,7 +1483,7 @@ CUSTOM OPTIONS (only with --custom)
   --seed N            reproducible output - dev/debug only, NEVER during play
 
 OUTPUT
-  JSON on stdout, tab-indented: {setting, setting_name, filter, monsters[]}.
+  Compact JSON on stdout (one line): {setting, setting_name, filter, monsters[]}.
   Monster objects are reproduced verbatim from the bestiary. Warnings, the
   seed notice and the yaml reminder all go to stderr, so stdout stays
   parseable - pipe it straight into a JSON parser if you like.
@@ -1539,9 +1530,268 @@ HELP_LLM = HELP_LLM % {
 }
 
 
-def emit(payload):
-    json.dump(payload, sys.stdout, indent="\t", ensure_ascii=False)
-    sys.stdout.write("\n")
+# -p/--pretty dump style: labels with colons, 4-space indent, parens only for
+# short same-line scalar lists. Null is <none> (angle brackets) so it is not
+# mistaken for a list. Multi-line containers never wrap in parens. Long prose
+# word-wraps; continuation lines indent one level deeper.
+_PRETTY_INDENT = "    "
+_PRETTY_LINE_BUDGET = 88  # soft wrap width (including indent)
+
+
+def _is_scalar(value):
+    return not isinstance(value, (dict, list, tuple))
+
+
+def _fmt_scalar(value):
+    if value is None:
+        return "<none>"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _fmt_scalar_list_inline(items):
+    """Paren form for a same-line scalar list: '( Close, Messy )' or '()'."""
+    if not items:
+        return "()"
+    return "( %s )" % ", ".join(_fmt_scalar(item) for item in items)
+
+
+def _inline_value(value):
+    """Format a scalar or short scalar-list for a same-line 'key: value'."""
+    if _is_scalar(value):
+        return _fmt_scalar(value)
+    if isinstance(value, (list, tuple)):
+        return _fmt_scalar_list_inline(value)
+    raise TypeError("not an inline-able value")
+
+
+def _can_inline_scalar_list(items, budget):
+    if any(not _is_scalar(item) for item in items):
+        return False
+    return len(_fmt_scalar_list_inline(items)) <= budget
+
+
+def _is_simple_value(value, budget):
+    """True when value can sit on a 'key: ...' line without nesting.
+
+    Long scalars still count as simple (they word-wrap on their own line
+    group); only nested dicts/lists become block children.
+    """
+    if _is_scalar(value):
+        return True
+    if isinstance(value, (list, tuple)):
+        return _can_inline_scalar_list(value, budget)
+    return False
+
+
+def _kv_part(key, value):
+    return "%s: %s" % (key, _inline_value(value))
+
+
+def _is_short_packable(key, value, budget):
+    """Only compact numeric/token fields share a line; prose stays solo.
+
+    Haul rows become 'creature: 1, die: 8, rolls: ( 6 )'. Names, attacks and
+    description never ride along with a neighbor.
+    """
+    if not _is_simple_value(value, budget):
+        return False
+    if _is_scalar(value):
+        text = _fmt_scalar(value)
+        # Empty or anything past a short token/number: own line only.
+        if text == "" or len(text) > 12:
+            return False
+    elif isinstance(value, (list, tuple)):
+        # Inline lists only pack when tiny (e.g. rolls: ( 6 )).
+        if len(_fmt_scalar_list_inline(value)) > 16:
+            return False
+    part = _kv_part(key, value)
+    return len(part) <= 24
+
+
+def _wrap_block(text, initial_indent, subsequent_indent):
+    """Word-wrap text; first line uses initial_indent, rest subsequent_indent."""
+    if text == "":
+        return [initial_indent.rstrip()] if initial_indent.strip() else [""]
+
+    wrapper = textwrap.TextWrapper(
+        width=_PRETTY_LINE_BUDGET,
+        initial_indent=initial_indent,
+        subsequent_indent=subsequent_indent,
+        break_long_words=True,
+        break_on_hyphens=False,
+        replace_whitespace=True,
+        drop_whitespace=True,
+    )
+    lines = []
+    paragraphs = text.split("\n")
+    for i, para in enumerate(paragraphs):
+        if not para.strip():
+            # Keep a blank line between paragraphs when source had one.
+            if lines and i < len(paragraphs) - 1:
+                lines.append("")
+            continue
+        wrapped = wrapper.wrap(para)
+        if not wrapped:
+            # textwrap drops pure-whitespace; still show the key line once.
+            if not lines:
+                lines.append(initial_indent.rstrip())
+        else:
+            lines.extend(wrapped)
+        # Later paragraphs hang under the continuation indent only.
+        wrapper.initial_indent = subsequent_indent
+    return lines or [initial_indent.rstrip()]
+
+
+def _pretty_scalar_kv(key, value, depth):
+    """'key: value' with word-wrap; continuations indent one level deeper."""
+    pad = _PRETTY_INDENT * depth
+    text = _fmt_scalar(value)
+    prefix = "%s%s: " % (pad, key)
+    cont = pad + _PRETTY_INDENT
+    if text == "":
+        yield "%s%s:" % (pad, key)
+        return
+    if "\n" not in text and len(prefix) + len(text) <= _PRETTY_LINE_BUDGET:
+        yield prefix + text
+        return
+    for line in _wrap_block(text, prefix, cont):
+        yield line
+
+
+def _pretty_bare_text(text, depth):
+    """Word-wrap a bare (no key) string at the given indent depth."""
+    pad = _PRETTY_INDENT * depth
+    if text == "":
+        yield pad.rstrip()
+        return
+    if "\n" not in text and len(pad) + len(text) <= _PRETTY_LINE_BUDGET:
+        yield pad + text
+        return
+    cont = pad  # bare lines share one indent; wrap within the budget
+    for line in _wrap_block(text, pad, cont):
+        yield line
+
+
+def _pretty_dict_body(mapping, depth, pack_simple=False):
+    """Yield body lines for a dict at the given indent depth.
+
+    pack_simple: when True (list items like a haul), pack short simple fields
+    onto shared lines ('creature: 1, die: 8, rolls: ( 6 )'). Named nested
+    dicts keep one key per line so tags stay scannable. Long scalars always
+    get their own line even when packing. Key order is preserved.
+    """
+    pad = _PRETTY_INDENT * depth
+    budget = max(24, _PRETTY_LINE_BUDGET - len(pad))
+    pending = []  # short packable fields waiting to share a line
+
+    def flush_pending():
+        if not pending:
+            return
+        parts = []
+        line_len = 0
+        for key, value in pending:
+            part = _kv_part(key, value)
+            extra = len(part) + (2 if parts else 0)  # ", " between parts
+            if parts and line_len + extra > budget:
+                yield pad + ", ".join(parts)
+                parts = [part]
+                line_len = len(part)
+            else:
+                parts.append(part)
+                line_len += extra
+        if parts:
+            yield pad + ", ".join(parts)
+        pending.clear()
+
+    for key, value in mapping.items():
+        if not _is_simple_value(value, budget):
+            yield from flush_pending()
+            yield from _pretty_lines(key, value, depth)
+        elif pack_simple and _is_short_packable(key, value, budget):
+            pending.append((key, value))
+        elif _is_scalar(value):
+            yield from flush_pending()
+            yield from _pretty_scalar_kv(key, value, depth)
+        else:
+            yield from flush_pending()
+            # Short inline scalar list - one key per line.
+            yield "%s%s" % (pad, _kv_part(key, value))
+    yield from flush_pending()
+
+
+def _pretty_lines(key, value, depth):
+    """Human-readable lines for one key/value.
+
+    Not JSON and not YAML. Four-space indent. Parentheses only for short
+    same-line scalar lists; multi-line lists and objects are bare. Long
+    text word-wraps with continuation lines indented one level deeper.
+    """
+    pad = _PRETTY_INDENT * depth
+    budget = max(24, _PRETTY_LINE_BUDGET - len(pad) - len(str(key)) - 2)
+
+    if isinstance(value, dict):
+        yield "%s%s:" % (pad, key)
+        if not value:
+            yield "%s%s<empty>" % (pad, _PRETTY_INDENT)
+            return
+        yield from _pretty_dict_body(value, depth + 1, pack_simple=False)
+        return
+
+    if isinstance(value, (list, tuple)):
+        if not value:
+            yield "%s%s: ()" % (pad, key)
+            return
+        if _can_inline_scalar_list(value, budget):
+            yield "%s%s: %s" % (pad, key, _fmt_scalar_list_inline(value))
+            return
+
+        # Multi-line list: no wrapping parens. Scalars one per line; dict
+        # items pack their short fields; blank line between complex items.
+        yield "%s%s:" % (pad, key)
+        complex_items = any(isinstance(item, (dict, list, tuple)) for item in value)
+        for i, item in enumerate(value):
+            if i and complex_items:
+                yield ""
+            if isinstance(item, dict):
+                if not item:
+                    yield "%s%s<empty>" % (pad, _PRETTY_INDENT)
+                else:
+                    # List-of-objects: collapse short fields onto fewer lines.
+                    yield from _pretty_dict_body(item, depth + 1, pack_simple=True)
+            elif isinstance(item, (list, tuple)):
+                yield from _pretty_lines("item", list(item), depth + 1)
+            else:
+                yield from _pretty_bare_text(_fmt_scalar(item), depth + 1)
+        return
+
+    yield from _pretty_scalar_kv(key, value, depth)
+
+
+def format_pretty(payload):
+    """Plain-text dump of a payload dict (or other value)."""
+    if isinstance(payload, dict):
+        lines = []
+        for key, value in payload.items():
+            lines.extend(_pretty_lines(key, value, 0))
+        return "\n".join(lines) + "\n"
+    # Non-dict root is unexpected, but don't crash a debug path.
+    return "\n".join(_pretty_bare_text(_fmt_scalar(payload), 0)) + "\n"
+
+
+def emit(payload, pretty=False):
+    """Write the payload to stdout.
+
+    Default is one compact JSON line (play-time / pipe-friendly). pretty=True
+    is the human -p/--pretty path: a plain label/indent dump, not JSON. Keep
+    that mode out of --help-llm so the model keeps using the compact default.
+    """
+    if pretty:
+        sys.stdout.write(format_pretty(payload))
+    else:
+        json.dump(payload, sys.stdout, ensure_ascii=False, separators=(",", ":"))
+        sys.stdout.write("\n")
 
 
 def main():
@@ -1607,17 +1857,19 @@ def main():
                     help="add N d4 to each treasure roll (the rulebook's 'lord "
                          "over others' / 'ancient or noteworthy' modifiers)")
     ap.add_argument("--seed", type=int, default=None)
+    # Human debugging only: deliberately omitted from --help-llm so the model
+    # keeps using the compact default (and so --help-llm cannot drift into
+    # documenting a flag the runtime path is not meant to use).
+    ap.add_argument(
+        "-p", "--pretty", action="store_true",
+        help="plain-text dump (labels/colons/parens, 4-space indent) instead of "
+             "JSON; for human debugging (default is compact JSON)",
+    )
     ap.add_argument("--help-llm", action="store_true", dest="help_llm",
                     help="print the dense full reference written for LLM callers, then exit")
     args = ap.parse_args()
 
-    if args.seed is not None:
-        print(
-            "Warning: Do not use --seed in a real game! If you did then re-read "
-            "gameplay-loop.md now!",
-            file=sys.stderr,
-        )
-        random.seed(args.seed)
+    apply_seed(args.seed)
 
     if args.list_themes:
         lexicon = load_lexicon()
@@ -1638,7 +1890,8 @@ def main():
     if args.setting_info is not None:
         if args.setting_info != "all" and args.setting_info not in book:
             sys.exit(
-                "error: unknown setting %r. Known: %s"
+                "error: unknown setting %r. Known: %s\n"
+                "Run with no arguments for descriptions."
                 % (args.setting_info, ", ".join(sorted(book)))
             )
         if args.setting is not None:
@@ -1710,7 +1963,10 @@ def main():
     else:
         count = args.random if args.random is not None else 1
         if count < 1:
-            sys.exit("error: --random must be at least 1")
+            sys.exit(
+                "error: --random must be at least 1 "
+                "(e.g. --random 3, or omit it for a single monster)."
+            )
         count = min(count, len(kept))
         chosen = random.sample(kept, k=count)
 
@@ -1755,7 +2011,8 @@ def main():
                 "returned": len(chosen),
             },
             "monsters": chosen,
-        }
+        },
+        pretty=args.pretty,
     )
     print("Reminder: update gm and character yaml files now!", file=sys.stderr)
     return 0
@@ -1811,7 +2068,8 @@ def run_named(book, args):
                 "returned": 1,
             },
             "monsters": [entry],
-        }
+        },
+        pretty=args.pretty,
     )
     print("Reminder: update gm and character yaml files now!", file=sys.stderr)
     return 0
@@ -2039,7 +2297,7 @@ def run_custom(args):
         ),
         "monsters": [monster],
     }
-    emit(payload)
+    emit(payload, pretty=args.pretty)
 
     print(
         "Note: a custom monster has no description, instinct or moves - you "
