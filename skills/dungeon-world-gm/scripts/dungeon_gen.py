@@ -17,36 +17,15 @@ Usage:
   python dungeon_gen.py --seed 42        # reproducible results (dev/debug only, never in play)
 """
 
-import random
 import argparse
+import random
 import sys
 from typing import List, Tuple, Dict
 
+from _util import apply_seed, d, force_utf8_stdio
 
-def _force_utf8_stdio():
-    """Windows defaults sys.stdout to the ANSI code page (cp1252) whenever
-    stdout is not a real console - a redirect or a pipe is enough. cp1252 has
-    no mapping for characters this script prints (e.g. U+2192 "->"), so the
-    write raises UnicodeEncodeError instead of degrading. Force UTF-8; a no-op
-    where the stream does not support reconfiguring."""
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")
-        except (AttributeError, OSError):
-            pass
+force_utf8_stdio()
 
-
-_force_utf8_stdio()
-
-# ---------------------------------------------------------------------------
-# Dice helpers
-# ---------------------------------------------------------------------------
-
-def d(sides: int) -> int:
-    return random.randint(1, sides)
-
-def nd(n: int, sides: int) -> int:
-    return sum(d(sides) for _ in range(n))
 
 def pick_range(table: List[Tuple[int, int, str]], roll: int) -> str:
     for lo, hi, val in table:
@@ -732,9 +711,7 @@ def main():
                          help="print the dense full reference written for LLM callers, then exit")
     args = parser.parse_args()
 
-    if args.seed is not None:
-        print("Warning: Do not use --seed in a real game! If you did then re-read gameplay-loop.md now!")
-        random.seed(args.seed)
+    apply_seed(args.seed)
 
     unknown = [t for t in args.tables if t not in TABLES]
     if unknown:

@@ -33,24 +33,11 @@ import re
 import sys
 from pathlib import Path
 
+from _util import apply_seed, force_utf8_stdio
 
-def _force_utf8_stdio():
-    """Windows defaults sys.stdout to the ANSI code page (cp1252) whenever
-    stdout is not a real console - a redirect or a pipe is enough. cp1252 has
-    no mapping for characters this script prints (e.g. U+2192 "->"), so the
-    write raises UnicodeEncodeError instead of degrading. Force UTF-8; a no-op
-    where the stream does not support reconfiguring."""
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")
-        except (AttributeError, OSError):
-            pass
+force_utf8_stdio()
 
-
-_force_utf8_stdio()
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _treasure  # noqa: E402  (sibling module - the treasure table and its objects)
+import _treasure  # sibling module - the treasure table and its objects
 
 BESTIARY = Path(__file__).resolve().parent.parent / "assets" / "monsters.json"
 LEXICON = Path(__file__).resolve().parent.parent / "assets" / "monster_words.json"
@@ -1611,13 +1598,7 @@ def main():
                     help="print the dense full reference written for LLM callers, then exit")
     args = ap.parse_args()
 
-    if args.seed is not None:
-        print(
-            "Warning: Do not use --seed in a real game! If you did then re-read "
-            "gameplay-loop.md now!",
-            file=sys.stderr,
-        )
-        random.seed(args.seed)
+    apply_seed(args.seed)
 
     if args.list_themes:
         lexicon = load_lexicon()

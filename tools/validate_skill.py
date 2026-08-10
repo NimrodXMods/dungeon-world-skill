@@ -38,9 +38,9 @@ LOCK = ROOT / "tools" / "yamledit.lock"
 
 # Scripts that intentionally have --help only. Everything else in scripts/ is
 # reached by the model through --help-llm, which is the canonical interface doc.
-# _treasure.py is not a CLI at all - it is a sibling module imported by
-# monster_gen.py and idea_gen.py, and has no interface for a model to read.
-NO_HELP_LLM = {"session_load.py", "session_save.py", "_treasure.py"}
+# Underscore modules (_treasure.py, _util.py) are not CLIs - they are sibling
+# libraries imported by the generators and have no interface for a model to read.
+NO_HELP_LLM = {"session_load.py", "session_save.py", "_treasure.py", "_util.py"}
 
 # Arguments a generator needs before it actually generates anything. Most take
 # none. monster_gen.py requires a bestiary setting tag - run bare it prints its
@@ -368,7 +368,7 @@ def check_encoding_safety():
 
     Seeds are swept because output is data-driven: any single seed may happen
     to avoid the offending character, which is exactly how this shipped
-    broken (see the scripts' _force_utf8_stdio).
+    broken (see _util.force_utf8_stdio).
     """
     # NO_COLOR keeps Python 3.13+ colourised tracebacks from leaking ANSI
     # escapes into the CI log.
@@ -390,8 +390,10 @@ def check_encoding_safety():
                 fail(
                     rel(script),
                     "dies with a cp1252 stdout ({} --seed {}): {}\n"
-                    "      Call _force_utf8_stdio() at import, as the other "
-                    "scripts do.".format(" ".join(extra) or "(no args)", seed, reason),
+                    "      Call force_utf8_stdio() from _util at import, as the "
+                    "other scripts do.".format(
+                        " ".join(extra) or "(no args)", seed, reason
+                    ),
                 )
                 broken = True  # one report per script is enough
                 break
