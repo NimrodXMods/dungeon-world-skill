@@ -3,6 +3,24 @@
 Guidance for coding agents working in this repository. This is the canonical project
 guide — [CLAUDE.md](CLAUDE.md) just points here, so there is nothing to keep in sync.
 
+## Who may edit `CLAUDE.md`
+
+**Only Anthropic Claude models may modify `CLAUDE.md`.** That file is Claude Code harness
+specifics (tool names, `@`-imports, and similar). Project-wide rules belong here in
+`AGENTS.md`.
+
+If you are **not** an Anthropic Claude model:
+
+- Treat `CLAUDE.md` as **read-only**. Do **not** update, rewrite, or “sync” it.
+- You should not need to read it for normal work; prefer this file.
+- Read `CLAUDE.md` only when there is a concrete need (e.g. the user asked about Claude
+  Code wiring, or you are diagnosing something that clearly lives only there). Still do
+  not modify it — if a change is required, tell the user (or leave it for Claude).
+
+Humans may edit either file. Claude models that touch `CLAUDE.md` should keep general
+rules out of it and point at `AGENTS.md` instead (see that file’s own “What belongs here”
+section).
+
 ## Committing
 
 **Never commit automatically.** Do not run `git commit`, `git push`, or `git tag` on your own
