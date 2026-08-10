@@ -15,9 +15,10 @@ commit-class action and needs the user's say-so.
 
 Any edit under `skills/` must also update that skill's `SKILL.md` frontmatter in the same
 change: `metadata.version` (major = major change, minor = added functionality, patch = fix
-or trivial addition), `metadata.updated` (today), and `metadata.last-modified-by-model`
-(you). Do it automatically — it is part of the edit, not a separate step to ask about.
-CI fails the build if you skip it. See [CLAUDE.md](CLAUDE.md) for the full policy.
+or trivial addition), `metadata.updated` (today's date in **UTC**, `YYYY-MM-DD` — CI is
+usually UTC), and `metadata.last-modified-by-model` (you). Do it automatically — it is
+part of the edit, not a separate step to ask about. CI fails the build if you skip it.
+See [CLAUDE.md](CLAUDE.md) for the full policy.
 
 ## Before you push
 
