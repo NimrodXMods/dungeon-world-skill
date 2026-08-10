@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail if a change touches a skill without bumping its SKILL.md version.
 
-CLAUDE.md requires every edit under skills/ to update that skill's frontmatter
+AGENTS.md requires every edit under skills/ to update that skill's frontmatter
 in the same change. Nothing about that is self-enforcing: a reference file can
 be rewritten wholesale and the version left behind, and the mistake is only
 visible later, when two different skill contents claim to be the same version.
