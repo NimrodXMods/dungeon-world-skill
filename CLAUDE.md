@@ -266,9 +266,27 @@ Three fields, always together:
   day (CI runners typically run in UTC; a local evening commit must not use a
   local date that is still "yesterday" in UTC). Unchanged is correct when today's
   UTC date is already what's there: several edits in one day share a date.
-- `metadata.last-modified-by-model` — the model making the edit, in the existing
-  `Vendor Model Name (model-id)` form, e.g. `Anthropic Claude Opus 5 (claude-opus-5)`.
-  Overwrite it; it records who touched it last, not a history. Leave `creator-model` alone.
+- `metadata.last-assisting-model` — when a coding model assisted with the change,
+  overwrite this with that model in `Vendor Model Name (model-id)` form, e.g.
+  `Anthropic Claude Opus 5 (claude-opus-5)` or `xAI Grok 4.5 (grok-4.5)`. Leave
+  `creator-model` alone.
+
+  **Meaning (narrow):** the last model that *assisted the human* on any edit to
+  this skill — a breadcrumb for maintainers, not a history and not an audit log.
+
+  **Not meaning:**
+  - Not blame or praise for the quality of the last update.
+  - Not a claim that the last update was primarily model-generated vs human-authored.
+  - Not "the model responsible for this skill" or "who owns this version."
+  - Not evidence of who decided the design; humans may drive the change while a
+    model only applies diffs, or the reverse.
+
+  If a human edits with no model assist, they may leave the field unchanged or
+  set it only when a model later helps. Agents that *do* assist must overwrite it
+  with themselves as part of the edit.
+
+  **Name history:** formerly `last-modified-by-model`. Renamed so it cannot be
+  read as "this model made / is accountable for the last modification."
 
 Semver policy for `metadata.version`:
 

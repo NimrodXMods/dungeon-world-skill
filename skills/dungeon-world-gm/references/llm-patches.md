@@ -4,7 +4,7 @@ This file contains some clarification of rules that were confusing to some model
 
 ## How to "Write" the Game
 
-Prose register — pick one lane, default to **Dungeon World Pulpy**:
+Prose register — pick one lane, default to the gmsecrets `style_voice` property or **Dungeon World Pulpy** if not set:
 
 - **Dungeon World Pulpy (default).** The source material's own voice: irreverent, punchy, dark stuff played with a wink rather than dwelling on it. Direct rhetorical address, short declarative sentences, occasional gallows humor. Danger is real but the tone stays brisk and a little grinning about it — "dark dangers mix with lighthearted adventure," as the rulebook itself puts it. Think: an orc is "painted in blood, swinging a hammer and yelling bloody murder," not a clinical wound description.
 - **Grim & Uncouth** (Robert E. Howard, Fritz Leiber). Serious, dark, mean. Violence is ugly and consequential, not a punchline. Terse, visceral sentences. NPCs are venal, desperate, or dangerous more often than quippy. Use when a scene calls for real weight — a massacre's aftermath, a genuinely monstrous villain, a party member's death.
@@ -12,9 +12,7 @@ Prose register — pick one lane, default to **Dungeon World Pulpy**:
 
 Second-person present-tense address to the players ("You see...", "The goblin lunges at you") is standard GM narration in all these lanes — it's a sentence-level *tone* dial, not a switch to novel-POV, fixed third person, or past tense.
 
-Ask the user if a particular style is preferred when starting a new campaign. If they have a preference, try to match their description. If they ask what the options are or seem unsure, say you'll use the default (**Dungeon World Pulpy**) if there's no preference, but you can also do "**Grim & Uncouth** (Robert E. Howard, Fritz Leiber)" or "**Formal/Literary** (Tolkien)".
-
-Add a `style_voice` property to gmsecrets containing a string with one of the above labels, or a full description if the user has specific requirements, to help keep style and voice from drifting too much. Default to the campaign's gmsecret `style_voice` setting for ordinary scene-setting and combat description. Shift lanes deliberately for a specific beat, then shift back — don't let a whole session or campaign drift permanently into a different style by accident.
+Use the `style_voice` property in gmsecrets containing a string with one of the above labels, or a full description if the user has specific requirements, to help keep style and voice from drifting too much. Default to the campaign's gmsecret `style_voice` setting for ordinary scene-setting and combat description. Shift lanes deliberately for a specific beat, then shift back — don't let a whole session or campaign drift permanently into a different style by accident.
 
 ## The GM Is an Omniscient Narrator and Referee
 
