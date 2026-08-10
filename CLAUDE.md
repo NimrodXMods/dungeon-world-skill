@@ -262,8 +262,10 @@ affected skill's own frontmatter.
 Three fields, always together:
 
 - `metadata.version` — bump per the policy below.
-- `metadata.updated` — today's date, `"YYYY-MM-DD"`. Unchanged is correct when today's
-  date is already what's there: several edits in one day share a date.
+- `metadata.updated` — today's date in **UTC**, `"YYYY-MM-DD"`. Use the UTC calendar
+  day (CI runners typically run in UTC; a local evening commit must not use a
+  local date that is still "yesterday" in UTC). Unchanged is correct when today's
+  UTC date is already what's there: several edits in one day share a date.
 - `metadata.last-modified-by-model` — the model making the edit, in the existing
   `Vendor Model Name (model-id)` form, e.g. `Anthropic Claude Opus 5 (claude-opus-5)`.
   Overwrite it; it records who touched it last, not a history. Leave `creator-model` alone.

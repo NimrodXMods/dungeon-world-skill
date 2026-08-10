@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 idea_gen.py – RPG random generation tables
-(Treasure, Treasure Objects, Discovery, Danger, Creature, and misc prompts)
+(Treasure, Treasure Objects, Discovery, Danger, story hooks, room clutter,
+rumors, and misc prompts)
 
 Treasure here is treasure no monster owns. A monster's own haul comes from
 monster_gen.py --treasure, which rolls the creature's damage die against the
@@ -12,16 +13,18 @@ instead - it's rolled there by default for every NPC (see --no-traits/
 --full-traits), since that's where it's actually used.
 
 Usage:
-  python idea_gen.py                  # one result from every table
-  python idea_gen.py treasure         # only treasure
+  python idea_gen.py                  # every table, three results each (default -n 3)
+  python idea_gen.py treasure
   python idea_gen.py danger discovery
-  python idea_gen.py equipment-tag -n 2   # roll 2 equipment tags at once
-  python idea_gen.py -n 3 gmmove        # a GM move prompt
-  python idea_gen.py drsl-miss          # a Discern Realities/Spout Lore miss trick
-  python idea_gen.py std-magicitem      # a named item from magic-items.md
+  python idea_gen.py equipment-tag -n 2   # N tags in one combined result
+  python idea_gen.py gmmove
+  python idea_gen.py story-hook -n 1      # single result when you want one
+  python idea_gen.py rumor
+  python idea_gen.py treasure-object      # three separate looks to choose among
 """
 
 import argparse
+import math
 import random
 import sys
 from typing import List, Tuple, Dict, Any
@@ -42,7 +45,7 @@ import _treasure  # sibling module - the treasure table and its objects
 # ---------------------------------------------------------------------------
 
 def _render_options(options, indent: str) -> List[str]:
-    """A numbered menu, each option followed by the categories that built it.
+    """A bullet menu, each option followed by the categories that built it.
 
     The category line is not decoration: it is a runnable token. Printing it in
     the comma form that roll_treasure_object accepts means rerolling one axis,
@@ -50,9 +53,9 @@ def _render_options(options, indent: str) -> List[str]:
     to remember is possible.
     """
     lines = []
-    for i, opt in enumerate(options, 1):
-        lines.append(f"{indent}{i}. {opt['text']}")
-        lines.append("{}   rolled with treasure-object:{}".format(
+    for opt in options:
+        lines.append(f"{indent}- {opt['text']}")
+        lines.append("{}  > rolled with treasure-object:{}".format(
             indent, ",".join(opt["categories"])
         ))
     return lines
@@ -61,7 +64,7 @@ def _render_options(options, indent: str) -> List[str]:
 def _render_value(value: int) -> List[str]:
     """One table entry, plus a menu of looks when the entry leaves them open."""
     text, is_object = _treasure.value_entry(value)
-    lines = [text]
+    lines = ["* " + text]
     if is_object:
         options = _treasure.describe_options(exclude_traits=_treasure.VALUE_EXCLUDED)
         lines.append("  looks like (pick one, or mix them):")
@@ -121,7 +124,7 @@ def roll_treasure_object(spec: str = None) -> str:
         return "\n".join(
             f"{name} → {_treasure.roll_category(name)}" for name in names
         )
-    return "\n".join(_render_options(_treasure.describe_options(), "  "))
+    return "\n".join(_render_options(_treasure.describe_options(1), "  "))
 
 # ---------------------------------------------------------------------------
 # Discovery (1d12 × 3 nested tables)
@@ -706,6 +709,243 @@ def roll_drsl_miss() -> str:
     return f"DR/Spout Lore Miss → {name}: {desc}"
 
 # ---------------------------------------------------------------------------
+# Story Hook (object is more than decorative - seed for why it matters)
+# Standalone table; where to *suggest* calling it is left to the GM / later
+# routing work, not auto-attached to treasure rolls.
+# ---------------------------------------------------------------------------
+
+STORY_HOOKS = [
+    ("Hidden compartment",
+     "a false bottom, hollow hilt, or sewn lining - invent what is inside and "
+     "who hid it"),
+    ("Maker's mark",
+     "monogram, guild stamp, or workshop brand - tie it to a known NPC, "
+     "faction, or steading and say why that matters now"),
+    ("Old bloodstain / residue",
+     "dried blood, ichor, or soot that does not match the current owner - "
+     "whose, and what act left it"),
+    ("Faint warmth or cold",
+     "slightly wrong temperature for the material - a lingering magic, "
+     "curse, or bond; invent the source"),
+    ("Wrong weight",
+     "heavier or lighter than it should be - denser core, void inside, or "
+     "something else sharing the mass"),
+    ("Repaired break",
+     "crack, weld, or re-stitch that does not match the original craft - "
+     "when was it broken, and who fixed it"),
+    ("Chip matching something known",
+     "a missing piece elsewhere (weapon, statue, door, ring) - invent the "
+     "mate and who would notice"),
+    ("Whisper of curse or blessing",
+     "a one-line omen when touched or worn - soft fiction only until you "
+     "decide it has teeth"),
+    ("Double life",
+     "mundane use plus one odd property (opens a lock, points north of a "
+     "thing, answers to a name) - keep the odd part small"),
+    ("Ownership claim",
+     "engraved name, bounty tag, or 'property of…' - someone wants it back"),
+    ("Map or note inside",
+     "fragment, cipher, or sketch folded/scratched into it - one lead, not "
+     "a full quest map"),
+    ("Scent or memory trigger",
+     "smell or texture that forces a PC or NPC memory - ask who recognizes "
+     "it and what it costs them"),
+    ("Stolen / return-to",
+     "looks recently taken, or bears a plea to return it - invent the "
+     "rightful owner and the risk of keeping it"),
+    ("Evidence of a recent act",
+     "fresh wear, mud, ash, or fingerprints from something that just "
+     "happened nearby - connect it to the scene"),
+    ("Counts as a key",
+     "shape, pattern, or material matches a lock, ward, or door you have "
+     "not shown yet - invent the door when they try it"),
+    ("Beloved or hated by someone present",
+     "an NPC in or near the scene has a strong personal tie - invent who "
+     "and what they will do about it"),
+]
+
+
+def roll_story_hook() -> str:
+    name, desc = random.choice(STORY_HOOKS)
+    return f"Story Hook → {name}: {desc}"
+
+
+# ---------------------------------------------------------------------------
+# Room Clutter (ordinary space junk - not discovery, not dungeon dressing)
+# Backs llm-patches "familiar environments": few adjectives, ordinary baseline,
+# optional ordinary-but-for-X twist. For dungeon areas use dungeon_gen.py
+# dressing instead.
+# ---------------------------------------------------------------------------
+
+ROOM_CLUTTER = [
+    ("Dust and neglect",
+     "thick dust, cobwebs, or a room that has not been used in a while - "
+     "ordinary, not a trap"),
+    ("Draft or smell",
+     "a draft from a crack, kitchen smell, damp, smoke, or perfume - "
+     "one sensory note"),
+    ("Worn furniture",
+     "scuffed chair, sagging bed, nicked table - lived-in ordinary"),
+    ("Tools of the trade",
+     "needle and thread, hammer, ledger, cooking knife - match the room's "
+     "owner if known"),
+    ("Food remnants",
+     "crumb trail, half-eaten meal, empty cup, greasy napkin"),
+    ("Personal scrap",
+     "sock, toy, prayer bead, hair ribbon, cheap charm - human scale"),
+    ("Vermin sign",
+     "mouse droppings, gnawed corner, beetle under a bowl - ordinary pest, "
+     "not a monster unless you promote it"),
+    ("Weather through the opening",
+     "rain streak on the sill, sun stripe, soot from the hearth"),
+    ("Religious nick-nack",
+     "small idol, chalked holy mark, wilted offering - local faith flavor"),
+    ("Work leftover",
+     "wood shavings, ink blot, clay scraps, unfinished mending"),
+    ("Empty containers",
+     "jars, crates, sacks - most empty or half-full of dull staples"),
+    ("Chalk or scratch marks",
+     "tally marks, a child's drawing, a height mark on a doorframe"),
+    ("Laundry or linens",
+     "drying cloth, folded blanket, stained apron"),
+    ("Ordinary but for one odd detail",
+     "describe the room as typical for its kind, then one elaborate "
+     "difference that stands out (llm-patches familiar-environments pattern)"),
+    ("Something recently moved",
+     "scrape mark, dust ring where an object sat, chair not pushed in - "
+     "someone was here, not necessarily danger"),
+    ("Borrowed light",
+     "candle stub, oil lamp low, shutter half-open - lighting only"),
+    ("Game or idle pastime",
+     "half-finished <dice game/cards/knucklebones>, a scratched board, cheap "
+     "stakes left on the table"),
+    ("Music left out",
+     "a <lute/pipe/drum/whistle> with a broken string or missing stick - not "
+     "treasure, just put down"),
+    ("Wet gear drying",
+     "<cloak/boots/saddle blanket> dripping by the <hearth/door/window> - "
+     "ordinary travel mess"),
+    ("Medicine or remedies",
+     "a clay pot of <salve/poultices/bitter tea>, stained rag, no magic labels"),
+    ("Writing mid-task",
+     "open <ledger/letter/recipe> with a blot where the pen stopped; ink still "
+     "damp or dried mid-word"),
+    ("Children's clutter",
+     "wooden <horse/sword/doll>, chalk dust, sticky fingerprints on the "
+     "<table/wall/shutter>"),
+    ("Hunting or farm take",
+     "a brace of <rabbits/birds/fish>, feathers, gutting board - food work, "
+     "not a scene clue unless you promote it"),
+    ("Mending pile",
+     "basket of clothes with <patches/darning/new buttons> half done; needle "
+     "still stuck in the fabric"),
+    ("Ash and firecare",
+     "cold ash raked, fresh <log/peat/dung bricks>, poker still warm or long "
+     "cold - match the season"),
+    ("Guest traces",
+     "extra <cup/bowl/bedroll> that does not match the household set - someone "
+     "slept or ate here"),
+    ("Ward against bad luck",
+     "a <braid of herbs/iron nail over the door/circle of salt> that every "
+     "local home has; ordinary superstition"),
+    ("Stored bulk",
+     "stacked <firewood/sacks of grain/empty casks> taking half the room - "
+     "domestic stockpile"),
+    ("Broken ordinary thing",
+     "a cracked <mug/plate/stool> set aside 'to fix later' and clearly never "
+     "fixed"),
+    ("Smell that belongs",
+     "the room smells strongly of <onions/tallow/wet dog/old beer/tannin> and "
+     "nothing else odd"),
+    ("Same as always, almost",
+     "everything expected for a <kitchen/barracks/shop/cell> - only the "
+     "<one object you name> is slightly wrong; keep the rest boring"),
+]
+
+
+def roll_room_clutter() -> str:
+    name, desc = random.choice(ROOM_CLUTTER)
+    return f"Room Clutter → {name}: {desc}"
+
+
+# ---------------------------------------------------------------------------
+# Rumor (tavern/town secondhand claim + a 0..99 score)
+# The score is printed as several interchangeable labels (true-chance /
+# truth-strength / true-content ratio) so it is not read as a hard probability.
+# Drawn from a mixture: mostly flat Uniform(40, 80) (mean 60 - a bit better
+# than a coin flip), thin triangular shoulders toward 0 and 99. Clamped to
+# 0..99 (never 100). Optional: later roll d100 under the score for a resolve.
+# ---------------------------------------------------------------------------
+
+# P(bulk) on the flat mid band; remainder split equally into lower/upper tails.
+_RUMOR_TRUE_BULK = 0.92
+
+RUMORS = [
+    "The road (to <steading> or north/e/s/w/ne/nw/se/sw) is closed - bandits, washout, or something worse.",
+    "The <keep/government>'s new tax is funding a secret war chest.",
+    "Someone important went missing last <market day/other day> and nobody will say who.",
+    "<Lights/effects> have been seen over the <old barrow/site> <three/four/more> nights running.",
+    "The merchant who just arrived is selling stolen goods.",
+    "<festival or holy day> is <coming early or was cancelled>.",
+    "A monster (or 'monster') was sighted near the <mill/wood/ford/etc>.",
+    "<A noble/official>'s scandal is about to break, and half the steading already knows.",
+    "The real treasure from the last expedition never left town.",
+    "Bad weather is an omen - someone is cursing the valley.",
+    "The <priest/elder/reeve> is not who they claim to be.",
+    "<A rival steading> is hiring blades for a quiet job.",
+    "The <well/spring/river> is tainted, and people are getting sick.",
+    "An old war debt is coming due and outsiders will be blamed.",
+    "The map the party <carries or will find> is a deliberate fake.",
+    "Someone in this <tavern or room> is an informant for a danger the PCs have not met yet.",
+    "The <bridge/ferry/gate> will not open after <dark/the bell> - the watch has orders from someone higher.",
+    "A <caravan/messenger/pilgrim band> never arrived from <neighboring steading/the capital> and the guild is pretending nothing is wrong.",
+    "The <mine/quarry/forest cut> is closed because they found <bones/old iron/something that should stay buried>.",
+    "Children have been singing a <new/old> rhyme about the <party's last fight/a local hero/a coming doom> and no one taught them.",
+    "The <innkeeper/barkeep/stablehand> is paying in <foreign coin/old coin/chips of crystal> that nobody mints anymore.",
+    "Someone is buying up every <ration/arrow/healing herb/blank parchment> in town at twice the price.",
+    "The <cemetery/urn field/sea cliff> has fresh graves that were not there last <week/moon>.",
+    "A <wanted poster/bounty notice> went up overnight for a face that looks a lot like <a PC/an ally/someone the party just met>.",
+    "The <wizard/hedge-witch/scholar> at the edge of town has stopped taking visitors - smoke still comes from the chimney at odd hours.",
+    "Livestock will not drink from the <trough/pond/downstream bend> and the farmers blame <the new mill/the temple/outsiders>.",
+    "A wedding between <house A/house B> and <house C/house D> was called off because of a <blood oath/debt/curse> nobody will name.",
+    "The night watch is short-handed; half of them have gone to guard a <private warehouse/noble's garden/empty barn>.",
+    "Someone carved the same <mark/rune/beast-sigil> on three doors along <Market Street/the docks/the temple lane>.",
+    "A <ship/coach/mule train> was expected with <grain/steel/a named passenger> and only the empty <hull/wagon/leads> came back.",
+    "The <mayor/reeve/guildmaster> is not sleeping at home - they have a room at the <tavern/temple/keep> under another name.",
+    "Dreams of a <flood/fire/crowned stranger/empty throne> are common enough that the <priest/elder> started asking who else saw them.",
+]
+
+
+def _rumor_true_chance() -> int:
+    """Integer 0..99 score for a rumor (never 100).
+
+    Not a single fixed meaning - printed as true-chance / truth-strength /
+    true-content ratio so the caller picks how to read it. Mixture (flatter
+    mid than normal/lognormal):
+      - 92%: Uniform(40, 80)  — flat band, mean 60
+      -  4%: triangular(0, 40, mode=40)   — trails off toward 0
+      -  4%: triangular(80, 100, mode=80) — trails off toward 99 (high is
+        100 before clamp so 99 can still appear; result never stays 100)
+    Extremes are rare; output is always in 0..99.
+    """
+    u = random.random()
+    if u < _RUMOR_TRUE_BULK:
+        sample = random.uniform(40.0, 80.0)
+    elif u < _RUMOR_TRUE_BULK + (1.0 - _RUMOR_TRUE_BULK) / 2.0:
+        sample = random.triangular(0.0, 40.0, 40.0)
+    else:
+        # high=100 so the tail can reach 99 after floor; clamp drops 100.
+        sample = random.triangular(80.0, 100.0, 80.0)
+    return max(0, min(99, math.floor(sample)))
+
+
+def roll_rumor() -> str:
+    claim = random.choice(RUMORS)
+    chance = _rumor_true_chance()
+    return f'Rumor → "{claim}" (quality = {chance}/100)'
+
+
+# ---------------------------------------------------------------------------
 # Standard Magic Item (this skill's own addition - a random pick from the
 # named items in references/magic-items.md; this table just names one, it
 # doesn't reproduce the item's effects here, so the GM still needs to look
@@ -756,7 +996,7 @@ STD_MAGICITEM = [
 
 def roll_std_magicitem() -> str:
     item = random.choice(STD_MAGICITEM)
-    return f"{item} (grep from magic-items.md or search line in rulebook digest)"
+    return f"{item}"
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -770,6 +1010,9 @@ TABLES = {
     "equipment-tag": ("Equipment Tag", roll_equipment_tag),
     "gmmove":    ("GM Move", roll_gm_move),
     "drsl-miss": ("DR/Spout Lore Miss", roll_drsl_miss),
+    "story-hook": ("Story Hook", roll_story_hook),
+    "room-clutter": ("Room Clutter", roll_room_clutter),
+    "rumor":     ("Rumor", roll_rumor),
     "std-magicitem": ("Standard Magic Item", roll_std_magicitem),
 }
 
@@ -793,8 +1036,11 @@ def resolve_table(name: str):
 HELP_LLM = """\
 idea_gen.py - general-purpose RPG random-idea tables (treasure and what it looks
 like, discoveries, dangers, equipment tags, GM moves, Discern Realities/Spout
-Lore miss tricks, named magic items), useful any time a random prompt would help
-creativity, independent of the other generators.
+Lore miss tricks, story hooks, room clutter, rumors, named magic items), useful
+any time a random prompt would help creativity, independent of the other
+generators.
+Default is `-n 3` so you get a short menu to pick from (or mix), not a single
+locked-in result. Pass `-n 1` only when you truly want one line.
 For a generic NPC appearance/personality/quirk trait, use npc_gen.py instead
 (rolled there by default for every NPC - see its --no-traits/--full-traits).
 For "what creature is it?", use monster_gen.py - it answers with a real stat
@@ -803,18 +1049,19 @@ block rather than a category, so there is no creature table here.
 USAGE
   idea_gen.py [TABLE ...] [-n N] [--seed N]
 
-TABLE (zero or more; default: every table, one result each)
+TABLE (zero or more; default if omitted: every table below)
   treasure         Treasure Table (1-18 finding-treasure roll) for treasure that
                    no monster owns - a cache, a reward, something washed up. For
                    a monster's own haul use monster_gen.py --treasure instead,
                    which rolls the creature's damage die against the same table.
                    All dice are resolved, so you get "A bag of 300 coins" rather
                    than "1d4x100".
-  treasure-object  three ways one piece of treasure could look, to choose
-                   between. Roll this when you know a thing is valuable but not
-                   what it IS. You rarely need to ask for it directly: a
-                   "treasure" roll that lands on an actual object already brings
-                   its own menu (see OUTPUT).
+  treasure-object  one composed look per result (bullet + "rolled with" token).
+                   Default -n 3 gives three separate looks to choose among.
+                   When you know a thing is valuable but not what it IS. You
+                   rarely need to ask for it directly: a "treasure" roll that
+                   lands on an actual object already brings its own multi-option
+                   looks-like menu (see OUTPUT).
   treasure-object:CATEGORY[,CATEGORY...]
                    one roll from each named axis, when you do not want a whole
                    object - or want to redo part of one. Comma-separated, no
@@ -830,50 +1077,67 @@ TABLE (zero or more; default: every table, one result each)
                    with, so rerolling part of one is a copy-paste.
   discovery        Discovery prompt
   danger           Danger prompt
-  equipment-tag     a random equipment tag (see references/tag-reference.md)
-  gmmove            a GM move prompt (which move to make, not how to word it)
-  drsl-miss         a Discern Realities / Spout Lore miss trick
-  std-magicitem     a named item pulled from magic-items.md
+  equipment-tag    a random equipment tag (see references/tag-reference.md)
+  gmmove           a GM move prompt (which move to make, not how to word it)
+  drsl-miss        a Discern Realities / Spout Lore miss trick
+  story-hook       why an object is more than decorative (hidden compartment,
+                   maker's mark, old blood, wrong weight, etc.) - invent the
+                   rest; standalone seed, not auto-rolled with treasure
+  room-clutter     what's scattered in an ordinary room/scene - few adjectives,
+                   familiar-environment junk (see llm-patches). Not discovery
+                   (footer reminds: promote only if fiction demands). For
+                   dungeon area sensory dressing use dungeon_gen.py dressing
+  rumor            tavern/town secondhand claim with angle-bracket slots to
+                   fill, plus (quality = N/100). N is 0..99 (never 100), drawn
+                   mostly flat on 40-80 (mean ~60). A footer explains that
+                   'quality' means true-chance, truth-strength, or true content
+                   ratio - not a hard probability. Optional: roll d100 under N
+                   later. Does not invent a full front (see fronts reference)
+  std-magicitem    a named item from magic-items.md; footer points you to grep
+                   that file or the rulebook digest for effects
 
--n N       how many of each requested table to roll at once (default 1).
-           For "equipment-tag" this rolls N tags as one combined result
-           rather than N separate single-tag results.
+-n N       how many of each requested table to roll at once (default 3).
+           Pass -n 1 for a single result. Exception: "equipment-tag" rolls N
+           tags as one combined result rather than N separate single-tag results.
 --seed N   reproducible output - dev/debug only, NEVER during play
 
 OUTPUT
   For each requested table (in the order given), a header carrying the exact
   token that produced it - "=== Treasure Object: material === [ TABLE=
-  treasure-object:material ]" - followed by -n result(s). Reuse the TABLE=
-  value verbatim to ask for more of the same.
-  Every composed object is followed by a "rolled with treasure-object:a,b,c"
-  line. That line IS a runnable table token - pass it back, whole or trimmed to
-  the axes you want, when one detail is wrong and the rest of the object is
-  fine.
+  treasure-object:material ]" - followed by -n result line(s). Reuse the
+  table token after TABLE= verbatim to ask for more of the same.
+  Treasure value lines are prefixed with "* ". Composed looks use bullet
+  lines ("- …") each followed by "  > rolled with treasure-object:a,b,c".
+  That a,b,c token IS a whole runnable table name - pass it back, whole or
+  trimmed to the axes you want, for a different composition.
   A treasure roll that lands on an actual object whose appearance the table
-  leaves open ("A small valuable item worth 140 coins") is followed by an
-  indented "looks like (pick one, or mix them)" menu. The value is rolled once
-  and shared by every option, so which one you pick never changes what the
-  treasure is worth - only what it is.
-  Results that are not objects get NO menu, deliberately: coins are coins, and
-  "Useful information", "A portal or secret path" and "A magical item or
-  effect" are yours to invent (for the last of those, see
-  references/magic-items.md or the std-magicitem table).
-  Always ends with a reminder to update yaml files if anything changed.
+  leaves open is followed by an indented "looks like (pick one, or mix them)"
+  menu (several bullets; value shared). Results that are not objects get NO
+  menu: coins are coins, and "Useful information" / portal / magical effect
+  lines are yours to invent (for the last, see magic-items.md or
+  std-magicitem).
+  After the results for some tables, a one-line footer may appear:
+    room-clutter   ordinary-junk / promote-to-discovery note
+    rumor          how to read 'quality'
+    std-magicitem  where to look up the item's effects
+  Always ends with two reminders: re-roll/modify is fine, and review turns +
+  update gm/character yaml if needed.
 
 Err on the side of using this script too much rather than not enough - even
 when a result doesn't perfectly fit the situation, it injects entropy that
 counteracts an LLM's tendency to repeat its own priors when improvising.
 
 EXAMPLES
-  idea_gen.py                        one result from every table
-  idea_gen.py treasure                only treasure
-  idea_gen.py danger discovery         both of the listed tables
-  idea_gen.py treasure-object          three looks for one valuable thing
-  idea_gen.py treasure-object:material -n 3   three materials, nothing else
-  idea_gen.py treasure-object:material,motif  redo just those two axes
-  idea_gen.py equipment-tag -n 2       roll 2 equipment tags at once
-  idea_gen.py -n 3 gmmove               3 GM move prompts
-  idea_gen.py drsl-miss
+  idea_gen.py                        every table, three results each (default)
+  idea_gen.py treasure               three treasure rolls
+  idea_gen.py danger discovery
+  idea_gen.py treasure-object        three separate looks to choose among
+  idea_gen.py treasure-object:material
+  idea_gen.py treasure-object:material,motif
+  idea_gen.py equipment-tag -n 2     two tags in one combined line
+  idea_gen.py gmmove
+  idea_gen.py story-hook -n 1        one hook only
+  idea_gen.py rumor
   idea_gen.py std-magicitem
 """
 
@@ -887,8 +1151,8 @@ def main():
         "tables", nargs="*", default=list(TABLES.keys()),
         help="which tables to roll (default: all). Choices: " + ", ".join(TABLES)
     )
-    parser.add_argument("-n", type=int, default=1,
-                         help="how many of each to roll at once (default: 1)")
+    parser.add_argument("-n", type=int, default=3,
+                         help="how many of each to roll at once (default: 3)")
     parser.add_argument("--seed", type=int, default=None, help="Random seed, for reproducibility")
     parser.add_argument("--help-llm", action="store_true", dest="help_llm",
                          help="print the dense full reference written for LLM callers, then exit")
@@ -916,10 +1180,17 @@ def main():
         else:
             for i in range(0, args.n):
                 print(fn())
+            if name == "std-magicitem":
+                print("(grep from magic-items.md or search line in rulebook digest)")
+            elif name == "room-clutter":
+                print("(ordinary junk - promote to discovery only if fiction demands)")
+            elif name == "rumor":
+                print("('quality' should be interpreted as true-chance, truth-strength, or true content ratio)")
+
         print()
 
-    print("Reminder: accepting the results isn't mandatory. Re-rolling is an option if results don't fit.")
-    print("Reminder: update gm and character yaml files if anything changed since last update!")
+    print("Reminder: accepting the results as-is isn't mandatory. Modify or re-roll if results don't fit.")
+    print("Reminder: review previous turns and update gm and character yaml files if needed!")
 
 if __name__ == "__main__":
     main()

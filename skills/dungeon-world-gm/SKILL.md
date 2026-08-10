@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.15.7"
+  version: "0.16.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -141,12 +141,13 @@ Available generator scripts and "trigger" situations for using them:
   bestiary, with its written description, instinct and moves already filled in, but it can help with custom
   monster generation.
 - `idea_gen.py` (general-purpose ideas: treasure and what a piece of treasure looks like, discoveries,
-  dangers, equipment tags, GM moves, DR/Spout Lore miss tricks, named magic items) - use its
-  treasure tables for loot no monster owns (a cache, a reward); a monster's own haul comes from
-  `monster_gen.py` instead, which rolls the creature's damage die against the same table. For every other question that
-  arises about the PC party and what they discover, or questions about anything requiring a creative
-  answer, use this script. It has no creature table - "what creature is it?" is `monster_gen.py`'s
-  question, and it answers with a real stat block rather than a category.
+  dangers, equipment tags, GM moves, DR/Spout Lore miss tricks, story hooks, room clutter, rumors,
+  named magic items) - use its treasure tables for loot no monster owns (a cache, a reward); a
+  monster's own haul comes from `monster_gen.py` instead, which rolls the creature's damage die
+  against the same table. For every other question that arises about the PC party and what they
+  discover, or questions about anything requiring a creative answer, use this script. It has no
+  creature table - "what creature is it?" is `monster_gen.py`'s question, and it answers with a
+  real stat block rather than a category.
 
 Run `python3 scripts/<script>.py --help-llm` before using any of these scripts (once per
 script per session is enough) - it prints a dense reference written for LLM callers with
