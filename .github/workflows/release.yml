@@ -28,13 +28,47 @@ jobs:
       # touching the frontmatter.
       - name: Package at the tagged version
         run: |
+          set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          python tools/package_skill.py --expect-version "${version%%-*}"
+          base="${version%%-*}"
+          python tools/package_skill.py --expect-version "${base}"
+          # Stable alias for /releases/latest/download/dungeon-world-gm.zip so
+          # README never needs a versioned filename. Versioned zip stays too.
+          cp "dist/dungeon-world-gm-${base}.zip" dist/dungeon-world-gm.zip
 
       - name: Publish release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          files: dist/dungeon-world-gm-*.zip
+          files: |
+            dist/dungeon-world-gm-*.zip
+            dist/dungeon-world-gm.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+      # Refresh Release badge immediately on tag (main badge job only runs on
+      # main pushes). CI Status is left alone here — last main validate wins.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: ${{ !contains(github.ref_name, '-') }}
+        with:
+          node-version: "20"
+
+      - name: Update Release badge
+        if: ${{ !contains(github.ref_name, '-') }}
+        run: |
+          set -euo pipefail
+          mkdir -p badges
+          npx --yes -p badge-maker badge "Release" "${GITHUB_REF_NAME}" blue > badges/release.svg
+
+      - name: Publish Release badge
+        if: ${{ !contains(github.ref_name, '-') }}
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: badges
+          publish_dir: ./badges
+          keep_files: true
+          force_orphan: false
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: "chore: update Release badge"

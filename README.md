@@ -1,5 +1,8 @@
 # Dungeon World Agent Skill
 
+[![CI Status](https://raw.githubusercontent.com/NimrodXMods/dungeon-world-skill/refs/heads/badges/status_main.svg)](https://github.com/NimrodXMods/dungeon-world-skill/actions/workflows/validate.yml)
+[![Release](https://raw.githubusercontent.com/NimrodXMods/dungeon-world-skill/refs/heads/badges/release.svg)](https://github.com/NimrodXMods/dungeon-world-skill/releases/latest/download/dungeon-world-gm.zip)
+
 Have you ever wanted to _not_ be the GM, but nobody else around wanted to GM either? Well here's your solution!
 
 Have you ever just wanted some assistance with being a GM to keep the
@@ -73,7 +76,10 @@ First check the requirements below, but it should work with Anthropic, SpaceX AI
 or OpenAI's minimum subscription level services at the very least. (I'm unsure if
 free options from those providers will work though.)
 
-[Download the .zip file from releases here.](https://github.com/NimrodXMods/dungeon-world-skill/releases)
+[Download the latest skill `.zip` here](https://github.com/NimrodXMods/dungeon-world-skill/releases/latest/download/dungeon-world-gm.zip)
+(stable link; always the current non-prerelease asset). Versioned zips remain on
+the [releases page](https://github.com/NimrodXMods/dungeon-world-skill/releases)
+as well.
 
 Upload it to your agent of choice or install it according to your agent provider's
 skill installation procedure. It follows standard skill packaging conventions
