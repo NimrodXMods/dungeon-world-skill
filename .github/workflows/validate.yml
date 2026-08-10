@@ -24,7 +24,7 @@ jobs:
       - name: Validate skill
         run: python tools/validate_skill.py
 
-      # CLAUDE.md requires every skills/ edit to bump that skill's frontmatter.
+      # AGENTS.md requires every skills/ edit to bump that skill's frontmatter.
       # The base is the PR's target branch, or the previous tip on a push; both
       # skip cleanly when there is nothing to compare against.
       - name: Check skill version was bumped
