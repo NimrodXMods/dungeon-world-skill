@@ -482,7 +482,9 @@ def resolve_themes(lexicon, spec):
     unknown = [t for t in wanted if t not in themes]
     if unknown:
         sys.exit(
-            "error: unknown theme(s) %s. Known: %s"
+            "error: unknown theme(s) %s. Known: %s\n"
+            "  Pass --theme TAG (comma-separate to merge, e.g. --theme cavern,undead). "
+            "Run --list-themes for labels and word counts."
             % (", ".join(repr(u) for u in unknown), ", ".join(theme_names(lexicon)))
         )
 
@@ -1888,7 +1890,8 @@ def main():
     if args.setting_info is not None:
         if args.setting_info != "all" and args.setting_info not in book:
             sys.exit(
-                "error: unknown setting %r. Known: %s"
+                "error: unknown setting %r. Known: %s\n"
+                "Run with no arguments for descriptions."
                 % (args.setting_info, ", ".join(sorted(book)))
             )
         if args.setting is not None:
@@ -1960,7 +1963,10 @@ def main():
     else:
         count = args.random if args.random is not None else 1
         if count < 1:
-            sys.exit("error: --random must be at least 1")
+            sys.exit(
+                "error: --random must be at least 1 "
+                "(e.g. --random 3, or omit it for a single monster)."
+            )
         count = min(count, len(kept))
         chosen = random.sample(kept, k=count)
 
