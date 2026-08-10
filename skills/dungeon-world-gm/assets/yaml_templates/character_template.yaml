@@ -33,15 +33,45 @@ moves:
   starting: []
   advanced: []
 
-# Class-specific extras - only use what applies to the class
-class_specifics: {}
-  #signature_weapon: "" # Fighter
-  #domain: "" # Cleric
-  #deity: "" # Cleric/Paladin
-  #land: "" # Druid
-  #tell: "" # Druid
-  #animal_companion: {} # Ranger: {name, species, ferocity, cunning, armor, instinct, strengths: [], trainings: [], weaknesses: []}
-  #spellbook: [] # Wizard/Cleric - list of {name, level, prepared: true/false}
+# Class-specific extras - only use what applies to the class, then delete others. That is, delete unused keys after character creation.
+class_specifics:
+  barbarian_variant: "" # "Unencumbered, Unharmed" or "Full Plate And Packing Steel" - Barbarian
+  herculean_appetites: [] # Barbarian
+  signature_weapon: # fighter
+    base_type: "" # sword, axe, etc
+    range: "" # range tag like close, etc
+    enhancements: ["", ""]
+    look: ""
+  paladin_quest:
+    objective: "" # Paladin
+    boons: ["", ""]
+    vows: [""]
+  animal_companion: # Ranger
+    name: ""
+    species: ""
+    ferocity: 0
+    cunning: 0
+    armor: 0
+    instinct: 0
+    strengths: []
+    trainings: []
+    weaknesses: []
+  safe_poisons: [""] # Thief
+  deity: "" # Cleric/Paladin
+  domain: "" # Cleric
+  precept: "" # Cleric
+  petition: "" # Cleric
+  land: [""] # Druid - can have two lands if Elf
+  tell: "" # Druid
+  # Clerics and Wizards: always have all of their class rotes/cantrips owned and prepared, so they do not need to be tracked here.
+  # Clerics: do not need to physically own spell documents to be able to prepare spells.
+  # Clerics: all permitted cleric spells are always available for preparation by clerics, but they can only prepare a limited number.
+  # Clerics: Use 'spellbook' to record which spells they have prepared at the moment even though they have no actual spellbook.
+  # Wizards: must physically own a spell (stored in their spellbook) before they can prepare it.
+  # Wizards: Use the spellbook list to keeps track of which spells the wizard actually owns, in addition to marking which ones are prepared right now.
+  # Wizards: Can own spells that they don't have prepared, and it is important to keep track of which ones they own. So do not delete a spell from their spellbook simple because it is not prepared.
+  # Clerics, Wizards, any spell user: If a spell is revoked, that means prepared now = false and it must be re-prepared using a downtime move to be used again.
+  spellbook: [{ name: "", level: 1, prepared: true }] # Even though clerics have no book of spells, use this to track which ones they have prepared.
 
 load: { current: 0, max: 0 }
 gear: []
