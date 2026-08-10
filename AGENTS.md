@@ -11,6 +11,20 @@ reaches a point where a commit makes sense, stop and tell the user, then wait fo
 This includes tags: pushing a `v*` tag triggers a public GitHub Release, so it is a
 commit-class action and needs the user's say-so.
 
+### After a PR merges
+
+This GitHub repo is configured to **delete the head branch automatically on merge**.
+That is intentional and safe here: GitHub keeps a restore/undelete path for the branch
+for some time afterward if something went wrong.
+
+When the user asks to clean up after a merge:
+
+1. `git checkout main` (or the default branch), then `git pull`.
+2. Delete the **local** feature branch (`git branch -d <branch>`).
+3. **Do not** try to delete the remote branch (`git push origin --delete …`), and do
+   **not** treat a missing `origin/<branch>` as an error — the remote is already gone.
+4. `git fetch --prune` is fine if stale remote-tracking refs linger.
+
 ## Editing a skill
 
 Any edit under `skills/` must also update that skill's `SKILL.md` frontmatter in the same

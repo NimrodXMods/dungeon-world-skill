@@ -8,6 +8,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 initiative — not after finishing a change, not at the end of a task, not "to be safe." When work
 reaches a point where a commit makes sense, stop and tell the user, then wait for them to ask.
 
+### After a PR merges
+
+The repo has GitHub **“Automatically delete head branches”** enabled: the remote feature
+branch is removed when the PR merges. That is intentional. GitHub still offers restore /
+undelete of a deleted branch for a period afterward, so this is not a permanent one-click
+loss of the ref.
+
+Post-merge cleanup agents should do when asked:
+
+1. Check out `main` (or the default branch) and `git pull`.
+2. Delete only the **local** feature branch (`git branch -d <name>`).
+3. **Do not** `git push origin --delete <name>` and **do not** flag a missing remote branch
+   as a failure — auto-delete already handled it. Optional: `git fetch --prune` to drop
+   stale remote-tracking refs.
+
+Keep this in sync with [AGENTS.md](AGENTS.md).
+
 ## What this repo is
 
 This repo is not an application — it is the source of a single distributable **Claude Skill**,
