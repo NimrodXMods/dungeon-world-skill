@@ -34,3 +34,53 @@ jobs:
 
       - name: Check the skill packages cleanly
         run: python tools/package_skill.py
+
+  # Publish SVG badges to the `badges` branch (not gh-pages). Only main pushes;
+  # PRs never write. Runs even when validate fails so CI Status can show FAIL.
+  badges:
+    name: Update badges
+    needs: validate
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Generate badge SVGs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: |
+          set -euo pipefail
+          mkdir -p badges
+
+          # badge-maker package; CLI binary is `badge`.
+          if [ "$VALIDATE_RESULT" = "success" ]; then
+            npx --yes -p badge-maker badge "CI Status" "PASS" green > badges/status_main.svg
+          else
+            npx --yes -p badge-maker badge "CI Status" "FAIL" red > badges/status_main.svg
+          fi
+
+          # Latest non-prerelease release tag (GitHub's /releases/latest semantics).
+          TAG=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name 2>/dev/null || true)
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            TAG="none"
+          fi
+          npx --yes -p badge-maker badge "Release" "${TAG}" blue > badges/release.svg
+
+      - name: Publish badges branch
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: badges
+          publish_dir: ./badges
+          # Orphan commit: the branch holds only badge SVGs, never the skill tree.
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: "chore: update CI badges"
