@@ -108,7 +108,7 @@ def main():
             problems.append(
                 "{}: {} file(s) changed but metadata.version is still {} - bump it "
                 "(major=major change, minor=new functionality, patch=fix), and set "
-                "metadata.last-modified-by-model plus metadata.updated if the date "
+                "metadata.last-assisting-model plus metadata.updated if the date "
                 "has moved on.\n"
                 "    changed: {}".format(skill, len(touched), new, sample)
             )

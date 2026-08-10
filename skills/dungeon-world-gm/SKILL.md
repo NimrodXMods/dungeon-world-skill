@@ -4,11 +4,11 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.17.0"
+  version: "0.18.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
-  last-modified-by-model: xAI Grok 4.5 (grok-4.5)
+  last-assisting-model: xAI Grok 4.5 (grok-4.5)
   updated: "2026-08-10"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
@@ -55,10 +55,23 @@ three possible states: start, main gameplay loop, end.
 
 ### Session Start
 
-Before starting a game session, one of the following things should happen. Ask the user which one they intend if they don't state up front.
+If the user invoked the skill with a request, then skip directly to the matching option.
+Otherwise, present each step using **[[elicitation]]**; ask the user which one they want.
 
-- **Resuming a Campaign:** The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
-- **Starting a New Campaign:** Read **[[fronts-and-worldbuilding]]** and also check **rulebook-digest/L0-index** for information on creating one or more fronts. To do this, ask the user some questions about what sort of world they want, what sort of campaign they want to play, how many players there will be, and anything else that is useful to write at least one front and set up the campaign scenario. Use `idea_gen.py` (see below) to help. Suggest a 'campaign slug' to identify the game, ask user to confirm or suggest new slug, and store decisions in the `<campaign_slug>_gmsecret.yaml` file (see below) as they are made. Ask the user if they'd like to maintain a running story based on the game (see **Writing `story.md`** below), the default answer is yes so assume yes unless otherwise stated. Then go through the **[[character-creation-checklist]]** if new characters need to be created or ask them to upload character sheets.
+What does the user want right now from the skill?
+
+| # | Option | Next |
+| --- | --- | --- |
+| 1 | **New campaign** | Go to **[[campaign-creation-checklist]]** |
+| 2 | **Resume** from a campaign save | Go to **Resuming a Campaign:** path below |
+| 3 | **GM Assistant** | Start **GM Assistant Mode** state described below |
+| 4 | **Rules / reference only** | Answer questions; do not start session state |
+
+Default: **none** — needs an explicit pick if unclear.
+
+#### Resuming a Campaign
+
+The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
 
 **`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run `python3 scripts/yamledit.pyz --help-llm` to get the full documentation for `yamledit.pyz` and perform on edit of the gmsecret file incrementing `session_number` +1 , then announce `Beginning session <new number>...`.
 
@@ -81,7 +94,7 @@ game state moves to the main gameplay loop.
 
 ### Main Gameplay Loop
 
-Immediately upon starting a session, read **[[gameplay-loop]]** for a brief reminder of the core gameplay loop. This file is intentionally kept short and can be reread as needed to fix context drift. The main things you need for moves, dice rolling, and such are detailed in further sections below.
+Immediately upon entering the main gameplay loop, read **[[gameplay-loop]]** for a brief reminder of the core gameplay loop. This file is intentionally kept short and can be reread as needed to fix context drift. The main things you need for moves, dice rolling, and such are detailed in further sections below.
 
 The loop repeats until the user (player or player(s)) decide to end the session with the "End of Session" move. Once that happens,
 switch to the session end state. This can be triggered by the person saying "end session", "let's end the session", etc.
@@ -92,6 +105,32 @@ The easiest place to end a session is during a "Make Camp" (move) or arriving at
 
 Read **[[session-end]]** when it's time to end a session. This file isn't needed until then, and reading it early will usually
 result in it being partially forgotten by session end time.
+
+### GM Assistant Mode
+
+**GM Assistant mode** is a second mode of operation for the skill where the
+user is GM and the agent assists them rather than running the game directly.
+Don't assume this "mode" applies unless the user requests it. If this mode is requested
+then expect that the details of what you are asked to do will need to be worked out
+ad hoc. Some possibilities are:
+
+- The agent keeps track of all data for user GM and Players, suggests all details of
+  setting and next actions, gets confirmation from user GM or is asked to recreate or
+  change based on GM (user) specifications. The agent may or may not roll some or all dice.
+- The agent keeps track of all data for GM and Players but GM decides all details of
+  setting and next actions. In this case the user (GM) has to give the agent info
+  about what is going on and what needs to be tracked, but may keep some details
+  in their head. The agent may or may not roll some or all the dice for everyone.
+- The agent keeps track of only GM data and players use their own character sheets. The
+  agent may or may not help with dice rolls, or may only roll dice for the GM but not players.
+- The agent only helps generate random parts of the campaign world and answers rule
+  questions but doesn't track campaign state other than static objects/settings.
+
+Use the above as guidelines to help ask questions to clarify what the agent should do if
+the user requests GM assistant mode. The exact responsibilities or gameplay loop are not
+formally defined by the skill. Assume the GM you are assisting may "loop" multiple times
+before getting back to you because they own the loop rather than you. They may sometimes tell
+you what's happening and other times significant time might go by before they communicate.
 
 ## Dice Rolling
 
@@ -117,8 +156,7 @@ priors-driven sameness that's noticeable to users even when the model itself can
 it. When in doubt, use `*_gen.py` scripts more rather than less.
 
 Review each script's output before using it, and re-run if it doesn't fit the situation -
-the first result is never mandatory. It's also fine to run a script a few times (~3) and
-keep whichever result fits best, or mix and match details from multiple outputs.
+the first result is never mandatory. It's also fine to mix and match details from multiple outputs.
 
 Available generator scripts and "trigger" situations for using them:
 
@@ -198,27 +236,6 @@ genuinely new field is fine but needs explicit flags as a safeguard.
 can't perform a desired editing function. Always store a report in memory when `yamledit.pyz`
 has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possible.
 
-## GM Assistant "Mode"
-
-**GM Assistant mode** (low priority, not yet in active use): a second mode where the
-user is GM and the agent assists rather than running the game directly. Details TBD -
-don't assume this "mode" applies unless the user requests it. If this mode is requested
-then expect that the details will need to be worked out ad hoc and the skill updated
-to reflect different variants of it. Some possibilities are:
-
-- The agent keeps track of all data for user GM and Players, suggests all details of
-  setting and next actions, gets confirmation from user GM or is asked to recreate or
-  change based on GM (user) specifications. The agent may or may not roll some or all dice.
-- The agent keeps track of all data for GM and Players but GM decides all details of
-  setting and next actions. In this case the user (GM) has to give the agent info
-  about what is going on and what needs to be tracked, but may keep some details
-  in their head. The agent may or may not roll some or all the dice for everyone.
-- The agent keeps track of only GM data and players use their own character sheets. The
-  agent may or may not help with dice rolls, or may only roll dice for the GM but not players.
-
-Use the above as guidelines to help ask questions to clarify what the agent should do if
-the user ever requests GM assistant mode.
-
 ## Reference Index
 
 - **[[dw-intro]]** - the generic "what is this / what is Dungeon World" answer, output verbatim on a no-argument or generic invocation (see First Contact section above). Not meant to be read during play otherwise.
@@ -235,6 +252,8 @@ the user ever requests GM assistant mode.
 - **[[treasure-and-monster-building]]** - for monsters prefer using `monster_gen.py`, which now returns official rulebook monsters by default (complete with description, instinct and moves). Use this [[treasure-and-monster-building]] guide when fiction needs special custom monsters and a full description of the options is needed: it helps with the modular "pick from each category" builder behind custom `monster_gen.py` for improvising an enemy that isn't in the bestiary. Also read this if you need to generate from the treasure roll table; make sure there's always some treasure for defeating monsters and it's occasionally something good. Sometimes random generation from `monster_gen.py` may be lacking sufficient treasure.
 - **[[weather]]** - only read this if bad weather is used as part of story or a GM move.
 - **[[hacking-and-conversion]]** - only read this for _writing custom moves_, building new classes, and converting non-DW adventures/monsters into Dungeon World terms (includes a Direct Conversion stat cheat-sheet).
+- **[[elicitation]]** - **Never read this unless** Session Start / a checklist / another procedure instructs you to present structured multi-choice, **or** you have a strong suspicion a procedure was not followed and you are auditing setup or sheet data for missed options. How to offer harness-agnostic multi-choice in chat (not product-specific ask tools).
+- **[[campaign-creation-checklist]]** - **Never read this unless** Session Start (or equivalent) routes you into a **new campaign**, **or** you have a strong suspicion campaign setup was skipped or incomplete and you are auditing gmsecret / setup state for mistakes. Ordered new-campaign questions and defaults.
 - **[[character-creation-checklist]]** - only when creating new PCs (or rebuilding a sheet): universal chargen order plus per-class decisions for the 8 core classes, Barbarian, and Immolator. Use with the character yaml template; full move text still lives in the rulebook digest (core) or **extra-classes/** (Barbarian/Immolator).
 - **rulebook-digest** - a hierarchical (L0/L1/L2) digest of the full 410-page core rulebook, built as an `advanced-digest`. `L0-index.md` tracks chapter-by-chapter coverage; `L1-digest.md` holds one paragraph per section plus ~60 atomic L2 facts (`F-NNN`) and full catalogs for anything genuinely precise a paraphrase would lose - including the complete bestiary (9 chapters, ~130 monsters/NPCs), all 8 playbooks, and the full Wizard/Cleric spell lists. Several durable findings were also folded directly into the other reference files above (corrections are noted inline where that happened) - read `L0-index.md` first for an overview of what's where. For anything that would require L3, use the `[xml:...]` anchor on the relevant `L1-digest.md` section header with `scripts/rulebook.py`, as described below.
 - **rulebook-digest/source/xml/** - the complete core rulebook text (~100k words) as the authors' own published XML, one file per chapter. **Never read these files directly** - they are markup, and a chapter is thousands of words. Read them only through `scripts/rulebook.py`, which addresses the book by ANCHOR (`moves#basic-moves/hack-and-slash`) rather than by page: `--outline` to find an anchor, `--anchor` to read one section, `--search` to find wording whose location you don't know. Run `rulebook.py --help-llm` for the full interface. Every section header in `L1-digest.md` carries the `[xml:...]` anchor for its own L3 source.
@@ -320,9 +339,3 @@ can be reconstructed from past conversation history (`conversation_search` /
 alone — the recaps are usually too compressed to produce real prose, while
 the actual transcripts have the scene-level detail needed for a readable
 narrative. This only needs to happen once per campaign.
-
-## Possible Future Additions
-
-- GM Assistant mode workflow/file scheme (see above) - not yet designed, lower priority.
-- Eventual HTML artifact to render a character sheet YAML nicely - explicitly deferred by the user for now.
-- Maybe some images or image generation for dice rolls, but depends on the UI front end ability to display which seems uncertain right now.

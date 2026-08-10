@@ -13,11 +13,43 @@ Immolator move text isn't in the digest; those are in `extra-classes/*`.
 This checklist only tracks *what to decide*, not full move
 wording — confirm exact move text against those sources when it matters.
 
+How to *present* closed menus to the user: **[[elicitation]]** (on demand).
+
+---
+
+## How to run this checklist
+
+1. Walk **Part 1 in order**. After **Class** is chosen, open that class's
+   section in Part 2 and use it for every later closed list (race, look,
+   alignment, gear, embedded starting-move choices).
+2. For every step with a **closed option set** in Part 2, **list the options
+   before asking** — never "what race?" without the class's race list, never
+   "what alignment?" without the class's alignments. See [[elicitation]].
+3. **Locked choices** (e.g. Paladin is Human only): state the lock and record
+   it; do not pretend there is a free pick.
+4. **Multi-select** steps (Fighter signature-weapon enhancements, Barbarian
+   appetites, gear "choose two", etc.): say how many to pick and list the full
+   set in one elicitation.
+5. **Free-text** steps (name, custom look entries, deity name, companion name):
+   open question; optional 2–3 examples from the class lists are fine without
+   forcing them.
+6. Do **not advance** past starting moves or gear while an embedded sub-choice
+   is still TBD (spellbook picks, Signature Weapon build, Animal Companion
+   block, poison choice, etc.).
+7. Homebrew / not on the list is fine — say so when offering menus ("or name
+   something else and we'll adapt").
+8. Speed mode: if the user wants to go fast, you may batch several *independent*
+   Part 2 picks for the same class in one message; keep branching picks
+   (class → race) sequential.
+9. When the sheet is complete, write/update the character YAML via the template
+   and `yamledit` as usual; then return to campaign/session flow.
+
 ---
 
 ## Part 1: Universal Questions (Every Class)
 
 These apply no matter what class the player picks. Ask them in this order.
+When a step has options in Part 2, surface those options with [[elicitation]].
 
 1. [ ] **Class.** Which class? (If two players want the same class in a party
    game, they should compromise — DW default is one of each.)
@@ -30,10 +62,15 @@ These apply no matter what class the player picks. Ask them in this order.
    hair, body, clothing — categories vary by class, see Part 2). Custom
    entries are always fine.
 5. [ ] **Stats.** Assign 16(+2), 15(+1), 13(+1), 12(+0), 9(+0), 8(–1) to the six
-   stats, one score per stat. Ask which starting move or basic move excites
-   them most, put the 16 there, and work down the list from what supports it.
-   Part 2 gives a stat-priority hint per class as a starting point for this
-   conversation, not a rule.
+   stats, one score per stat. Use separate elicitations to ask them what stat they
+   want to assign each score to starting with 16 and moving down. Before and while
+   doing this, advise them regarding what Part 2 gives for a stat-priority hint
+   and what sort of moves are assisted by each stat bonus modifier. For example,
+   they will want to know that spellcasting for a wizard will get a +2 by assigning
+   the 16 to INT, or that assigning the 16 to STR will give +2 to hack and slash.
+   Same for other standard and class moves. At the very end, print out all of their
+   selections along with example moves that get each modifier and ask if they want
+   to make any changes.
 6. [ ] **Max HP.** Class base HP + Constitution score. Record it, start at max.
 7. [ ] **Damage die.** Note the class's base damage die.
 8. [ ] **Starting moves.** Walk the starting-moves list for the class (Part 2).
