@@ -15,7 +15,7 @@ creativity.
 
 ## What is Dungeon World?
 
-Dungeon World is a TTRPG (table top role-playing game) where a small group tells
+[Dungeon World](https://www.dungeon-world.com/about/) is a TTRPG (table top role-playing game) where a small group tells
 a shared fantasy story together, guided by simple rules that stay out of the way
 until they matter. Normally it's played around a table with one person as GM --
 describing the world, playing every NPC and monster, posing problems -- while
