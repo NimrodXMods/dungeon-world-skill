@@ -71,9 +71,9 @@ What does the user want right now from the skill?
 
 | # | Option | Next |
 | --- | --- | --- |
-| 1 | **New campaign** | Go to **New Campaign** |
-| 2 | **Resume** from a campaign save | Go to **Resuming a Campaign:** path below |
-| 3 | **GM Assistant** | Start **GM Assistant Mode** state described below |
+| 1 | **New campaign** | [Phase 1a Create](SKILL-1a-create.md) |
+| 2 | **Resume** from a campaign save | [Phase 1b Resume](SKILL-1b-resume.md) |
+| 3 | **GM Assistant** | [Phase 4 GM Assistant](SKILL-4-gm-assistant.md) |
 | 4 | **Rules / reference only** | Answer questions; do not start session state |
 
 Default: **none** — needs an explicit pick if unclear.
@@ -84,7 +84,7 @@ To enter Create New Campaign state, read [Phase 1a Create](SKILL-1a-create.md) a
 
 #### Resuming a Campaign
 
-To enter Resume an Existing Campaign state, Read [Phase 1b Resume](SKILL-1a-resume.md) and continue there. Do not load this until/unless it is needed to continue.
+To enter Resume an Existing Campaign state, read [Phase 1b Resume](SKILL-1b-resume.md) and continue there. Do not load this until/unless it is needed to continue.
 
 ### Main Gameplay Loop
 
@@ -287,29 +287,29 @@ has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possi
 
 ## Reference Index
 
-- **[[dw-intro]]** - the generic "what is this / what is Dungeon World" answer, output verbatim on a no-argument or generic invocation (see First Contact section above). Not meant to be read during play otherwise.
-- **[[core-moves]]** - always read - every basic/special player move, stat mod table, debilities, encumbrance, XP, damage-by-severity, range tags. Start here for "what move is this?" or "what happens on a 7-9 for move X?"
-- **[[llm-patches]]** - Contains corrective prose and rule clarifications for models.
-- **[[gm-agenda-principles-moves]]** - always read - GM agenda/principles, the GM move list, soft vs. hard moves, dungeon-level moves, scene framing/ending, spotlight management, general GMing tips. Start here for "what do I do right now as GM?"
-- **[[combat-and-custom-moves]]** - defer reading until combat occurs or a custom move is needed. How DW combat actually flows without initiative, multi-enemy math, adjusting difficulty live, running a swarm, and a checklist for writing good custom moves.
-- **[[fronts-and-worldbuilding]]** - Fronts/Dangers/Portents, danger types with their GM move lists and impending dooms, "draw maps leave blanks," a full worked sample Front, and the six-angle (who/what/where/when/why/how) worldbuilding question technique.
-- **[[npc-tools]]** - Use this for: NPC creation questions, quest hooks, hireling stats, steading tags + quick-build recipes, instincts/knacks lists, name lists by ancestry, a steading name generator, and per-class background questions.
-- **[[follower-moves]]** - Perilous Wilds' "Lead the Way" alternative follower system (Recruit, Order Follower, Do Their Thing, Call for Assistance, Pay Up, Watch Them Go) with Quality/Loyalty/Cost stats and the full follower-tags glossary, replacing [[npc-tools]]'s basic hireling rules if you want the fuller system. Follower _creation_ (stat generation) isn't in this file - it's `npc_gen.py --follower` instead, since that reuses the script's existing name lists.
-- **[[equipment-and-services]]** - weapons, armor, gear, poisons, tags, services, transport, land prices, bribes, gifts, plus specific consumable in-use effects.
-- **[[magic-items]]** - ~30 named official magic items with unique mechanical effects, ready to hand out or use as homebrew templates.
-- **[[tag-reference]]** - the official complete alphabetical tag glossary (equipment + monster + steading tags in one place) for fast lookup.
-- **[[treasure-and-monster-building]]** - for monsters prefer using `monster_gen.py`, which now returns official rulebook monsters by default (complete with description, instinct and moves). Use this [[treasure-and-monster-building]] guide when fiction needs special custom monsters and a full description of the options is needed: it helps with the modular "pick from each category" builder behind custom `monster_gen.py` for improvising an enemy that isn't in the bestiary. Also read this if you need to generate from the treasure roll table; make sure there's always some treasure for defeating monsters and it's occasionally something good. Sometimes random generation from `monster_gen.py` may be lacking sufficient treasure.
-- **[[weather]]** - only read this if bad weather is used as part of story or a GM move.
-- **[[hacking-and-conversion]]** - only read this for _writing custom moves_, building new classes, and converting non-DW adventures/monsters into Dungeon World terms (includes a Direct Conversion stat cheat-sheet).
-- **[[elicitation]]** - **Never read this unless** Session Start / a checklist / another procedure instructs you to present structured multi-choice, **or** you have a strong suspicion a procedure was not followed and you are auditing setup or sheet data for missed options. How to offer harness-agnostic multi-choice in chat (not product-specific ask tools).
-- **[[campaign-creation-checklist]]** - **Never read this unless** Session Start (or equivalent) routes you into a **new campaign**, **or** you have a strong suspicion campaign setup was skipped or incomplete and you are auditing gmsecret / setup state for mistakes. Ordered new-campaign questions and defaults.
-- **[[character-creation-checklist]]** - only when creating new PCs (or rebuilding a sheet): universal chargen order plus per-class decisions for the 8 core classes, Barbarian, and Immolator. Use with the character yaml template; full move text still lives in the rulebook digest (core) or **extra-classes/** (Barbarian/Immolator).
+- **[dw-intro](references/dw-intro.md)** - the generic "what is this / what is Dungeon World" answer, output verbatim on a no-argument or generic invocation (see First Contact section above). Not meant to be read during play otherwise.
+- **[core-moves](references/core-moves.md)** - read when entering main loop ([SKILL-2-main-loop.md](SKILL-2-main-loop.md)): every basic/special player move, stat mod table, debilities, encumbrance, XP, damage-by-severity, range tags. Start here for "what move is this?" or "what happens on a 7-9 for move X?"
+- **[llm-patches](references/llm-patches.md)** - read when entering main loop: rule clarifications that models get wrong (open threads/deeds, fronts always-exist, ranger companion). Voice/prose rules live in SKILL.md "How to Write the Game" (always loaded).
+- **[gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)** - read when entering main loop: GM agenda/principles, the GM move list, soft vs. hard moves, dungeon-level moves, scene framing/ending, spotlight management. Start here for "what do I do right now as GM?"
+- **[combat-and-custom-moves](references/combat-and-custom-moves.md)** - defer reading until combat occurs or a custom move is needed. How DW combat actually flows without initiative, multi-enemy math, adjusting difficulty live, running a swarm, and a checklist for writing good custom moves.
+- **[fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)** - Fronts/Dangers/Portents, danger types with their GM move lists and impending dooms, "draw maps leave blanks," a full worked sample Front, and the six-angle (who/what/where/when/why/how) worldbuilding question technique.
+- **[npc-tools](references/npc-tools.md)** - Use this for: NPC creation questions, quest hooks, hireling stats, steading tags + quick-build recipes, instincts/knacks lists, name lists by ancestry, a steading name generator, and per-class background questions.
+- **[follower-moves](references/follower-moves.md)** - Perilous Wilds' "Lead the Way" alternative follower system (Recruit, Order Follower, Do Their Thing, Call for Assistance, Pay Up, Watch Them Go) with Quality/Loyalty/Cost stats and the full follower-tags glossary, replacing [npc-tools](references/npc-tools.md)'s basic hireling rules if you want the fuller system. Follower _creation_ (stat generation) isn't in this file - it's `npc_gen.py --follower` instead, since that reuses the script's existing name lists.
+- **[equipment-and-services](references/equipment-and-services.md)** - weapons, armor, gear, poisons, tags, services, transport, land prices, bribes, gifts, plus specific consumable in-use effects.
+- **[magic-items](references/magic-items.md)** - ~30 named official magic items with unique mechanical effects, ready to hand out or use as homebrew templates.
+- **[tag-reference](references/tag-reference.md)** - the official complete alphabetical tag glossary (equipment + monster + steading tags in one place) for fast lookup.
+- **[treasure-and-monster-building](references/treasure-and-monster-building.md)** - for monsters prefer using `monster_gen.py`, which now returns official rulebook monsters by default (complete with description, instinct and moves). Use this [treasure-and-monster-building](references/treasure-and-monster-building.md) guide when fiction needs special custom monsters and a full description of the options is needed: it helps with the modular "pick from each category" builder behind custom `monster_gen.py` for improvising an enemy that isn't in the bestiary. Also read this if you need to generate from the treasure roll table; make sure there's always some treasure for defeating monsters and it's occasionally something good. Sometimes random generation from `monster_gen.py` may be lacking sufficient treasure.
+- **[weather](references/weather.md)** - only read this if bad weather is used as part of story or a GM move.
+- **[hacking-and-conversion](references/hacking-and-conversion.md)** - only read this for _writing custom moves_, building new classes, and converting non-DW adventures/monsters into Dungeon World terms (includes a Direct Conversion stat cheat-sheet).
+- **[elicitation](references/elicitation.md)** - **Never read this unless** Session Start / a checklist / another procedure instructs you to present structured multi-choice, **or** you have a strong suspicion a procedure was not followed and you are auditing setup or sheet data for missed options. How to offer harness-agnostic multi-choice in chat (not product-specific ask tools).
+- **[campaign-creation-checklist](references/campaign-creation-checklist.md)** - **Never read this unless** Session Start (or equivalent) routes you into a **new campaign**, **or** you have a strong suspicion campaign setup was skipped or incomplete and you are auditing gmsecret / setup state for mistakes. Ordered new-campaign questions and defaults.
+- **[character-creation-checklist](references/character-creation-checklist.md)** - only when creating new PCs (or rebuilding a sheet): universal chargen order plus per-class decisions for the 8 core classes, Barbarian, and Immolator. Use with the character yaml template; full move text still lives in the rulebook digest (core) or **extra-classes/** (Barbarian/Immolator).
 - **rulebook-digest** - a hierarchical (L0/L1/L2) digest of the full 410-page core rulebook, built as an `advanced-digest`. `L0-index.md` tracks chapter-by-chapter coverage; `L1-digest.md` holds one paragraph per section plus ~60 atomic L2 facts (`F-NNN`) and full catalogs for anything genuinely precise a paraphrase would lose - including the complete bestiary (9 chapters, ~130 monsters/NPCs), all 8 playbooks, and the full Wizard/Cleric spell lists. Several durable findings were also folded directly into the other reference files above (corrections are noted inline where that happened) - read `L0-index.md` first for an overview of what's where. For anything that would require L3, use the `[xml:...]` anchor on the relevant `L1-digest.md` section header with `scripts/rulebook.py`, as described below.
 - **rulebook-digest/source/xml/** - the complete core rulebook text (~100k words) as the authors' own published XML, one file per chapter. **Never read these files directly** - they are markup, and a chapter is thousands of words. Read them only through `scripts/rulebook.py`, which addresses the book by ANCHOR (`moves#basic-moves/hack-and-slash`) rather than by page: `--outline` to find an anchor, `--anchor` to read one section, `--search` to find wording whose location you don't know. Run `rulebook.py --help-llm` for the full interface. Every section header in `L1-digest.md` carries the `[xml:...]` anchor for its own L3 source.
   - The `(pNN-NN)` page ranges throughout `L0-index.md` and `L1-digest.md` are **not** a retrieval mechanism - nothing resolves them. They exist so you can tell a user where to look in their printed 1st-edition book ("that's Hack and Slash, around p60"). Treat them as an approximate courtesy pointer, not an authoritative citation, and never try to look anything up by page.
-  - One gap: the **Tag Reference** appendix is print-only and absent from the XML. [[tag-reference]] is the authority for it; there is nothing to re-fetch.
+  - One gap: the **Tag Reference** appendix is print-only and absent from the XML. [tag-reference](references/tag-reference.md) is the authority for it; there is nothing to re-fetch.
 - **extra-classes/** - this directory contains extra add-on classes. It can be ignored unless a character is of a class that is not in the rulebook. Otherwise the non-core class should have a document in this directory of the form `classname.md`.
-- **[[ATTRIBUTION.md]]** - never read this unless user asks about authors, license, copyright, or attribution of the material. All of this is moved to this file so that it doesn't fill up context for no reason. It contains no game mechanics.
+- **[ATTRIBUTION](references/ATTRIBUTION.md)** - never read this unless user asks about authors, license, copyright, or attribution of the material. All of this is moved to this file so that it doesn't fill up context for no reason. It contains no game mechanics.
 
 ## `advanced-digest` Retrieval for **rulebook-digest**
 

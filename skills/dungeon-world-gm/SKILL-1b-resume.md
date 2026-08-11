@@ -39,4 +39,4 @@ When you have verified that the session has started, ensure you have read `hando
 ## Transition Game State to Main Loop
 
 Once all the session start details are resolved, the game state moves to the
-main gameplay loop. Enter the **Main Gameplay Loop**.
+main gameplay loop. Enter via [SKILL-2-main-loop.md](SKILL-2-main-loop.md).

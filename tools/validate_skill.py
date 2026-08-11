@@ -2,10 +2,10 @@
 """Validate the dungeon-world-gm skill.
 
 Most of what makes this skill correct is convention rather than syntax: a
-[[wikilink]] that resolves, a reference file that actually appears in SKILL.md's
-index (one that doesn't is invisible at runtime), a generator that still answers
---help-llm, a template that still satisfies its schema. Nothing about those
-fails loudly on its own, so they are checked here.
+Markdown skill-root link that resolves, a reference file that actually appears
+in SKILL.md's index (one that doesn't is invisible at runtime), a generator that
+still answers --help-llm, a template that still satisfies its schema. Nothing
+about those fails loudly on its own, so they are checked here.
 
 No pip dependencies, by design. The vendored yamledit.pyz already bundles
 ruamel.yaml and fastjsonschema, so this script borrows them off its sys.path -
@@ -95,7 +95,10 @@ FORBIDDEN_TRACKED = [
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Legacy Obsidian-style; not part of Agent Skills — fail if any remain.
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
+# Agent Skills file refs: skill-root-relative Markdown links to .md paths.
+MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+\.md)(?:#[^)]*)?\)")
 
 # The vendored rulebook text: 24 chapters + appendices/ (4) + monster_settings/
 # (9). A short count means a partial copy, which would silently break L3.
@@ -199,37 +202,72 @@ def check_frontmatter(yaml_mod):
     return version
 
 
-def check_wikilinks():
-    """A reference nobody links to is a reference the model never opens."""
-    docs = [SKILL_DIR / "SKILL.md"] + sorted(REFERENCES.glob("*.md"))
-    available = {path.stem for path in REFERENCES.glob("*.md")}
-    linked = set()
-    spellings = {}
+def skill_md_docs():
+    """Markdown under the skill tree that participates in the link graph.
+
+    Excludes vendored rulebook XML and non-doc trees. Includes SKILL.md,
+    SKILL-*.md procedure packs, and references/**/*.md (including the digest).
+    """
+    docs = []
+    for path in SKILL_DIR.rglob("*.md"):
+        s = str(path).replace("\\", "/")
+        if "/source/xml/" in s or "/__pycache__/" in s:
+            continue
+        docs.append(path)
+    return sorted(docs)
+
+
+def check_skill_links():
+    """Skill-root Markdown links must resolve; reference files must be linked."""
+    docs = skill_md_docs()
+    available_refs = {path.stem for path in REFERENCES.glob("*.md")}
+    linked_refs = set()
 
     for doc in docs:
-        for lineno, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+        text = doc.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
             for raw in WIKILINK.findall(line):
-                target = raw[:-3] if raw.endswith(".md") else raw
-                linked.add(target)
-                spellings.setdefault(target, set()).add(raw)
-                if target not in available:
+                fail(
+                    "{}:{}".format(rel(doc), lineno),
+                    "legacy wikilink [[{}]] — use skill-root Markdown "
+                    "[label](path/from/skill-root.md) instead".format(raw),
+                )
+            for href in MD_LINK.findall(line):
+                # strip optional query-ish noise; keep path only
+                href = href.strip().split()[0].rstrip(")")
+                # External URLs are not skill-root paths
+                if href.startswith(("http://", "https://", "mailto:")):
+                    continue
+                # skill-root relative (Agent Skills convention)
+                target = (SKILL_DIR / href).resolve()
+                try:
+                    target.relative_to(SKILL_DIR.resolve())
+                except ValueError:
                     fail(
                         "{}:{}".format(rel(doc), lineno),
-                        "[[{}]] does not resolve to references/{}.md".format(raw, target),
+                        "link escapes skill root: ({})".format(href),
                     )
+                    continue
+                if not target.is_file():
+                    fail(
+                        "{}:{}".format(rel(doc), lineno),
+                        "broken link ({}) — no file at skill-root path".format(href),
+                    )
+                    continue
+                # orphan tracking: top-level references/*.md only
+                try:
+                    rel_to_refs = target.relative_to(REFERENCES.resolve())
+                except ValueError:
+                    continue
+                if len(rel_to_refs.parts) == 1 and rel_to_refs.suffix == ".md":
+                    linked_refs.add(rel_to_refs.stem)
 
-    for orphan in sorted(available - linked):
+    for orphan in sorted(available_refs - linked_refs):
         fail(
             "references/{}.md".format(orphan),
-            "is never linked from SKILL.md or another reference - it will not be read at runtime",
+            "is never linked from SKILL.md, SKILL-*.md, or another skill markdown "
+            "file - it will not be read at runtime",
         )
-
-    for target, forms in sorted(spellings.items()):
-        if len(forms) > 1:
-            warn(
-                "references/{}.md".format(target),
-                "linked inconsistently as {}".format(", ".join(sorted("[[%s]]" % f for f in forms))),
-            )
 
 
 def run(*args, stdin=None, env=None):
@@ -909,7 +947,7 @@ def main(argv=None):
         return 1
 
     check_frontmatter(yaml_mod)
-    check_wikilinks()
+    check_skill_links()
     check_scripts()
     check_no_external_imports()
     check_determinism()

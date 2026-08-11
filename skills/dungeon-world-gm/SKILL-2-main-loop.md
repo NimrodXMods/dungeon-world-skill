@@ -14,10 +14,10 @@ To increment the session number, run `python3 scripts/yamledit.pyz --help-llm` t
 
 These documents are needed for this state. Read them all now.
 
-- **[[gameplay-loop]]** for a brief reminder of the core gameplay loop. This file is intentionally kept short and can be reread as needed to fix context drift.
-- **[[core-moves]]**
-- **[[gm-agenda-principles-moves]]**
-- **[[llm-patches]]** - rule clarifications. Suggestion additions here if unclear rules are encountered.
+- [gameplay-loop](references/gameplay-loop.md) — brief core loop; reread on drift
+- [core-moves](references/core-moves.md)
+- [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)
+- [llm-patches](references/llm-patches.md) — rule clarifications (not prose voice; that is in SKILL.md)
 
 Other references should be read only as needed.
 
@@ -91,5 +91,5 @@ narrative. This only needs to happen once per campaign.
 ## Begin and Repeat the Main Loop
 
 The loop repeats until the user (player or player(s)) decide to end the session with
-the "End of Session" move. Once that happens, **enter the End of Session state** which
-can be triggered by the person saying "end session", "let's end the session", etc.
+the "End of Session" move. Once that happens, enter [SKILL-3-end-session.md](SKILL-3-end-session.md)
+(triggered by "end session", "let's end the session", etc.).

@@ -1,3 +1,4 @@
+# Phase 4: GM Assistant Mode
 
 **GM Assistant mode** is a second mode of operation for the skill where the
 user is GM and the agent assists them rather than running the game directly.

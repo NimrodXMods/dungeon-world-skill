@@ -1,7 +1,7 @@
 # Campaign Creation Checklist
 
 Purpose: ordered setup for a **new** campaign (or clarifying intent at session
-start). Present each step using **[[elicitation]]** — enumerate options, state
+start). Present each step using **[elicitation](references/elicitation.md)** — enumerate options, state
 defaults, allow custom answers where noted.
 
 Read **on demand** at Session Start when starting new (or when intent is
@@ -13,12 +13,12 @@ unclear). Skip when resuming a loaded campaign zip unless re-confirming a field.
 
 1. Work steps **in order**. Do not skip a step silently.
 2. For every step with a closed set, **list the options** before asking
-   ([[elicitation]]).
+   ([elicitation](references/elicitation.md)).
 3. Apply defaults only when the user skips and a default is stated — and **say**
    that you applied it.
 4. Independent early fields (players + voice + story log) may batch into one
    multi-field message; branching steps stay one-at-a-time.
-5. After setup, hand off to **[[character-creation-checklist]]** or sheet upload.
+5. After setup, hand off to **[character-creation-checklist](references/character-creation-checklist.md)** or sheet upload.
 
 ---
 
@@ -33,7 +33,7 @@ What does the user want right now? (skip if already clearly answered)
 | 1 | **New campaign** | Continue this checklist |
 | 2 | **Resume** from a campaign save zip | enter **Resuming a Campaign** state — leave this checklist |
 | 3 | **GM Assistant** | enter **GM Assistant Mode** |
-| 4 | **Rules / reference only** | enter **GM Assistant Mode** and standby to answer questions - leave this checklist and do not start session state |
+| 4 | **Rules / reference only** | Answer questions; leave this checklist; do not start session state |
 
 Default: **none** — needs an explicit pick if unclear.
 
@@ -48,11 +48,11 @@ Kind: number + short free text. No forced menu beyond clarifying solo vs party.
 ### 3. [ ] Voice (`style_voice`)
 
 Prose register for GM narration. **Option labels and full descriptions live in
-[[llm-patches]]** ("How to Write the Game") — do not invent a fourth house style
+[SKILL.md](SKILL.md)** ("How to Write the Game") — do not invent a fourth house style
 without the user asking.
 
 Describe each style in one sentence and ask the user which style is preferred when starting a new campaign.
-Present using **[[elicitation]]** as single-select (summaries ok; point at llm-patches if they want detail):
+Present using **[elicitation](references/elicitation.md)** as single-select (summaries ok; point at SKILL.md if they want detail):
 
 1. **Dungeon World Pulpy** (default)
 2. **Grim & Uncouth**
@@ -69,7 +69,7 @@ What kind of world / campaign do they want?
 | --- | --- | --- |
 | 1 | **I have a premise** | Free text; take notes; build fronts to match |
 | 2 | **Surprise me** | Use `idea_gen.py` / `region_gen.py` / etc.; invent at least one front without spoiling GM-secret detail |
-| 3 | **Open world, light preferences** | Still create ≥1 front (see [[llm-patches]] Fronts note); preferences optional |
+| 3 | **Open world, light preferences** | Still create ≥1 front (see [llm-patches](references/llm-patches.md) Fronts note and [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)); preferences optional |
 
 Default: none required if they already stated a premise in chat — record it and
 mark this done.
@@ -89,7 +89,7 @@ File: `<slug>_gmsecret.yaml`.
 
 | # | Option |
 | --- | --- |
-| 1 | **Create new** via [[character-creation-checklist]] |
+| 1 | **Create new** via [character-creation-checklist](references/character-creation-checklist.md) |
 | 2 | **Upload** existing character sheet YAML(s) |
 | 3 | **Mix** — some new, some upload |
 
@@ -100,8 +100,8 @@ session truly ready to play.
 
 Not a player menu. Before play:
 
-- Ensure **at least one front** exists on the gmsecret ([[llm-patches]],
-  [[fronts-and-worldbuilding]]).
+- Ensure **at least one front** exists on the gmsecret ([llm-patches](references/llm-patches.md),
+  [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)).
 - Use generators when inventing; keep spoilers out of player-facing text.
 - Optional: lightly name the starting region/steading via `region_gen.py` /
   `steading_gen.py` if fiction needs a place to stand.
@@ -132,8 +132,9 @@ Only when:
 - At least one character sheet is in play (created or uploaded)
 - Session-start always-read refs are loaded
 
-are all met do you enter the **Main Gameplay Loop**. Do not narrate
-"session begins" until session-number rules are satisfied.
+are all met do you enter the **Main Gameplay Loop** via
+[SKILL-2-main-loop.md](SKILL-2-main-loop.md). Do not narrate "session begins"
+until session-number rules are satisfied.
 
 ---
 
@@ -142,5 +143,5 @@ are all met do you enter the **Main Gameplay Loop**. Do not narrate
 - Keep field names aligned with `gmsecret` template/schema.
 - Add steps here when new campaign-level toggles appear; do not bury them only
   in SKILL.md prose.
-- Presentation rules stay in [[elicitation]]; this file owns **which** questions
+- Presentation rules stay in [elicitation](references/elicitation.md); this file owns **which** questions
   and **what** options/defaults.

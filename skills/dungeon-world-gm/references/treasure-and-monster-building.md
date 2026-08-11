@@ -68,7 +68,7 @@ Pick one from each relevant category - no need for a full pre-written stat block
 - Abhors violence: +disadvantage (roll twice, take worse)
 - Descriptive tags as needed: Stealthy, Organized, Intelligent, Terrifying
 
-## Debilities (reminder - full list in [[core-moves]])
+## Debilities (reminder - full list in [core-moves](references/core-moves.md))
 
 Weak/Shaky/Sick/Stunned/Confused/Scarred - tied to STR/DEX/CON/INT/WIS/CHA respectively.
 

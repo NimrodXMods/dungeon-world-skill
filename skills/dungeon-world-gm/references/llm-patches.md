@@ -1,6 +1,9 @@
 # LLM "Patches" File
 
-This file contains some clarification of rules that were confusing to some models and other attempts to address imaginary situations that can be confusing to models. It should always be read when the skill is first triggered as stated in `SKILL.md`.
+This file contains rule clarifications that models often get wrong. Read it when
+entering the main gameplay loop ([SKILL-2-main-loop.md](SKILL-2-main-loop.md)),
+not on every skill load. Prose register / "How to Write the Game" lives in
+[SKILL.md](SKILL.md) (always loaded).
 
 ## Rule Clarifications
 

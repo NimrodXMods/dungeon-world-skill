@@ -58,5 +58,5 @@ this, treat it as a live reminder to hold the line going forward, not just a one
 
 ## See Also
 
-Read **[[gm-agenda-principles-moves]]** for the full agenda/principles/move list - only reread if necessary.
-Only read the End of Session instructions when it's time to end a session because it isn't needed until then.
+Read [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md) for the full agenda/principles/move list - only reread if necessary.
+Only read [SKILL-3-end-session.md](SKILL-3-end-session.md) when it's time to end a session.

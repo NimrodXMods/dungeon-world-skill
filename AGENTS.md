@@ -54,11 +54,11 @@ python tools/validate_skill.py
 python tools/check_version_bump.py --base origin/main
 ```
 
-The first catches the repo's otherwise-unenforceable conventions (broken wikilinks, orphaned
-reference files, scripts that lost `--help-llm`, templates that drifted from their schemas,
-third-party imports that won't exist in the sandbox). The second catches a skill edit that
-forgot its frontmatter bump. Both are described in more detail under
-[CI and releasing](#ci-and-releasing).
+The first catches the repo's otherwise-unenforceable conventions (broken skill-root
+Markdown links, leftover `[[wikilinks]]`, orphaned reference files, scripts that lost
+`--help-llm`, templates that drifted from their schemas, third-party imports that won't
+exist in the sandbox). The second catches a skill edit that forgot its frontmatter bump.
+Both are described in more detail under [CI and releasing](#ci-and-releasing).
 
 ## What this repo is
 
@@ -77,9 +77,13 @@ context-budget discipline.
   machine (Session Start → Main Gameplay Loop → Session End), which reference files to read when, and
   the rules for calling every script. **Any change to a script's interface, a reference file's name, or
   the file-state scheme must be mirrored in `SKILL.md`** — the model has no other index.
-- `references/*.md` — topic files, cross-linked as `[[filename-without-extension]]`. Each is listed in
-  SKILL.md's "Reference Index" with an explicit read-eagerly / read-on-demand note. Preserve that
-  distinction when adding files; a new reference that isn't in the index is invisible at runtime.
+- `references/*.md` — topic files. Cross-link with **skill-root-relative Markdown links**
+  (Agent Skills style), e.g. `[core-moves](references/core-moves.md)`, not Obsidian
+  `[[wikilinks]]` (those do not render on GitHub and are not in the Agent Skills
+  standard). Procedure packs live next to `SKILL.md` as `SKILL-*.md` and are linked the
+  same way (`[Phase 2](SKILL-2-main-loop.md)`). Each topic is listed in SKILL.md's
+  Reference Index with a load note; a new reference that is never linked is invisible
+  at runtime (CI checks this).
 - `references/rulebook-digest/` — an `advanced-digest`: `L0-index.md` (coverage map) → `L1-digest.md`
   (one paragraph per section + atomic `F-NNN` facts) → `source/xml/` (the authors' own published
   rulebook XML, 37 files, ~700KB, vendored byte-identical from `Sagelt/Dungeon-World` at a pinned
@@ -92,8 +96,8 @@ context-budget discipline.
   - The `(pNN-NN)` page ranges in the digest are retained **only** so the model can tell a user
     where to look in a printed 1st edition. Nothing resolves them and CI cannot check them. Don't
     reintroduce page-based lookup.
-  - Known gap: the Tag Reference appendix is print-only and absent upstream; `[[tag-reference]]` is
-    the authority for it.
+  - Known gap: the Tag Reference appendix is print-only and absent upstream;
+    [tag-reference](skills/dungeon-world-gm/references/tag-reference.md) is the authority for it.
 - `scripts/*.py` — generators and utilities, all stdlib-only, invoked as `python3 scripts/<name>.py`.
 - `assets/yaml_templates/` and `assets/yaml_schemas/` — the campaign state format. Templates double as
   runtime documentation; schemas are *selectively* open (fixed shapes like `hp` closed so typos error,
@@ -289,12 +293,13 @@ pushing.
 Nearly all of the runtime is subprocess spawning, not analysis, so if the validator gets slow
 again look for a check that shells out per-seed or per-script rather than for slow logic.
 
-It enforces the conventions described above that nothing else can: wikilinks resolve, no
-reference file is orphaned from the index, generators still answer `--help-llm`, templates
-still satisfy their schemas, the rulebook's page markers are contiguous, and
-`scripts/yamledit.pyz` still matches `tools/yamledit.lock` (version + sha256). The validator
-has no pip dependencies — it borrows `ruamel.yaml` and `fastjsonschema` off the vendored
-pyz's `sys.path`, so keep it that way.
+It enforces the conventions described above that nothing else can: skill-root Markdown
+links resolve, no `[[wikilinks]]` remain, no top-level reference file is orphaned from the
+link graph, generators still answer `--help-llm`, templates still satisfy their schemas,
+the rulebook's page markers are contiguous, and `scripts/yamledit.pyz` still matches
+`tools/yamledit.lock` (version + sha256). The validator has no pip dependencies — it
+borrows `ruamel.yaml` and `fastjsonschema` off the vendored pyz's `sys.path`, so keep it
+that way.
 
 Releasing: the frontmatter version should already be current (see the next section — it is
 kept up to date with every skill edit, not bumped at release time), so releasing is just

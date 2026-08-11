@@ -4,7 +4,7 @@ Use `npc_gen.py` to create followers. This is for moves and reference.
 
 Source: *The Perilous Wilds* (Revised Edition), "Lead the Way" chapter by Jeremy
 Strandberg, p22-24 - CC BY-SA 3.0. Replaces the core rulebook's basic hireling
-rules (see [[npc-tools]] for those).
+rules (see [npc-tools](references/npc-tools.md) for those).
 
 Followers make the standard Encumbrance, Make Camp, and Recover moves, and Last
 Breath at the GM's discretion. Otherwise, they don't use the basic moves - use
