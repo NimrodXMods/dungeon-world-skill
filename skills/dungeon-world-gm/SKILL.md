@@ -4,11 +4,11 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.21.1"
+  version: "0.22.1"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
-  last-assisting-model: xAI Grok 4.5 (grok-4.5)
+  last-assisting-model: Anthropic Claude Opus 5 (claude-opus-5)
   updated: "2026-08-11"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
@@ -169,6 +169,12 @@ Available generator scripts and "trigger" situations for using them:
   discover, or questions about anything requiring a creative answer, use this script. It has no
   creature table - "what creature is it?" is `monster_gen.py`'s question, and it answers with a
   real stat block rather than a category.
+  Its `seed` table is the odd one out: it hands back a *question* rather than an answer, rolling
+  the Inexhaustive List of Questions from
+  [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md). Reach for it when writing a
+  front's Stakes questions, when filling in the world around the party, or mid-session when the
+  players point at something and the right move is to ask a good question about it rather than
+  decide. It will not build a front for you, by design.
 
 Run `python3 scripts/<script>.py --help-llm` before using any of these scripts (once per
 script per session is enough) - it prints a dense reference written for LLM callers with
