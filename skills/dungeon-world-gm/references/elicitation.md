@@ -141,4 +141,5 @@ Domain option lists for this skill live in:
 
 - [campaign-creation-checklist](references/campaign-creation-checklist.md) — setup fields and defaults
 - [character-creation-checklist](references/character-creation-checklist.md) — playbook decisions
-- [SKILL.md](SKILL.md) ("How to Write the Game") — prose register / `style_voice` labels
+- [SKILL.md](SKILL.md) narration constitution — prose register / `style_voice` labels
+- [gm-narration](references/gm-narration.md) — full narration essays (warm at create/loop)

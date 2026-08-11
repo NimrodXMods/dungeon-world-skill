@@ -77,4 +77,6 @@ readable but scrambles the words - a deliberate soft spoiler-guard, not real sec
 and the handoff file, zips them with every character `*.yaml` in the same directory
 as `<slug>_gmsecret.txt`, and names the zip `<slug>_checkpoint.zip` or `<slug>_s<N>.zip`.
 
-Once the zip file is created, use `present_files` to actually hand the zip file to the person - the script only builds the zip, it doesn't deliver it.
+Once the zip is created, **deliver it to the user** however your host allows
+(file download, attachment, share path, etc.). The script only builds the zip;
+it does not hand it off.

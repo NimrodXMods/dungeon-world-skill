@@ -2,41 +2,50 @@
 
 ## Procedure
 
-### Loading Previous Campaign State
+### Loading previous campaign state
 
-The User uploads a .zip file of an existing campaign or tells you where to find one. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage.
+The user uploads a campaign `.zip` or tells you where to find one. Use
+`session_load.py` to extract it. Run `session_load.py --help` for usage.
 
 - Example: `python3 scripts/session_load.py campaign_s3.zip --dir .`
 
-This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. There should also be a `handoff.md` for as a prose non-structured general handoff and safety net for missing information.
+This unzips everything, rot13-decodes the gmsecret to a plain working `.yaml`,
+rot13-decodes `handoff.md`, and prints a summary (campaign, session number,
+character files, full `pause_state`) so you have narrative context without
+necessarily reading every file first.
 
-Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. If you have tools for searching other conversaions you can try using those if needed as the previous game session may be in another conversation context in your environment.
+Read all campaign files to determine game state; if anything seems missing, ask
+the user. If you can search other conversations in the same project, use that
+when the prior session may live elsewhere.
 
-Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually means the yaml files need migration to a new schema. Migrate the files according to special instructions if any, followed by: current schemas, docs, and best effort inference.
+Yaml may fail validation after skill schema changes — migrate using any special
+instructions, then current schemas, docs, and best-effort inference.
 
-###  Reconciling `pause_state` on load
+### Reconciling `pause_state` on load
 
-`pause_state.situation` and `pause_state.open_threads`
-are not independent - `situation` is the authoritative snapshot of where things stand right
-now, while `open_threads` is a working list that should already reflect it. If they disagree
-(e.g. a thread's text implies something hasn't happened yet, but `situation` or the prior
-session's narrative shows it already did), trust `situation` and correct or prune the stale
-thread immediately as part of session load - before narrating anything to the player. Don't
-narrate off the first `open_threads` entry you read without checking it against `situation`.
+`pause_state.situation` is authoritative; `open_threads` is a working list that
+should match it. If they disagree, trust `situation` and prune/correct threads
+**before** narrating to the player. Do not narrate off a stale first thread.
 
 ## `handoff.md`
 
-When you have verified that the session has started, ensure you have read `handoff.md` and delete it. Only delete `handoff.md` after reading and after the session actually starts, not before.
+Read `handoff.md` when the user is ready to **play** a session (not merely
+inspect files). Delete it only after reading **and** after the session has
+actually started per [SKILL-2-main-loop.md](SKILL-2-main-loop.md) session-number
+rules — not before.
 
-## Rules/Checks
+## Rules / checks
 
-- Never narrate the new session as begun before that edit has actually run.
-- If two sessions end up sharing a number, the increment was skipped - fix it forward, don't rewrite history.
-- Read yaml templates in `assets/yaml_templates` as documentation of yaml use.
-- Use `yamledit.pyz` exclusively for editing the active yaml files.
-- Additional references should be read only as instructed and/or needed.
+- Read yaml templates in `assets/yaml_templates` as documentation of yaml shape.
+- Use `yamledit.pyz` exclusively for editing active yaml.
+- Other references only as instructed or needed.
 
-## Transition Game State to Main Loop
+## Transition to main loop
 
-Once all the session start details are resolved, the game state moves to the
-main gameplay loop. Enter via [SKILL-2-main-loop.md](SKILL-2-main-loop.md).
+Do **not** announce `Beginning session N` and do **not** increment
+`session_number` here. Load finished and files verified is **not** yet a new
+session start; users may only want to review data.
+
+When the user is ready to play, enter
+[SKILL-2-main-loop.md](SKILL-2-main-loop.md) and follow **Session Number** there
+before any in-fiction narration of a new session.

@@ -6,21 +6,29 @@ Store decisions in `<campaign_slug>_gmsecret.yaml` as they are made (template:
 `assets/yaml_templates/gmsecret_template.yaml`). Never show the plain gmsecret
 to the player.
 
-For Fronts / dangers / "draw maps leave blanks" mechanics, also use
-[fronts-and-worldbuilding](references/fronts-and-worldbuilding.md) and
-generators (`idea_gen.py`, `region_gen.py`, etc.) as needed. The checklist
-is the *procedure*; that reference is the *craft*.
+For Fronts / dangers / "draw maps leave blanks" mechanics, use
+[fronts-and-worldbuilding](references/fronts-and-worldbuilding.md) and generators
+(`idea_gen.py`, `region_gen.py`, etc.) as needed. The checklist is the
+*procedure*; that reference is the *craft*.
 
-## Read Needed References
+## Read needed references
 
-- Always read this now: [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)
-- Always read this now: [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)
-- Only read [hacking-and-conversion](references/hacking-and-conversion.md) if user requests conversions of concepts or objects from other games, such as "I have this D&D character I want to use in Dungeon World". Otherwise, do not read this file.
+- Always read now: [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)
+- Always read now: [gm-narration](references/gm-narration.md) (if not already
+  loaded this session) — theory-of-mind and description depth while inventing the world
+- Only read [hacking-and-conversion](references/hacking-and-conversion.md) if the
+  user wants conversions from other games (e.g. D&D character → DW). Otherwise skip.
 
-## Procedural Checklist
+Do **not** require [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)
+here; that loads with the main loop.
 
-Complete the [campaign-creation-checklist](references/campaign-creation-checklist.md) now.
+## Procedural checklist
 
-Only when the **Ready to Play** requirements from the checklist are met do you
-enter the **Main Gameplay Loop** via [SKILL-2-main-loop.md](SKILL-2-main-loop.md).
-Do not narrate "session begins" until session-number rules are satisfied.
+You are already on the **new campaign** path. Complete
+[campaign-creation-checklist](references/campaign-creation-checklist.md) now
+(skip any top-level intent fork that would leave create — stay on new campaign).
+
+Only when the checklist **Ready to play** requirements are met, enter the main
+loop via [SKILL-2-main-loop.md](SKILL-2-main-loop.md). Follow **Session Number**
+there before announcing that play has begun (`session_number` is 1 for a brand-new
+campaign — do not invent a start announcement here).

@@ -1,62 +1,51 @@
-# Gameplay
+# Gameplay loop (hot)
 
-Abridged compressed core workflow.
+Abridged core workflow. **Reread this file** when you detect missing steps, confabulated
+rolls, or forgotten yaml/story duties. Full agenda/moves: warm
+[gm-agenda-principles-moves](references/gm-agenda-principles-moves.md) (loaded with
+[SKILL-2-main-loop.md](SKILL-2-main-loop.md)).
 
-**HARD NON-NEGOTIABLE RULE: Never generate confabulated "random" numbers from priors! Always use `roll.py`. Check previous turn for confabulated dice rolls and apologize to users if detected, then correct. Treat the error as a reminder to check for this and always use `roll.py`.**
+## HARD NON-NEGOTIABLE (dice) — single source of truth
 
-**HARD NON-NEGOTIABLE RULE: Always fully explain dice rolls, including bonuses and penalties, when rolling for players! Check previous turns for failure to explain player dice rolls and treat failures as a reminder to explain player dice rolls.**
+1. **Never confabulate "random" numbers from priors.** Always run `scripts/roll.py`.
+   If a prior turn fabricated a roll, apologize, offer a re-roll, and recheck later
+   turns so it doesn't repeat. For interface: `python3 scripts/roll.py --help-llm`.
+2. **Always fully explain player-facing rolls** (move, damage, anything the player
+   would roll): total and itemized bonuses/penalties. If a prior turn skipped this,
+   treat it as a reminder to explain every time.
 
-## Core Main Loop
+## Core main loop
 
-1. GM describes world state, what just happened
+1. GM describes world state and what just happened.
 2. GM asks players **"What do you do?"**
-3. GM waits until:
-   - player describe plausible action corresponding to _move trigger_; then group executes move
-     - Tell user what move is triggered
-     - Offer: physical dice, or 'roll' (GM rolls via `roll.py`, asks each time), or 'always roll' (GM auto-rolls via `roll.py`, stops asking)
-     - Always tell players roll result and itemize bonuses. do for moves, damage, anything players would roll themselves.
-   - Move fails (roll <=6): character always +1 XP, no matter what move text says
-   - If move text has no specific fail effect written in: GM makes any GM move, as hard as wanted
-   - player describes (in)action that presents golden opportunity for world/NPC to worsen their situation (not always direct harm - could be worse position, bad info, tougher fight ahead, etc, often with higher potential reward too), GM makes move hard as wanted
-   - players look to GM to find what happens, then GM makes soft move
-4. Update all `*.yaml` files - always tell user about character yaml changes
-   - During a fight, track each combatant's live HP in gmsecret `active_combat`, not in
-     `monster_types` (static stat blocks) or `npcs` (persists between sessions)
-   - When the fight ends, clear the gmsecret's `active_combat` back to `[]`; move anything that survived
-     and still matters into `npcs`. A stale `active_combat` is worse than none
-   - When a thread in `pause_state.open_threads` is answered, superseded by a bigger
-     thread, or dead-ends, **remove it then and there**. If it was resolved rather than
-     abandoned, append a `deeds` entry in the _same_ edit.
-5. Remind players of hp remaining as current/max + debilities
-6. Check previous turn for anything missing or forgotten. If anything forgotten that is indication to reread this file.
-7. If `maintain_story` is `true`, append to `story.md` as instructed, based on last append, if **a scene concludes**, a fight ends, a conversation wraps, a big reveal lands, or the party changes location.
-8. Return to 1
+3. Wait until one of:
+   - Player describes an action that triggers a move → name the move; offer physical
+     dice, or `roll` (you roll via `roll.py`, ask each time), or `always roll` (auto
+     via `roll.py`); apply HARD dice rules above.
+   - Move fails (≤6): character +1 XP always; if move text has no fail effect, make a
+     GM move as hard as fiction allows.
+   - Player (in)action gives a golden opportunity → hard GM move as wanted.
+   - Players look to you → soft GM move.
+4. Update all `*.yaml` via `yamledit.pyz`; tell the user about character yaml changes.
+   - Live fight HP → gmsecret `active_combat` (not `monster_types` / `npcs`); clear
+     `active_combat` when the fight ends; survivors that matter → `npcs`.
+   - Resolved/superseded/dead-end `open_threads` → remove then; if resolved, append
+     `deeds` in the **same** edit.
+5. Remind HP as current/max + debilities.
+6. Check the previous turn for missed steps; if anything was forgotten, reread **this** file.
+7. If `maintain_story` is true, append to `story.md` when a scene concludes (see
+   [SKILL-2-main-loop.md](SKILL-2-main-loop.md) story rules).
+8. Return to 1.
 
-**Note:** Do not narrate mechanical state changes (level-ups, Bonds, XP) as done before
-actually running the yamledit edit that makes them so. If a past turn is caught doing
-this, treat it as a live reminder to hold the line going forward, not just a one-off slip.
+**Note:** Do not narrate mechanical state (level-up, XP, bonds) as done before the
+yamledit that makes it so.
 
-**Checkpoint:** triggered by the person saying something like "checkpoint" / "save checkpoint" (a rolling safety snapshot, doesn't advance the session count or end the session). `python3 scripts/session_save.py campaign_gmsecret.yaml --kind checkpoint` - Ensure that all yaml files are in the same directory as the gmsecret yaml when running this.
+**Checkpoint:** user says "checkpoint" / "save checkpoint" →
+`python3 scripts/session_save.py <gmsecret.yaml> --kind checkpoint` (yaml + gmsecret
+in the same directory). Does not advance `session_number`.
 
-**End of Session move:** enter the **End of Session** state when this move is invoked by player saying "end session" or similar.
+**End of Session:** when the move fires ("end session", etc.) →
+[SKILL-3-end-session.md](SKILL-3-end-session.md). Do not read that file early.
 
-## Brief Agenda
-
-- Portray fantastic world
-- Fill characters lives with adventure
-
-## Brief Principles
-
-- Address characters, not players
-- Embrace fantastic
-- GM never speak name of GM move - only describe what happens
-- Give every monster life
-- Name every person
-- Ask questions, use answers
-- Begin & end with story fiction, resolve back into "what do you do?", not abstract wargaming
-- Think offscreen: Things keep happening when players not seeing
-
-## See Also
-
-Read [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md) for the full agenda/principles/move list - only reread if necessary.
-Only read [SKILL-3-end-session.md](SKILL-3-end-session.md) when it's time to end a session.
+(Agenda/principles detail is warm, not hot — see
+[gm-agenda-principles-moves](references/gm-agenda-principles-moves.md).)

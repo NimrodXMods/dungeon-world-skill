@@ -2,8 +2,8 @@
 
 This file contains rule clarifications that models often get wrong. Read it when
 entering the main gameplay loop ([SKILL-2-main-loop.md](SKILL-2-main-loop.md)),
-not on every skill load. Prose register / "How to Write the Game" lives in
-[SKILL.md](SKILL.md) (always loaded).
+not on every skill load. Style labels + hard narration bullets:
+[SKILL.md](SKILL.md). Full narration essays: [gm-narration](references/gm-narration.md).
 
 ## Rule Clarifications
 
