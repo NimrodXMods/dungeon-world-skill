@@ -60,3 +60,5 @@ A second, more compact worked example ("The Opening of the White Gate" - a plana
 ## The Inexhaustive List of Questions (worldbuilding tool)
 
 For any subject - a **person**, a **group**, a **belief**, a **place**, a **thing**, or an **event** - ask across six angles: **Who** (identity/relationships), **What** (traits/objectives), **Where** (locations), **When** (timeline/destiny), **Why** (motive/emotion), **How** (methods/tools). Leave the answers blank until play reveals them; use this as a prompt generator when you're stuck on what to ask about something the players just pointed at.
+
+`idea_gen.py seed` rolls this list for you - a concrete subject, an angle to ask it from, and a few unrelated words to strike against it. Prefer it to picking a subject and angle yourself, which is where priors creep back in. It answers nothing and builds no front on purpose; the question is the product. See its `--help-llm` for pinning the subject or angle.

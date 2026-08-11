@@ -102,6 +102,10 @@ context-budget discipline.
 - `assets/yaml_templates/` and `assets/yaml_schemas/` — the campaign state format. Templates double as
   runtime documentation; schemas are *selectively* open (fixed shapes like `hp` closed so typos error,
   containers like fronts/NPCs open so campaigns can grow fields).
+- `tmp/` — gitignored scratch, at the repo root. Put anything temporary here: design notes,
+  working files, one-off scripts, generator output you want to eyeball. Nothing in it ships or
+  is committed, so prefer it over the system temp directory — it keeps the work next to the
+  repo and visible to the user, and keeps stray files out of `git status`.
 
 ## Runtime state model
 

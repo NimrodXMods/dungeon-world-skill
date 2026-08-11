@@ -24,9 +24,12 @@ Usage:
 """
 
 import argparse
+import itertools
+import json
 import math
 import random
 import sys
+from pathlib import Path
 from typing import List, Tuple, Dict, Any
 
 from _util import apply_seed, d, force_utf8_stdio
@@ -999,6 +1002,218 @@ def roll_std_magicitem() -> str:
     return f"{item}"
 
 # ---------------------------------------------------------------------------
+# Seed Question (the Inexhaustive List of Questions, made rollable)
+#
+# fronts-and-worldbuilding.md describes this as prose: for a person / group /
+# belief / place / thing / event, ask who / what / where / when / why / how.
+# Prose is exactly what a model answers from its own priors, so the point of
+# rolling it is to be handed a subject and an angle it would not have picked.
+#
+# The answer-tokens are NOT conditioned on the subject and are not meant to
+# cohere - see the _note in assets/seed_words.json. They are struck against the
+# subject to strike a spark; a pool tidied into sense produces the answer the
+# model already had.
+#
+# The result is a question to answer in play, never an answer, and deliberately
+# never a whole front - "Draw Maps, Leave Blanks".
+# ---------------------------------------------------------------------------
+
+SEED_DATA = Path(__file__).resolve().parent.parent / "assets" / "seed_words.json"
+
+# How many answer-tokens a line carries when the token does not say. Enough to
+# choose between or mix; short enough to read at a glance rather than work
+# through. Callers wanting more say so in the third slot: seed://5.
+SEED_TOKENS_DEFAULT = 3
+
+_seed_cache = None
+_angle_cycle = None
+
+
+class SeedTokenError(Exception):
+    """A malformed or unknown seed:SUBJECT/ANGLE/COUNT token. Carries the
+    message the CLI should print, since only the parser knows what was wrong."""
+
+
+def _seed_data() -> Dict[str, Any]:
+    """Read and cache assets/seed_words.json."""
+    global _seed_cache
+    if _seed_cache is None:
+        try:
+            with SEED_DATA.open(encoding="utf-8") as handle:
+                _seed_cache = json.load(handle)
+        except OSError as exc:
+            raise SeedTokenError("cannot read {}: {}".format(SEED_DATA, exc))
+        except ValueError as exc:
+            raise SeedTokenError("{} is not valid JSON: {}".format(SEED_DATA, exc))
+    return _seed_cache
+
+
+def seed_subjects() -> List[str]:
+    return sorted(_seed_data()["subjects"])
+
+
+def seed_angles() -> List[str]:
+    return sorted(_seed_data()["angles"])
+
+
+def _next_angle() -> str:
+    """An unpinned angle, drawn from a shuffled cycle rather than at random.
+
+    Independent draws repeat: `-n 5` would routinely ask WHY three times, and a
+    menu of five questions from two angles is barely a menu. Dealing from a
+    shuffled deck instead guarantees `-n 6` covers all six angles exactly once.
+
+    The deck is shuffled once per process, which is once per invocation, then
+    repeated in that same order - so `-n 10` sees results 7-10 reprise the order
+    of 1-4. That is not worth avoiding: the subjects and answer-tokens differ
+    anyway, and by then the caller has more questions than they can use.
+    """
+    global _angle_cycle
+    if _angle_cycle is None:
+        angles = seed_angles()
+        _angle_cycle = itertools.cycle(random.sample(angles, len(angles)))
+    return next(_angle_cycle)
+
+
+def _ask_line(angle: str, count: int) -> Tuple[str, str]:
+    """("ask WHY (motive/emotion)", "hate, money, power") for one angle."""
+    entry = _seed_data()["angles"][angle]
+    words = entry["words"]
+    count = max(1, min(count, len(words)))
+    return ("ask {} ({})".format(angle.upper(), entry["gloss"]),
+            ", ".join(random.sample(words, count)))
+
+
+def roll_seed(lines: int = 1, subject: str = None, angle: str = None,
+              count: int = SEED_TOKENS_DEFAULT,
+              hold_subject: bool = False, hold_angle: bool = False) -> str:
+    """`lines` questions as one block: subject, angle to ask from, answer-tokens.
+
+    Any of the three axes may be left to chance - an unpinned angle is dealt
+    from a shuffled deck rather than rolled, so a menu spans angles (see
+    _next_angle).
+
+    A held axis (the token's trailing "=") is resolved once and reused for every
+    line, which is what turns a menu of unrelated questions into a menu of
+    angles ON one thing. Held values are hoisted into "held:" lines above the
+    block rather than reprinted per line, since the whole point is that they do
+    not vary; the bullets then carry only what does.
+
+    The trailing "rolled with" line prints every axis resolved, so asking again
+    - for more tokens, or on one axis - is a copy-paste rather than a recalled
+    spelling. Same reasoning as treasure-object's category line. It carries the
+    "=" marks too: rerunning it holds again (on freshly drawn values), which is
+    the mode the caller asked for, and it is the only place a reader who has
+    never seen "=" will meet it.
+    """
+    data = _seed_data()
+    held_subject = None
+    if hold_subject:
+        held_subject = subject or random.choice(seed_subjects())
+    held_angle = None
+    if hold_angle:
+        held_angle = angle or _next_angle()
+
+    out = []
+    if held_subject:
+        out.append("held: {}: {}".format(
+            held_subject, random.choice(data["subjects"][held_subject])))
+    if held_angle:
+        out.append("held: " + _ask_line(held_angle, count)[0])
+
+    # Which axes still vary decides the bullet's shape: a held axis has already
+    # been said above, so repeating it per line would be the noise hoisting is
+    # meant to remove.
+    for _ in range(max(1, lines)):
+        this_subject = held_subject or subject or random.choice(seed_subjects())
+        this_angle = held_angle or angle or _next_angle()
+        ask, tokens = _ask_line(this_angle, count)
+        if held_subject and held_angle:
+            out.append("- {}".format(tokens))
+        elif held_subject:
+            out.append("- {} -> {}".format(ask, tokens))
+        elif held_angle:
+            out.append("- {}: {} -> {}".format(
+                this_subject, random.choice(data["subjects"][this_subject]),
+                tokens))
+        else:
+            # Nothing held, so each line stands alone and carries its own echo:
+            # the axes it resolved are the useful thing to ask again on, and a
+            # single block-level token could only report the empty slots.
+            out.append("- {}: {}\n  {} -> {}\n  > rolled with seed:{}/{}/{}".format(
+                this_subject, random.choice(data["subjects"][this_subject]),
+                ask, tokens, this_subject, this_angle, count))
+
+    if held_subject or held_angle:
+        # Unheld slots echo as "any" rather than empty: it says the same thing,
+        # and it keeps the line free of the "//" that Git Bash would mangle if
+        # someone pasted it straight back.
+        out.append("  > rolled with seed:{}{}/{}{}/{}".format(
+            held_subject or subject or "any", "=" if hold_subject else "",
+            held_angle or angle or "any", "=" if hold_angle else "",
+            count,
+        ))
+    return "\n".join(out)
+
+
+def parse_seed_token(name: str):
+    """"seed:person/why/5" -> a roll_seed block callable. Empty slots stay random.
+
+    One positional token rather than flags, following treasure-object:CATEGORY:
+    it keeps -n meaning "how many lines" and needs no per-table flag. The third
+    slot exists because -n is already spoken for, so the count of answer-tokens
+    has nowhere else to go.
+
+    A trailing "=" on a slot holds it: resolve once, reuse for every line, so
+    "seed:belief=//5 -n 6" asks six angles about ONE belief. It reads as "stays
+    equal", and unlike "!" or "*" it is not a shell metacharacter, so it needs
+    no quoting.
+    """
+    rest = name[len("seed:"):]
+    parts = rest.split("/")
+    if len(parts) > 3:
+        raise SeedTokenError(
+            "seed token takes at most SUBJECT/ANGLE/COUNT: {!r}".format(name))
+    parts += [""] * (3 - len(parts))
+    subject, angle, count_text = (part.strip() for part in parts)
+
+    hold_subject, subject = subject.endswith("="), subject.rstrip("=")
+    hold_angle, angle = angle.endswith("="), angle.rstrip("=")
+    # "any" spells an empty slot. Partly readability - it is the word the title
+    # already uses - and partly an escape hatch: a Git Bash caller writing
+    # "seed:belief=//5" has the "//" path-mangled away before Python sees it,
+    # and "seed:belief=/any/5" says the same thing with no "//" to mangle.
+    subject = "" if subject == "any" else subject
+    angle = "" if angle == "any" else angle
+    if count_text.endswith("="):
+        raise SeedTokenError(
+            "the seed COUNT slot cannot be held with '=' - it is already fixed "
+            "for the whole run: {!r}".format(name))
+
+    if subject and subject not in _seed_data()["subjects"]:
+        raise SeedTokenError("Unknown seed subject {!r}. Available: {}".format(
+            subject, ", ".join(seed_subjects())))
+    if angle and angle not in _seed_data()["angles"]:
+        raise SeedTokenError("Unknown seed angle {!r}. Available: {}".format(
+            angle, ", ".join(seed_angles())))
+
+    count = SEED_TOKENS_DEFAULT
+    if count_text:
+        if not count_text.isdigit() or int(count_text) < 1:
+            raise SeedTokenError(
+                "seed answer-token count must be a positive whole number, "
+                "got {!r}".format(count_text))
+        count = int(count_text)
+
+    title = "Seed Question: {}{}/{}{}".format(
+        subject or "any", "=" if hold_subject else "",
+        angle or "any", "=" if hold_angle else "")
+    return (title, lambda lines=1: roll_seed(
+        lines, subject or None, angle or None, count,
+        hold_subject, hold_angle))
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1013,6 +1228,7 @@ TABLES = {
     "story-hook": ("Story Hook", roll_story_hook),
     "room-clutter": ("Room Clutter", roll_room_clutter),
     "rumor":     ("Rumor", roll_rumor),
+    "seed":      ("Seed Question", roll_seed),
     "std-magicitem": ("Standard Magic Item", roll_std_magicitem),
 }
 
@@ -1030,6 +1246,8 @@ def resolve_table(name: str):
     if name.startswith(prefix):
         category = name[len(prefix):]
         return ("Treasure Object: " + category, lambda: roll_treasure_object(category))
+    if name.startswith("seed:"):
+        return parse_seed_token(name)
     return None
 
 
@@ -1095,6 +1313,44 @@ TABLE (zero or more; default if omitted: every table below)
                    later. Does not invent a full front (see fronts reference)
   std-magicitem    a named item from magic-items.md; footer points you to grep
                    that file or the rulebook digest for effects
+  seed             the Inexhaustive List of Questions, rolled: a concrete
+                   subject, an angle to ask it from, and a few loose
+                   answer-tokens to think against. Hands you a QUESTION to
+                   answer in play, not an answer - and deliberately never a
+                   whole front. Use it for a front's Stakes questions, for
+                   worldbuilding, or mid-session when the players point at
+                   something and you need a good question about it
+  seed:SUBJECT/ANGLE/COUNT
+                   pin any of the three; an empty slot (or the word "any")
+                   stays random, and trailing slots may be dropped. COUNT is how many
+                   answer-tokens the line carries (default 3) - it is a slot
+                   rather than a flag because -n already means how many lines.
+                     SUBJECT  person, group, belief, place, thing, event
+                     ANGLE    who (identity/relationships), what
+                              (traits/objectives), where (locations), when
+                              (timeline/destiny), why (motive/emotion), how
+                              (methods/tools)
+                   Every line prints the fully-resolved token it was rolled
+                   with, so rerolling one axis is a copy-paste.
+                   An unpinned ANGLE is dealt from a deck shuffled once per
+                   run, not rolled independently, so "-n 6" asks all six angles
+                   exactly once and a shorter menu never repeats one. Pinning
+                   the angle opts out, as does asking again in a new run.
+                   A trailing "=" HOLDS a slot: resolve it once, then reuse it
+                   for every line. "seed:belief=/any/5 -n 6" asks six different
+                   angles about ONE belief, which is how you interrogate a
+                   single thing instead of collecting unrelated questions.
+                   Held values are hoisted into "held:" lines above the block
+                   and dropped from the bullets, so the bullets carry only what
+                   varies. "=" works on SUBJECT and ANGLE; COUNT is already
+                   fixed for the run and rejects it. Note "=" holds the rolled
+                   VALUE, so "seed:=/why" holds one random subject.
+                   Under Git Bash on Windows ONLY, a "=" followed by "/" is
+                   rewritten as a path before python sees it (the token arrives
+                   as "belief=C:/Program Files/Git/..."), and quoting does not
+                   help. If a held token errors that way, prefix the command
+                   with MSYS2_ARG_CONV_EXCL='*'. Linux, macOS and PowerShell
+                   are unaffected.
 
 -n N       how many of each requested table to roll at once (default 3).
            Pass -n 1 for a single result. Exception: "equipment-tag" rolls N
@@ -1120,6 +1376,8 @@ OUTPUT
     room-clutter   ordinary-junk / promote-to-discovery note
     rumor          how to read 'quality'
     std-magicitem  where to look up the item's effects
+    seed           that the answer-tokens are not meant to cohere, and that
+                   Stakes questions belong in fronts[].stakes unanswered
   Always ends with two reminders: re-roll/modify is fine, and review turns +
   update gm/character yaml if needed.
 
@@ -1139,6 +1397,13 @@ EXAMPLES
   idea_gen.py story-hook -n 1        one hook only
   idea_gen.py rumor
   idea_gen.py std-magicitem
+  idea_gen.py seed                   three questions, random subject and angle
+  idea_gen.py seed:belief            a belief, asked from a random angle
+  idea_gen.py seed:person/why        both pinned
+  idea_gen.py seed://5               all random, five answer-tokens
+  idea_gen.py seed:/why/4 -n 1       one WHY question about anything, 4 tokens
+  idea_gen.py seed:belief=/any/5 -n 6   six angles on ONE held belief
+  idea_gen.py seed:=/why -n 4        four WHY answers about one held subject
 """
 
 def main():
@@ -1160,13 +1425,22 @@ def main():
 
     apply_seed(args.seed)
 
-    resolved = [(name, resolve_table(name)) for name in args.tables]
+    try:
+        resolved = [(name, resolve_table(name)) for name in args.tables]
+    except SeedTokenError as exc:
+        # The seed parser knows exactly which slot was wrong, so it says so
+        # itself rather than falling through to the generic unknown-table list.
+        print(exc)
+        return
     unknown = [name for name, entry in resolved if entry is None]
     if unknown:
         print(f"Unknown table(s): {unknown}")
         print("Available:", ", ".join(TABLES))
         print("Plus treasure-object:CATEGORY for one axis of an object -",
               ", ".join(_treasure.categories()))
+        print("Plus seed:SUBJECT/ANGLE/COUNT (any slot may be left empty) -",
+              "subjects:", ", ".join(seed_subjects()),
+              "| angles:", ", ".join(seed_angles()))
         return
 
     for name, (title, fn) in resolved:
@@ -1177,6 +1451,14 @@ def main():
         print(f"=== {title} === [ TABLE={name} ]")
         if name == "equipment-tag":
             print(fn(args.n))
+        elif name == "seed" or name.startswith("seed:"):
+            # Renders all -n lines itself: a held axis is hoisted above them,
+            # which only the table can know how to lay out.
+            print(fn(args.n))
+            print("(answer-tokens are unrelated to each other and to the subject - "
+                  "pick one, mix, or reject all)")
+            print("(a front's Stakes questions go in fronts[].stakes; "
+                  "leave the answer blank until play reveals it)")
         else:
             for i in range(0, args.n):
                 print(fn())
