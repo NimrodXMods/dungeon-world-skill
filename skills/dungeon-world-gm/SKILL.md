@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.22.1"
+  version: "0.23.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -59,7 +59,8 @@ a clear "be my GM," specific setup details, etc.) skip the intro and go straight
 This part is a sequential workflow reference to aid in determining next action. A session has
 two "modes":
 - **Agent as GM:** (options 1 and 2 below) three possible states: start, main gameplay loop, end.
-- **GM Assistant:** (options 3 and 4 below) the agent acts as an assistant for a human GM
+- **GM Assistant:** (option 3 below) the agent acts as an assistant for a human GM.
+  Option 4 is neither mode - it answers questions without starting session state.
 
 ### Session Start
 
@@ -233,7 +234,8 @@ has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possi
 - **[SKILL-1b-resume.md](SKILL-1b-resume.md)** — load save zip; does not start a session alone.
 - **[SKILL-2-main-loop.md](SKILL-2-main-loop.md)** — play; session_number; warm doc list; story.md rules.
 - **[SKILL-3-end-session.md](SKILL-3-end-session.md)** — End of Session only (not early).
-- **[SKILL-4-gm-assistant.md](SKILL-4-gm-assistant.md)** — human is GM.
+- **[SKILL-4-gm-assistant.md](SKILL-4-gm-assistant.md)** — human is GM; what to offer,
+  what not to do, and the spoiler rules that invert when the user is the GM.
 
 ### Hot / warm (play)
 

@@ -5,6 +5,7 @@ session_save.py - package a Dungeon World session for download.
 Usage:
     python3 session_save.py CAMPAIGN_GMSECRET.yaml --kind session_end
     python3 session_save.py CAMPAIGN_GMSECRET.yaml --kind checkpoint
+    python3 session_save.py CAMPAIGN_GMSECRET.yaml --kind checkpoint --no-rot13
 
 What it does:
     1. Reads `campaign_slug` and `session_number` from the gmsecret via
@@ -16,6 +17,21 @@ What it does:
        directory into the zip, unmodified. story.md, if present, goes in as
        plain text - it is the narrative the player already saw, so unlike the
        gmsecret and handoff there is nothing in it to spoil.
+
+--no-rot13 stores the gmsecret and handoff as plain text instead. Rot13 here is
+spoiler-obfuscation, not security: it exists so a PLAYER can hold the save file
+without spoiling themselves. When the person holding the zip is the GM - GM
+assistant mode, or a solo GM archiving their own prep - obfuscating their own
+notes from them is backwards, and this flag turns it off.
+
+The choice is recorded in the zip by FILENAME, not a flag or header, so
+session_load.py needs no matching option and cannot guess wrong:
+
+    rot13     <slug>_gmsecret.txt    <slug>_handoff.txt
+    plain     <slug>_gmsecret.yaml   handoff.md
+
+which also means a plain zip opens readable in any zip viewer, with the working
+filenames already correct.
 
        handoff.md is required for --kind session_end and optional for a
        checkpoint, which is taken mid-session before one exists.
@@ -93,6 +109,12 @@ def main():
     ap.add_argument("--dir", default=None,
                      help="Directory to look for character *.yaml files in (default: gmsecret's directory)")
     ap.add_argument("--outdir", default=".", help="Where to write the zip (default: current dir)")
+    ap.add_argument("--no-rot13", action="store_true", dest="no_rot13",
+                     help="Store the gmsecret and handoff as plain text instead of "
+                          "rot13. Use when the person holding the zip IS the GM "
+                          "(GM assistant mode, solo GM archiving prep) - the "
+                          "obfuscation exists to keep a player from spoiling "
+                          "themselves, which does not apply to them.")
     args = ap.parse_args()
 
     # `campaign_slug` is the key the template and schema define; `campaign` is
@@ -118,11 +140,20 @@ def main():
     else:
         zip_name = f"{slug}_checkpoint.zip"
 
-    # Rot13 the gmsecret's raw text after normalizing to LF (zip-canonical).
-    # Deliberately not re-serialised: a YAML round trip would strip comments.
-    # UTF-8 + LF is the portable payload; load expands newlines for the host.
-    encoded_gmsecret_text = codecs.encode(
-        normalize_newlines_to_lf(read_text_utf8(args.gmsecret)), "rot13"
+    # Rot13 the gmsecret's raw text after normalizing to LF (zip-canonical),
+    # unless --no-rot13. Deliberately not re-serialised: a YAML round trip would
+    # strip comments. UTF-8 + LF is the portable payload; load expands newlines
+    # for the host.
+    def maybe_rot13(text):
+        return text if args.no_rot13 else codecs.encode(text, "rot13")
+
+    # The names carry the encoding, so load needs no flag of its own and a plain
+    # zip opens readable with the working filenames already right.
+    gmsecret_name = f"{slug}_gmsecret.yaml" if args.no_rot13 else f"{slug}_gmsecret.txt"
+    handoff_name = "handoff.md" if args.no_rot13 else f"{slug}_handoff.txt"
+
+    encoded_gmsecret_text = maybe_rot13(
+        normalize_newlines_to_lf(read_text_utf8(args.gmsecret))
     )
 
     # encode handoff.md. Required at session end - that is the file the next
@@ -132,8 +163,8 @@ def main():
     encoded_handoff_text = None
     handoff_path = os.path.join(char_dir, "handoff.md")
     if os.path.exists(handoff_path):
-        encoded_handoff_text = codecs.encode(
-            normalize_newlines_to_lf(read_text_utf8(handoff_path)), "rot13"
+        encoded_handoff_text = maybe_rot13(
+            normalize_newlines_to_lf(read_text_utf8(handoff_path))
         )
     elif args.kind == "session_end":
         sys.exit(f"ERROR: no handoff.md found in {char_dir}. Write one before "
@@ -158,9 +189,9 @@ def main():
 
     zip_path = os.path.join(args.outdir, zip_name)
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(f"{slug}_gmsecret.txt", encoded_gmsecret_text)
+        zf.writestr(gmsecret_name, encoded_gmsecret_text)
         if encoded_handoff_text is not None:
-            zf.writestr(f"{slug}_handoff.txt", encoded_handoff_text)
+            zf.writestr(handoff_name, encoded_handoff_text)
         for cf in char_files:
             # writestr + LF, not zf.write raw bytes: Windows working copies may
             # be CRLF on disk; the zip must stay LF-canonical.
@@ -174,16 +205,21 @@ def main():
                 normalize_newlines_to_lf(read_text_utf8(story_path)),
             )
 
+    note = "plain text - readable by anyone holding the zip" if args.no_rot13 \
+        else "rot13-encoded"
     print(f"Wrote {zip_path}")
-    print(f"  - {slug}_gmsecret.txt (rot13-encoded)")
+    print(f"  - {gmsecret_name} ({note})")
     if encoded_handoff_text is not None:
-        print(f"  - {slug}_handoff.txt (rot13-encoded)")
+        print(f"  - {handoff_name} ({note})")
     for cf in char_files:
         print(f"  - {os.path.basename(cf)}")
     if has_story:
         print(f"  - {STORY_FILENAME}")
     if not char_files:
         print("  (no character *.yaml files found alongside the gmsecret - is --dir right?)", file=sys.stderr)
+    if args.no_rot13:
+        print("  (spoilers are readable in this zip - hand it to a GM, not a player. "
+              "session_load.py needs no flag: it reads the encoding off the filenames)")
 
 
 if __name__ == "__main__":
