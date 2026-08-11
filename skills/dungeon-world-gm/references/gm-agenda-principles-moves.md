@@ -50,7 +50,7 @@ After every move: "What do you do?"
 - Offer an opportunity, with or without cost
 - Put someone in a spot
 - Tell them the requirements or consequences and ask
-- Bad weather, see [[weather]] for ideas and moves
+- Bad weather, see [weather](references/weather.md) for ideas and moves
 
 **Soft move vs hard move**: a soft move is the setup/threat ("the ceiling starts to crack"); a hard move is the follow-through/consequence ("the ceiling collapses, take damage"). 7-9 results usually call for a soft move (or a hard choice); missed rolls (6-) usually call for a hard move. You can make as hard a move as you like on a miss - there's no cap.
 
@@ -113,12 +113,12 @@ Full writeup with worked examples: ["Suddenly Ogres" by Vasiliy Shapovalov](http
 4. If players dig for an enemy's plans, give them more than they "deserve" - err generous.
 5. Don't know what a player wants? Ask "What do you want to happen?"
 6. Don't know why they're doing something? Ask "What are you trying to accomplish?"
-7. Have a list of NPC names ready before you start (see [[npc-tools]]).
+7. Have a list of NPC names ready before you start (see [npc-tools](references/npc-tools.md)).
 8. Let NPCs fight each other sometimes.
 9. Hurt the players as much as you reasonably can.
 10. Give them as much treasure as you reasonably can.
 
-## Combat Specifics (see [[combat-and-custom-moves]] for the full discussion)
+## Combat Specifics (see [combat-and-custom-moves](references/combat-and-custom-moves.md) for the full discussion)
 
 - No initiative, no rounds - combat runs on the same fiction-first conversation as everything else.
 - **Multiple enemies attacking one PC (official rule, per core rulebook):** roll damage once, using the _highest_ damage die among the attackers, and add +1 damage for each additional attacker beyond the first (not a re-roll per attacker). E.g. a d10+1-ignores-armor orkaster plus three d6 goblins all hit at once: roll 1d10+1 (ignores armor) and add +3 (for the three other attackers) - one roll total. (Alternate 'easy mode' house rule if players request: rolling one die per attacker and taking the highest.)

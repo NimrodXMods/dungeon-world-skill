@@ -20,7 +20,7 @@ Missed/failed moves:
 
 - **Characters always gain +1 XP on all failed rolls <=6 for any basic, special, or other move roll!** They learn from failure.
 - Usually moves specify no default consequence for 6-
-- See [[gm-agenda-principles-moves]] for "hard GM move" ideas.
+- See [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md) for "hard GM move" ideas.
 
 ## Basic Moves (Immediate, Short Timescale Actions)
 
@@ -68,7 +68,7 @@ These are used for actions on a short timescale such as attacks in combat, death
 - 7-9: learn something interesting, GM decides if it's useful (may come with a cost/complication)
 - GM always asks player: How do you know this?
 
-*Neither Discern Realities nor Spout Lore lists a 6- outcome - that's true of every move (6- is GM territory, see the GM Move List in [[gm-agenda-principles-moves]]), but it's a bigger blank page for these two than most. That file also has a dedicated menu of tricks specifically for DR/Spout Lore misses, since "you don't know" is the weakest option and there's rarely a natural damage/cost to fall back on.*
+*Neither Discern Realities nor Spout Lore lists a 6- outcome - that's true of every move (6- is GM territory, see the GM Move List in [gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)), but it's a bigger blank page for these two than most. That file also has a dedicated menu of tricks specifically for DR/Spout Lore misses, since "you don't know" is the weakest option and there's rarely a natural damage/cost to fall back on.*
 
 **Parley** (+CHA) - when you have leverage on an NPC (something they need/want) and press them
 
@@ -124,10 +124,11 @@ These moves are for actions that typically take half a day or more. Also include
 
 **Level Up**: subtract (current level + 7) from XP, +1 level, choose an advanced move, +1 to one stat (max 18). Wizards also gain a new spell.
 
-**End of Session**: read **[[session-end]]** when this move is triggered. This is the move that says "we want to end the
-session" and there's no need to read the file about it beforehand.
+**End of Session**: enter [SKILL-3-end-session.md](SKILL-3-end-session.md) when this
+move is triggered. This is the move that says "we want to end the session" — do not
+read that file until the move fires.
 
-## Flags (alternative to Bonds - see [[fronts-and-worldbuilding]] source notes)
+## Flags (alternative to Bonds - see [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md) source notes)
 
 Flags are instructions to other players on how to treat your character (creates tension/tone rather than backstory). Mark XP if someone hits your flag this session, or if you hit someone else's. When Aiding/Interfering, roll the stat that fits how you're helping rather than a flat Bond bonus.
 

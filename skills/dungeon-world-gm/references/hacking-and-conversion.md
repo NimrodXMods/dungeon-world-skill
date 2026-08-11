@@ -1,6 +1,6 @@
 # Hacking Dungeon World: Custom Content, New Classes, and Conversion
 
-Source: "Advanced Delving" chapter and the Teaching the Game / Adventure Conversion appendices. Complements [[combat-and-custom-moves]] (which covers the fan-supplement take on writing custom moves) with the official design guidance.
+Source: "Advanced Delving" chapter and the Teaching the Game / Adventure Conversion appendices. Complements [combat-and-custom-moves](references/combat-and-custom-moves.md) (which covers the fan-supplement take on writing custom moves) with the official design guidance.
 
 ## Where Moves Come From
 Three entry points, most-to-least common:

@@ -1,7 +1,7 @@
 dungeon-world-skill Copyright (C) 2026 by NimrodX
 
 Except as otherwise specified, all contents of dungeon-world-skill are
-licened according to CC BY-NC-SA 4.0 Attribution-NonCommercial-ShareAlike 4.0
+licensed according to CC BY-NC-SA 4.0 Attribution-NonCommercial-ShareAlike 4.0
 as described below.
 
 The `yamledit` utility is covered by the MIT license.
@@ -26,7 +26,7 @@ Parts of the skill's references are condensed from the followiong:
 - Alex Leone's "Dungeon World Quick Reference GM Book" (CC BY-SA 4.0, itself
   drawing on Truncheon World and Suddenly Ogres)
 - Jason Lutes' "The Perilous Wilds" (Revised Edition, CC BY-SA 3.0) - the source
-  of the follower system in [[follower-moves]] and several of the generator
+  of the follower system in references/follower-moves.md and several of the generator
   scripts' tables (name lists, NPC occupations, steadings, regions/areas/sites,
   dungeons - see each script's own docstring for exactly which tables and page
   numbers).

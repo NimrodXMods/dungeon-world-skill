@@ -4,12 +4,12 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.18.0"
+  version: "0.20.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
   last-assisting-model: xAI Grok 4.5 (grok-4.5)
-  updated: "2026-08-10"
+  updated: "2026-08-11"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
 
@@ -35,111 +35,94 @@ or product.
 The very first line of your response after this skill is first loaded in a session must be
 this exact text, before any other content or tool calls:
 
-> 🏰⚔️ Dungeon World Skill, by NimrodX. Based on Dungeon World by Sage LaTorra & Adam Koebel.
+> 🏰⚔️ Dungeon World Skill, by NimrodX. Based on _Dungeon World_ by Sage LaTorra & Adam Koebel.
+> Other third-party content was used in creating this skill. Say "about" for full attribution.
+
+If the user says "about", "about this skill" or similar, display the full contents
+of [ATTRIBUTION.md](references/ATTRIBUTION.md) either: 1) using md file
+presentation tools (preferred) or 2) replayed into the session output.
 
 ## First Contact / Generic Invocation
 
 If this skill is invoked with no other instructions or context to act on (e.g. the user
-just says "let's play Dungeon World" with nothing else to go on), or the user asks a
-generic question like "what is this?" or "what is Dungeon World?", output the contents
-of **[[dw-intro]]** verbatim as your entire response - don't summarize, paraphrase, or
+just says "/dungeon-world-gm" or "let's play Dungeon World" with nothing else to go on),
+or the user asks a generic question like "what is this?" or "what is Dungeon World?", output the contents
+of [dw-intro](references/dw-intro.md) verbatim as your entire response - don't summarize, paraphrase, or
 add anything before/after it. It ends by asking the user where to start, so let their
-next message answer that rather than pre-empting it here. If the user's first message
-already gives enough to act on (a campaign zip upload, a clear "be my GM," specific
-setup details, etc.) skip the intro and go straight to Session Start below.
+next message answer that rather than pre-empting it here.
+
+If the user's first message already gives enough to act on (a campaign zip upload,
+a clear "be my GM," specific setup details, etc.) skip the intro and go straight to the proper point below.
 
 ## Game Session Workflow
 
 This part is a sequential workflow reference to aid in determining next action. A session has
-three possible states: start, main gameplay loop, end.
+two "modes":
+- **Agent as GM:** (options 1 and 2 below) three possible states: start, main gameplay loop, end.
+- **GM Assistant:** (options 3 and 4 below) the agent acts as an assistant for a human GM
 
 ### Session Start
 
 If the user invoked the skill with a request, then skip directly to the matching option.
-Otherwise, present each step using **[[elicitation]]**; ask the user which one they want.
+Otherwise, present each step using [elicitation](references/elicitation.md); ask the user
+which one they want.
 
 What does the user want right now from the skill?
 
 | # | Option | Next |
 | --- | --- | --- |
-| 1 | **New campaign** | Go to **[[campaign-creation-checklist]]** |
-| 2 | **Resume** from a campaign save | Go to **Resuming a Campaign:** path below |
-| 3 | **GM Assistant** | Start **GM Assistant Mode** state described below |
+| 1 | **New campaign** | [Phase 1a Create](SKILL-1a-create.md) |
+| 2 | **Resume** from a campaign save | [Phase 1b Resume](SKILL-1b-resume.md) |
+| 3 | **GM Assistant** | [Phase 4 GM Assistant](SKILL-4-gm-assistant.md) |
 | 4 | **Rules / reference only** | Answer questions; do not start session state |
 
-Default: **none** — needs an explicit pick if unclear.
+Default: **none** — needs an explicit pick if unclear. Load only the linked phase file
+when that path is chosen (progressive disclosure).
 
-#### Resuming a Campaign
+### Phase files (procedure packs)
 
-The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
+| Phase | File | When |
+| --- | --- | --- |
+| 1a Create | [SKILL-1a-create.md](SKILL-1a-create.md) | New campaign |
+| 1b Resume | [SKILL-1b-resume.md](SKILL-1b-resume.md) | Load save zip |
+| 2 Main loop | [SKILL-2-main-loop.md](SKILL-2-main-loop.md) | Play after start resolved |
+| 3 End session | [SKILL-3-end-session.md](SKILL-3-end-session.md) | End of Session move |
+| 4 GM Assistant | [SKILL-4-gm-assistant.md](SKILL-4-gm-assistant.md) | Human is GM |
 
-**`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run `python3 scripts/yamledit.pyz --help-llm` to get the full documentation for `yamledit.pyz` and perform on edit of the gmsecret file incrementing `session_number` +1 , then announce `Beginning session <new number>...`.
+## How to "Write" the Game (narration constitution — always on)
 
-**Reconciling `pause_state` on load:** `pause_state.situation` and `pause_state.open_threads`
-are not independent - `situation` is the authoritative snapshot of where things stand right
-now, while `open_threads` is a working list that should already reflect it. If they disagree
-(e.g. a thread's text implies something hasn't happened yet, but `situation` or the prior
-session's narrative shows it already did), trust `situation` and correct or prune the stale
-thread immediately as part of session load - before narrating anything to the player. Don't
-narrate off the first `open_threads` entry you read without checking it against `situation`.
+Keep this block short so it stays early-context and hard to dilute. Full essays:
+[gm-narration](references/gm-narration.md) — load when creating a campaign or entering
+the main loop (see those phase files).
 
-When you have verified that the session has started, ensure you have read `handoff.md` and delete it. Only delete `handoff.md` after reading and after the session actually starts, not before.
+**Prose register** — default to gmsecret `style_voice`, else **Dungeon World Pulpy**:
 
-Never narrate the new session as begun before that edit has actually run. If two sessions end up sharing a number, the increment was skipped - fix it forward, don't rewrite history.
+- **Dungeon World Pulpy (default)** — irreverent, punchy, dark with a wink; short
+  sentences; danger real but brisk.
+- **Grim & Uncouth** — Howard/Leiber; mean, visceral, serious violence.
+- **Formal/Literary** — denser, elevated; use sparingly for epic beats.
+- **Custom** — store the user's description in `style_voice`.
 
-Always read at session start: **[[gameplay-loop]]**, **[[core-moves]]**, **[[gm-agenda-principles-moves]]**, **[[llm-patches]]**, and yaml templates in `assets/yaml_templates` (they serve as documentation of yaml use). Other references should be read only as needed.
+Second-person present to the players ("You see…") in all lanes. Shift lanes for a
+beat if needed, then return; don't accidentally permanently drift the campaign voice.
 
-Once all the session start details are resolved, either by restoring a previous session or starting a new campaign, the
-game state moves to the main gameplay loop.
+**Hard bullets (always):**
 
-### Main Gameplay Loop
-
-Immediately upon entering the main gameplay loop, read **[[gameplay-loop]]** for a brief reminder of the core gameplay loop. This file is intentionally kept short and can be reread as needed to fix context drift. The main things you need for moves, dice rolling, and such are detailed in further sections below.
-
-The loop repeats until the user (player or player(s)) decide to end the session with the "End of Session" move. Once that happens,
-switch to the session end state. This can be triggered by the person saying "end session", "let's end the session", etc.
-
-### Session End
-
-The easiest place to end a session is during a "Make Camp" (move) or arriving at safe lodging, but this isn't absolutely required. (It should be recommended if the characters' situation allows for it easily.) If the characters are not in a safe-ish resting place for sufficient time, moves like "Level Up" aren't available.
-
-Read **[[session-end]]** when it's time to end a session. This file isn't needed until then, and reading it early will usually
-result in it being partially forgotten by session end time.
-
-### GM Assistant Mode
-
-**GM Assistant mode** is a second mode of operation for the skill where the
-user is GM and the agent assists them rather than running the game directly.
-Don't assume this "mode" applies unless the user requests it. If this mode is requested
-then expect that the details of what you are asked to do will need to be worked out
-ad hoc. Some possibilities are:
-
-- The agent keeps track of all data for user GM and Players, suggests all details of
-  setting and next actions, gets confirmation from user GM or is asked to recreate or
-  change based on GM (user) specifications. The agent may or may not roll some or all dice.
-- The agent keeps track of all data for GM and Players but GM decides all details of
-  setting and next actions. In this case the user (GM) has to give the agent info
-  about what is going on and what needs to be tracked, but may keep some details
-  in their head. The agent may or may not roll some or all the dice for everyone.
-- The agent keeps track of only GM data and players use their own character sheets. The
-  agent may or may not help with dice rolls, or may only roll dice for the GM but not players.
-- The agent only helps generate random parts of the campaign world and answers rule
-  questions but doesn't track campaign state other than static objects/settings.
-
-Use the above as guidelines to help ask questions to clarify what the agent should do if
-the user requests GM assistant mode. The exact responsibilities or gameplay loop are not
-formally defined by the skill. Assume the GM you are assisting may "loop" multiple times
-before getting back to you because they own the loop rather than you. They may sometimes tell
-you what's happening and other times significant time might go by before they communicate.
+- Do not tell players what their characters couldn't perceive; reveal knowledge only
+  with a fictional path to knowing it.
+- Fiction never discusses game mechanics, session numbers, dice, or stat names in-world.
+- New creatures/places get a **rich first description**; familiar things stay short
+  unless something is extraordinary about them.
+- Give a **quick-glance count** of obvious foes (exact if few; rough if many).
+- NPCs have separate minds; they know only what they were told or could learn in time.
+- Full theory-of-mind, description tables, shapeshift, and pets: [gm-narration](references/gm-narration.md).
 
 ## Dice Rolling
 
-Never fabricate a "random" dice result from priors - always run `roll.py`. Check previous
-turns for a fabricated roll; if you find one, offer the player a re-roll and treat the
-lapse as a signal to recheck subsequent turns too, so it doesn't repeat.
-
-How to roll dice for real without fabrication: run `scripts/roll.py --help-llm` for
-instructions.
+**Never confabulate dice from priors** — always `scripts/roll.py`. Full hard rules
+(explain every player-facing roll, re-roll if confabulated) live in
+[gameplay-loop](references/gameplay-loop.md) (read with main loop; reread on drift).
+Interface: `python3 scripts/roll.py --help-llm`.
 
 ## Other Random Generation Scripts
 
@@ -200,7 +183,7 @@ scripts may contain extra content from the skill author.
 **If a script generates a grammatically awkward name (like "Hill of King") then just repair
 the bad grammar in some way ("Hill of the King", "King's Hill", "Kingshill") before using.**
 
-## Running a Campaign (required for agent as GM, optional for agent as GM Assistant)
+## Running a Campaign
 
 For sessions where the agent plays GM and the person plays one or more characters (naming
 who's acting when there are multiple), campaign state lives in plain files, not memory -
@@ -238,29 +221,41 @@ has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possi
 
 ## Reference Index
 
-- **[[dw-intro]]** - the generic "what is this / what is Dungeon World" answer, output verbatim on a no-argument or generic invocation (see First Contact section above). Not meant to be read during play otherwise.
-- **[[core-moves]]** - always read - every basic/special player move, stat mod table, debilities, encumbrance, XP, damage-by-severity, range tags. Start here for "what move is this?" or "what happens on a 7-9 for move X?"
-- **[[llm-patches]]** - Contains corrective prose and rule clarifications for models.
-- **[[gm-agenda-principles-moves]]** - always read - GM agenda/principles, the GM move list, soft vs. hard moves, dungeon-level moves, scene framing/ending, spotlight management, general GMing tips. Start here for "what do I do right now as GM?"
-- **[[combat-and-custom-moves]]** - defer reading until combat occurs or a custom move is needed. How DW combat actually flows without initiative, multi-enemy math, adjusting difficulty live, running a swarm, and a checklist for writing good custom moves.
-- **[[fronts-and-worldbuilding]]** - Fronts/Dangers/Portents, danger types with their GM move lists and impending dooms, "draw maps leave blanks," a full worked sample Front, and the six-angle (who/what/where/when/why/how) worldbuilding question technique.
-- **[[npc-tools]]** - Use this for: NPC creation questions, quest hooks, hireling stats, steading tags + quick-build recipes, instincts/knacks lists, name lists by ancestry, a steading name generator, and per-class background questions.
-- **[[follower-moves]]** - Perilous Wilds' "Lead the Way" alternative follower system (Recruit, Order Follower, Do Their Thing, Call for Assistance, Pay Up, Watch Them Go) with Quality/Loyalty/Cost stats and the full follower-tags glossary, replacing [[npc-tools]]'s basic hireling rules if you want the fuller system. Follower _creation_ (stat generation) isn't in this file - it's `npc_gen.py --follower` instead, since that reuses the script's existing name lists.
-- **[[equipment-and-services]]** - weapons, armor, gear, poisons, tags, services, transport, land prices, bribes, gifts, plus specific consumable in-use effects.
-- **[[magic-items]]** - ~30 named official magic items with unique mechanical effects, ready to hand out or use as homebrew templates.
-- **[[tag-reference]]** - the official complete alphabetical tag glossary (equipment + monster + steading tags in one place) for fast lookup.
-- **[[treasure-and-monster-building]]** - for monsters prefer using `monster_gen.py`, which now returns official rulebook monsters by default (complete with description, instinct and moves). Use this [[treasure-and-monster-building]] guide when fiction needs special custom monsters and a full description of the options is needed: it helps with the modular "pick from each category" builder behind custom `monster_gen.py` for improvising an enemy that isn't in the bestiary. Also read this if you need to generate from the treasure roll table; make sure there's always some treasure for defeating monsters and it's occasionally something good. Sometimes random generation from `monster_gen.py` may be lacking sufficient treasure.
-- **[[weather]]** - only read this if bad weather is used as part of story or a GM move.
-- **[[hacking-and-conversion]]** - only read this for _writing custom moves_, building new classes, and converting non-DW adventures/monsters into Dungeon World terms (includes a Direct Conversion stat cheat-sheet).
-- **[[elicitation]]** - **Never read this unless** Session Start / a checklist / another procedure instructs you to present structured multi-choice, **or** you have a strong suspicion a procedure was not followed and you are auditing setup or sheet data for missed options. How to offer harness-agnostic multi-choice in chat (not product-specific ask tools).
-- **[[campaign-creation-checklist]]** - **Never read this unless** Session Start (or equivalent) routes you into a **new campaign**, **or** you have a strong suspicion campaign setup was skipped or incomplete and you are auditing gmsecret / setup state for mistakes. Ordered new-campaign questions and defaults.
-- **[[character-creation-checklist]]** - only when creating new PCs (or rebuilding a sheet): universal chargen order plus per-class decisions for the 8 core classes, Barbarian, and Immolator. Use with the character yaml template; full move text still lives in the rulebook digest (core) or **extra-classes/** (Barbarian/Immolator).
-- **rulebook-digest** - a hierarchical (L0/L1/L2) digest of the full 410-page core rulebook, built as an `advanced-digest`. `L0-index.md` tracks chapter-by-chapter coverage; `L1-digest.md` holds one paragraph per section plus ~60 atomic L2 facts (`F-NNN`) and full catalogs for anything genuinely precise a paraphrase would lose - including the complete bestiary (9 chapters, ~130 monsters/NPCs), all 8 playbooks, and the full Wizard/Cleric spell lists. Several durable findings were also folded directly into the other reference files above (corrections are noted inline where that happened) - read `L0-index.md` first for an overview of what's where. For anything that would require L3, use the `[xml:...]` anchor on the relevant `L1-digest.md` section header with `scripts/rulebook.py`, as described below.
-- **rulebook-digest/source/xml/** - the complete core rulebook text (~100k words) as the authors' own published XML, one file per chapter. **Never read these files directly** - they are markup, and a chapter is thousands of words. Read them only through `scripts/rulebook.py`, which addresses the book by ANCHOR (`moves#basic-moves/hack-and-slash`) rather than by page: `--outline` to find an anchor, `--anchor` to read one section, `--search` to find wording whose location you don't know. Run `rulebook.py --help-llm` for the full interface. Every section header in `L1-digest.md` carries the `[xml:...]` anchor for its own L3 source.
-  - The `(pNN-NN)` page ranges throughout `L0-index.md` and `L1-digest.md` are **not** a retrieval mechanism - nothing resolves them. They exist so you can tell a user where to look in their printed 1st-edition book ("that's Hack and Slash, around p60"). Treat them as an approximate courtesy pointer, not an authoritative citation, and never try to look anything up by page.
-  - One gap: the **Tag Reference** appendix is print-only and absent from the XML. [[tag-reference]] is the authority for it; there is nothing to re-fetch.
-- **extra-classes/** - this directory contains extra add-on classes. It can be ignored unless a character is of a class that is not in the rulebook. Otherwise the non-core class should have a document in this directory of the form `classname.md`.
-- **[[ATTRIBUTION.md]]** - never read this unless user asks about authors, license, copyright, or attribution of the material. All of this is moved to this file so that it doesn't fill up context for no reason. It contains no game mechanics.
+### Procedure packs (next to SKILL.md)
+
+- **[SKILL-1a-create.md](SKILL-1a-create.md)** — new campaign only.
+- **[SKILL-1b-resume.md](SKILL-1b-resume.md)** — load save zip; does not start a session alone.
+- **[SKILL-2-main-loop.md](SKILL-2-main-loop.md)** — play; session_number; warm doc list; story.md rules.
+- **[SKILL-3-end-session.md](SKILL-3-end-session.md)** — End of Session only (not early).
+- **[SKILL-4-gm-assistant.md](SKILL-4-gm-assistant.md)** — human is GM.
+
+### Hot / warm (play)
+
+- **[gameplay-loop](references/gameplay-loop.md)** — **hot**: loop steps + dice hard rules SoT; reread on drift.
+- **[core-moves](references/core-moves.md)** — **warm** with main loop: basic/special moves, mods, debilities, encumbrance, ranges.
+- **[gm-agenda-principles-moves](references/gm-agenda-principles-moves.md)** — **warm** with main loop: full agenda/principles/GM moves.
+- **[llm-patches](references/llm-patches.md)** — **warm** with main loop: short rule clarifications (threads/deeds, fronts, ranger companion).
+- **[gm-narration](references/gm-narration.md)** — **warm** with create (1a) and/or main loop (2): long narration essays. Short constitution always in SKILL.md above.
+
+### Cold / on demand
+
+- **[dw-intro](references/dw-intro.md)** — generic intro only (First Contact).
+- **[combat-and-custom-moves](references/combat-and-custom-moves.md)** — combat or custom moves.
+- **[fronts-and-worldbuilding](references/fronts-and-worldbuilding.md)** — fronts craft (also required at 1a create).
+- **[npc-tools](references/npc-tools.md)** — NPCs, hirelings, steading tags, names.
+- **[follower-moves](references/follower-moves.md)** — Perilous Wilds follower system (creation via `npc_gen.py --follower`).
+- **[equipment-and-services](references/equipment-and-services.md)** — gear and prices.
+- **[magic-items](references/magic-items.md)** — named magic items.
+- **[tag-reference](references/tag-reference.md)** — full tag glossary.
+- **[treasure-and-monster-building](references/treasure-and-monster-building.md)** — custom monsters / treasure table detail (`monster_gen.py` first for bestiary).
+- **[weather](references/weather.md)** — weather as threat/move.
+- **[hacking-and-conversion](references/hacking-and-conversion.md)** — custom classes/moves, conversion.
+- **[elicitation](references/elicitation.md)** — only when a procedure needs structured multi-choice, or auditing missed options.
+- **[campaign-creation-checklist](references/campaign-creation-checklist.md)** — with 1a new campaign (or audit incomplete setup).
+- **[character-creation-checklist](references/character-creation-checklist.md)** — creating/rebuilding PCs.
+- **rulebook-digest** — L0 → L1 → L3 via `rulebook.py`; never read `source/xml/` wholesale. Tag Reference appendix is print-only; [tag-reference](references/tag-reference.md) is authority.
+- **extra-classes/** — non-core playbooks (`classname.md`) when needed.
+- **[ATTRIBUTION](references/ATTRIBUTION.md)** — only if user asks about authors/license ("about").
 
 ## `advanced-digest` Retrieval for **rulebook-digest**
 
@@ -272,70 +267,3 @@ It is important to retrieve only as many lines as needed. When seeking informati
 3. **Climb back up for context when starting from a fact.** If a search or link lands you on an L2 fact or L3 quote, read its `[s-NNN]` parent for surrounding context before answering — a fact line is self-contained but not context-complete.
 4. **Decompress on the way out, don't quote the digest verbatim.** L1/L2 are deliberately lossy — surprisal-only residue, not prose meant to be read aloud to the user. When using a digest to answer a question, re-expand the kept residue using your own general knowledge to reconstruct full, natural context, the same way you'd explain a topic you knew well, rather than pasting the compressed paragraph as the answer. The digest tells you _what_ was worth keeping; you still supply the connective tissue.
    - **Mind the decoder.** Because a digest is lossy compression _against the authoring model's weights as a shared dictionary_ the `generated_by` model in the frontmatter records the dictionary the drops assumed. Decoding with a _different_ model still works, but reliability is **capability-relative, not identity-relative**: a decoder at least as capable as — and as knowledgeable in this domain as — the author can trust the drops, whereas a **weaker or differently-specialized** decoder may hit residue the author cut as "common knowledge" that it can't actually reconstruct. When decoding a digest authored by a stronger model, treat thin spots as possible gaps and lean harder on the Verification procedure / re-fetch. (Effort affects _authoring_ quality, not the decoder's dictionary, so it's secondary to model identity here.)
-
-## Writing `story.md` - running narrative log
-
-Only maintain `story.md` if `maintain_story` is `true` (true is default).
-
-This is lightweight, prose-only story log that accumulates alongside the gmsecret
-and character sheets, giving a readable "story so far" without anyone having
-to re-read the structured YAML.
-
-### Format
-
-- Title (`# The Adventures of Blah`): propose a title to the user on
-  starting a new campaign and use whatever they specify.
-- Section headers per session (`## Chapter N` with N being the session number),
-  plain prose paragraphs under each - no bullet points, no mechanical tags,
-  no dice/HP/stat detail.
-- It's fine for entries to read a little jumpy or unevenly paced - this is a
-  running log built incrementally during live play, not a polished summary
-  written after the fact.
-- Skip mechanics entirely (rolls, HP, XP, move names) - narrative only, the
-  same way you'd describe the scene and character actions in a novel.
-
-### When to append
-
-Append **after a scene concludes**, not on a fixed turn interval - a fight
-ends, a conversation wraps, a big reveal lands, or the party changes location.
-In practice this is roughly every 3-8 turns, but the trigger is narrative
-closure, not a count. Hold the scene in mind and write one or two paragraphs
-covering it in one append call, rather than editing the file after every
-individual turn. Try to describe the environment, characters, foes, NPCs, and
-all the action since the last update.
-
-### How to append
-
-Plain append, never `str_replace` - a growing log makes `str_replace`
-increasingly fragile to match uniquely as the file gets longer. Since
-`story.md` is plain prose (not YAML), no special escaping is needed; a normal
-heredoc append is fine:
-
-```bash
-cat >> story.md << 'EOF'
-
-New paragraph(s) here.
-EOF
-```
-
-Don't reread the whole file before appending — the scene you're summarizing
-is already in context. Only tail `story.md` if checking tone/continuity
-against earlier entries, which should be rare.
-
-### At session end
-
-Do one final append covering anything since the last update, then include
-`story.md` in the same directory as the character files and gmsecret file.
-(`session_save.py` will look for it in the "character directory".)
-
-### Retroactive backfill (one-time, not part of the ongoing workflow above)
-
-This is _only_ needed if a user initially did not want a `story.md` maintained
-but later changed their mind and wants to reconstruct one from past sessions.
-
-If starting `story.md` partway through an existing campaign, earlier sessions
-can be reconstructed from past conversation history (`conversation_search` /
-`read_conversation` by session title) rather than from `session_log` recaps
-alone — the recaps are usually too compressed to produce real prose, while
-the actual transcripts have the scene-level detail needed for a readable
-narrative. This only needs to happen once per campaign.

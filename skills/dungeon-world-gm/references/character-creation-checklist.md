@@ -13,7 +13,7 @@ Immolator move text isn't in the digest; those are in `extra-classes/*`.
 This checklist only tracks *what to decide*, not full move
 wording — confirm exact move text against those sources when it matters.
 
-How to *present* closed menus to the user: **[[elicitation]]** (on demand).
+How to *present* closed menus to the user: **[elicitation](references/elicitation.md)** (on demand).
 
 ---
 
@@ -24,7 +24,7 @@ How to *present* closed menus to the user: **[[elicitation]]** (on demand).
    alignment, gear, embedded starting-move choices).
 2. For every step with a **closed option set** in Part 2, **list the options
    before asking** — never "what race?" without the class's race list, never
-   "what alignment?" without the class's alignments. See [[elicitation]].
+   "what alignment?" without the class's alignments. See [elicitation](references/elicitation.md).
 3. **Locked choices** (e.g. Paladin is Human only): state the lock and record
    it; do not pretend there is a free pick.
 4. **Multi-select** steps (Fighter signature-weapon enhancements, Barbarian
@@ -49,7 +49,7 @@ How to *present* closed menus to the user: **[[elicitation]]** (on demand).
 ## Part 1: Universal Questions (Every Class)
 
 These apply no matter what class the player picks. Ask them in this order.
-When a step has options in Part 2, surface those options with [[elicitation]].
+When a step has options in Part 2, surface those options with [elicitation](references/elicitation.md).
 
 1. [ ] **Class.** Which class? (If two players want the same class in a party
    game, they should compromise — DW default is one of each.)
