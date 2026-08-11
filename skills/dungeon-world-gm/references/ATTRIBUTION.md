@@ -12,7 +12,7 @@ Copyright (C) 2026 by NimrodX - Except as otherwise specified, all contents of d
 
 Condensed from: the Dungeon World core rulebook (2012, Sage LaTorra & Adam Koebel, CC BY 3.0) - fully digested at `rulebook-digest/`
 
-The "full" rulebook text is vendored verbatim at `rulebook-digest/source/xml/`, in the authors' own published XML (Sagelt/Dungeon-World `text/` on GitHub, at a pinned commit). See `rulebook-digest/source/ATTRIBUTION.md` for the exact commit, license detail, and refresh instructions. (Ask for [source-attribution](references\rulebook-digest\source\ATTRIBUTION.md) to see the whole thing.)
+The "full" rulebook text is vendored verbatim at `rulebook-digest/source/xml/`, in the authors' own published XML (Sagelt/Dungeon-World `text/` on GitHub, at a pinned commit). See `rulebook-digest/source/ATTRIBUTION.md` for the exact commit, license detail, and refresh instructions. (Ask for [source-attribution](references/rulebook-digest/source/ATTRIBUTION.md) to see the whole thing.)
 
 `assets/monsters.json` (the bestiary) is extracted from that same vendored copy - specifically `rulebook-digest/source/xml/monster_settings/`. See `tools/extract_monsters.py`'s docstring for regeneration instructions.
 
