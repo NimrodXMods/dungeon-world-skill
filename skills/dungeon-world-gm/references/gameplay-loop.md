@@ -14,6 +14,22 @@ rolls, or forgotten yaml/story duties. Full agenda/moves: warm
    would roll): total and itemized bonuses/penalties. If a prior turn skipped this,
    treat it as a reminder to explain every time.
 
+## HARD NON-NEGOTIABLE (player questions mid-scene)
+
+If you are in the main loop and about to open a **structured multi-choice / form /
+button menu** for the player: **stop**.
+
+In-fiction actions, NPC reactions, social pressure, payment-in-scene, and "does X
+notice / allow / believe / relent?" are **not** elicitation. Narrate (and roll a
+move if one triggers), then end with **"What do you do?"**
+
+Structured elicitation is for **setup / chargen / explicit out-of-fiction meta**
+only (see [elicitation](references/elicitation.md)). Confirming a choice the
+player already made in prose is also not a menu — just proceed.
+
+If a prior turn used a menu mid-scene, treat that as drift: reread **this** file
+and return to open prose + "What do you do?"
+
 ## Core main loop
 
 1. GM describes world state and what just happened.
