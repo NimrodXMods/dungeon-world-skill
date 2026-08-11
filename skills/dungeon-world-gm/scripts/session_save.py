@@ -33,6 +33,9 @@ It also never re-serialises the YAML. The gmsecret is treated as an opaque
 string, so the explanatory comments in the file survive a save/load round trip;
 dumping it through a YAML library would silently strip every one of them.
 
+Text in the zip is always UTF-8 with LF newlines (portable). Working copies on
+disk use the host line ending (CRLF on Windows). session_load converts back.
+
 The campaign "slug" is derived from the `campaign_slug:` field in the YAML
 (lowercased, spaces -> underscores, non-alnum stripped) unless --slug is
 given explicitly.
@@ -47,7 +50,7 @@ import subprocess
 import sys
 import zipfile
 
-from _util import force_utf8_stdio
+from _util import force_utf8_stdio, normalize_newlines_to_lf, read_text_utf8
 
 force_utf8_stdio()
 
@@ -115,10 +118,12 @@ def main():
     else:
         zip_name = f"{slug}_checkpoint.zip"
 
-    # Rot13 the gmsecret's raw text. Deliberately not re-serialised: a YAML
-    # round trip would strip every comment out of the working file.
-    with open(args.gmsecret) as f:
-        encoded_gmsecret_text = codecs.encode(f.read(), "rot13")
+    # Rot13 the gmsecret's raw text after normalizing to LF (zip-canonical).
+    # Deliberately not re-serialised: a YAML round trip would strip comments.
+    # UTF-8 + LF is the portable payload; load expands newlines for the host.
+    encoded_gmsecret_text = codecs.encode(
+        normalize_newlines_to_lf(read_text_utf8(args.gmsecret)), "rot13"
+    )
 
     # encode handoff.md. Required at session end - that is the file the next
     # session picks up from - but a checkpoint is a mid-session snapshot taken
@@ -127,9 +132,9 @@ def main():
     encoded_handoff_text = None
     handoff_path = os.path.join(char_dir, "handoff.md")
     if os.path.exists(handoff_path):
-        with open(handoff_path) as f:
-            plain_text = f.read()
-        encoded_handoff_text = codecs.encode(plain_text, "rot13")
+        encoded_handoff_text = codecs.encode(
+            normalize_newlines_to_lf(read_text_utf8(handoff_path)), "rot13"
+        )
     elif args.kind == "session_end":
         sys.exit(f"ERROR: no handoff.md found in {char_dir}. Write one before "
                  f"ending the session, or pass --dir if it lives elsewhere.")
@@ -144,6 +149,7 @@ def main():
     # story.md rides along in plain text, unlike the gmsecret and handoff: it is
     # the narrative the player has already lived through, so there is nothing in
     # it to spoil. Only nag about a missing one when the campaign opted in.
+    # Still store as UTF-8 LF so the zip is platform-stable.
     story_path = os.path.join(char_dir, STORY_FILENAME)
     has_story = os.path.exists(story_path)
     if not has_story and fields["maintain_story"]:
@@ -156,11 +162,17 @@ def main():
         if encoded_handoff_text is not None:
             zf.writestr(f"{slug}_handoff.txt", encoded_handoff_text)
         for cf in char_files:
-            zf.write(cf, arcname=os.path.basename(cf))
+            # writestr + LF, not zf.write raw bytes: Windows working copies may
+            # be CRLF on disk; the zip must stay LF-canonical.
+            zf.writestr(
+                os.path.basename(cf),
+                normalize_newlines_to_lf(read_text_utf8(cf)),
+            )
         if has_story:
-            # arcname keeps it at the top of the zip; without it the whole
-            # source path would be stored and extract to the wrong place.
-            zf.write(story_path, arcname=STORY_FILENAME)
+            zf.writestr(
+                STORY_FILENAME,
+                normalize_newlines_to_lf(read_text_utf8(story_path)),
+            )
 
     print(f"Wrote {zip_path}")
     print(f"  - {slug}_gmsecret.txt (rot13-encoded)")

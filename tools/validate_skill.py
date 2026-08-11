@@ -776,6 +776,18 @@ def check_session_roundtrip():
         if (restored / "roundtrip_gmsecret.txt").exists():
             fail(rel(load), "left the rot13 .txt behind after decoding")
 
+        # Zip payloads are LF-canonical; rot13'd members and plain text members
+        # must not smuggle CR into the archive (Windows line-ending noise).
+        with zipfile.ZipFile(archive) as zf:
+            for name in zf.namelist():
+                raw = zf.read(name)
+                if b"\r" in raw:
+                    fail(
+                        rel(save),
+                        "zip member {!r} contains CR bytes; session zip text "
+                        "must be LF-only".format(name),
+                    )
+
         # A checkpoint is taken mid-session, before any handoff.md exists, so
         # it must not require one the way session_end does.
         (work / "handoff.md").unlink()

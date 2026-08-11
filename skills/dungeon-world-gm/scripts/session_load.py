@@ -11,7 +11,8 @@ What it does:
        and writes it out as <slug>_gmsecret.yaml - a plain-text working copy
        ready to edit with yamledit.pyz or a text editor. The original .txt is
        removed after a successful decode (it's still inside the zip if needed).
-    3. Leaves the character *.yaml files as extracted, untouched.
+    3. Character *.yaml and story.md are extracted then rewritten with host
+       line endings (LF→CRLF on Windows). Zip payloads stay LF-canonical.
     4. Prints a short summary (campaign name, session number, pause_state,
        character files found) so you have immediate narrative context without
        necessarily needing to open and re-read the whole gmsecret file.
@@ -31,7 +32,7 @@ import os
 import sys
 import zipfile
 
-from _util import force_utf8_stdio
+from _util import force_utf8_stdio, normalize_newlines_to_lf, read_text_utf8, write_text_utf8_local
 
 force_utf8_stdio()
 
@@ -70,32 +71,38 @@ def main():
     if not handoff_files:
         print("WARNING: no *_handoff.txt found in the zip", file=sys.stderr)
 
-    # extract/decode gmsecret
+    # extract/decode gmsecret — zip payload is UTF-8 LF; write host-native newlines
     secret_path = os.path.join(args.dir, secret_files[0])
-    with open(secret_path) as f:
-        encoded_text = f.read()
+    encoded_text = normalize_newlines_to_lf(read_text_utf8(secret_path))
     plain_text = codecs.encode(encoded_text, "rot13")
     data = _load_yaml(plain_text)
     slug = secret_files[0][: -len("_gmsecret.txt")]
     yaml_path = os.path.join(args.dir, f"{slug}_gmsecret.yaml")
-    with open(yaml_path, "w") as f:
-        f.write(plain_text)
+    write_text_utf8_local(yaml_path, plain_text)
     os.remove(secret_path)
 
-    # extract/decode handoff.md
+    # extract/decode handoff — zip name is <slug>_handoff.txt; working file is
+    # always handoff.md (session_save looks for that basename next to gmsecret).
     for fn in handoff_files:
         handoff_path = os.path.join(args.dir, fn)
-        with open(handoff_path) as f:
-            encoded_text = f.read()
+        encoded_text = normalize_newlines_to_lf(read_text_utf8(handoff_path))
         plain_text = codecs.encode(encoded_text, "rot13")
-        handoff_md_path = os.path.join(args.dir, os.path.basename(fn).replace("_handoff.txt", "_handoff.md"))
-        with open(handoff_md_path, "w") as f:
-            f.write(plain_text)
+        write_text_utf8_local(os.path.join(args.dir, "handoff.md"), plain_text)
         os.remove(handoff_path)
 
+    # Character sheets and story.md were extracted binary-as-stored (LF in zip).
+    # Rewrite to host-native newlines so Windows editors and diffs match local
+    # working copies after save→load.
     char_files = sorted(
         n for n in names if n.endswith(".yaml") and not n.endswith("_gmsecret.yaml")
     )
+    for n in char_files:
+        p = os.path.join(args.dir, n)
+        if os.path.isfile(p):
+            write_text_utf8_local(p, read_text_utf8(p))
+    story_path = os.path.join(args.dir, "story.md")
+    if os.path.isfile(story_path):
+        write_text_utf8_local(story_path, read_text_utf8(story_path))
 
     campaign = data.get("campaign_slug") or data.get("campaign") or "(unnamed)"
     print(f"Loaded campaign: {campaign}")
