@@ -115,6 +115,13 @@ into a downloadable zip, rot13-ing the gmsecret and `handoff.md` so a player can
 spoiling themselves; `session_load.py` reverses that and prints a summary. rot13 here is
 spoiler-obfuscation, not security — don't "upgrade" it to encryption.
 
+`session_save.py --no-rot13` stores both plainly, for when the person holding the zip is
+the GM (assistant mode, or a solo GM archiving prep). The choice is recorded by **filename**
+— `_gmsecret.txt`/`_handoff.txt` when encoded, `_gmsecret.yaml`/`handoff.md` when plain — so
+`session_load.py` takes no matching flag and cannot guess wrong. Since rot13 is its own
+inverse, a guess would corrupt silently rather than fail, which is why the encoding is in the
+name and not in a header.
+
 Edits to those YAMLs go through `scripts/yamledit.pyz` (a bundled yamlpath-based tool) with
 `--schema assets/yaml_schemas/<type>.schema.yaml` passed on every call — there are two document types,
 so no single configured default works.
