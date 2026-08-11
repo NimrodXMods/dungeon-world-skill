@@ -52,11 +52,24 @@ as JSON or a protocol method:
   voice) as a short multi-field form.
 - Prefer fewer turns over dumping an entire chargen sheet as one wall of text
   unless the user asks to go fast.
+- **Characters are never batched across PCs.** Create **one character at a time**,
+  finish their sheet (or a clear handoff point), then start the next. Do **not**
+  ask parallel multi-PC questions such as "what are all three classes?" or
+  "give me all three names at once." Same for stats, gear, and bonds: one PC's
+  decisions only, until that PC is done. Solo multi-PC games still go sequential
+  (PC 1 fully, then PC 2, …).
 
 ### Presentation (plain chat)
 
 Number or letter the options. Keep labels short; put detail in a half-line gloss.
 Always say how to reply (number, name, or free text).
+
+**This chat formatting is the UI.** If your runtime knows MCP form-mode
+elicitation (`elicitation/create` + `requestedSchema`), treat the markdown below
+as the same shape as that schema — map fields/options/defaults mentally, then
+render with whatever structured-ask facility you have **or** as numbered chat.
+Do **not** dump raw MCP JSON or protocol envelopes at the user unless their
+client is an MCP form UI that expects that.
 
 ```text
 **Class** — pick one playbook (or name a homebrew and we'll improvise).
@@ -70,6 +83,30 @@ Default: none — this needs an explicit pick.
 Reply with a number, a name, or your own idea.
 ```
 
+Treat that block as equivalent to a single-field MCP-style form like:
+
+```json
+{
+  "mode": "form",
+  "message": "Pick one playbook (or name a homebrew and we'll improvise).",
+  "requestedSchema": {
+    "type": "object",
+    "properties": {
+      "class": {
+        "type": "string",
+        "title": "Class",
+        "description": "Playbook; custom/homebrew names allowed",
+        "enum": ["Fighter", "Wizard", "Cleric"]
+      }
+    },
+    "required": ["class"]
+  }
+}
+```
+
+(Expand `enum` to every class the skill actually supports; omit `default` when
+there is none — same as "Default: none" in the chat form.)
+
 Boolean example with default:
 
 ```text
@@ -82,19 +119,45 @@ Default: **yes**.
 Reply 1, 2, yes, or no.
 ```
 
+Equivalent shape:
+
+```json
+{
+  "mode": "form",
+  "message": "Keep a running story.md narrative of the campaign?",
+  "requestedSchema": {
+    "type": "object",
+    "properties": {
+      "maintain_story": {
+        "type": "boolean",
+        "title": "Story log",
+        "description": "Maintain story.md",
+        "default": true
+      }
+    },
+    "required": ["maintain_story"]
+  }
+}
+```
+
 ### Hard rules
 
 1. **If a finite option set is known, always enumerate it** when eliciting.
    Never ask "what class?" without listing the playbooks.
-2. **Never name harness tools** or protocol methods for asking the user.
-   Describe the content of the question, not a product-specific API.
+2. **Never name harness-specific tool APIs** as required (e.g. a particular
+   product's ask-user helper). Prefer the chat form above; if you map it to MCP
+   form mode or similar, that is fine — still present a clear multi-choice to
+   the human.
 3. **Defaults are first-class.** When the skill or template has a default, say
    it out loud before the user answers.
-4. **Do not paste JSON Schema or MCP request bodies** into play. This file is
-   the protocol; chat is the UI.
+4. **Chat is the default UI.** The JSON examples above are a **mapping aid** for
+   agents that understand MCP form elicitation — not something to paste at the
+   player mid-session unless their client is literally driving an MCP form.
 5. **Multi-select:** say how many to pick ("choose two") and list the full set.
 6. **Locked choices** (e.g. Paladin is Human only): state the lock; do not fake
    a menu of one meaningful option unless clarifying.
+7. **One PC at a time** for character creation (see Batching). No parallel
+   multi-character questionnaires.
 
 ---
 

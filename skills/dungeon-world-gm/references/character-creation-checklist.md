@@ -19,12 +19,18 @@ How to *present* closed menus to the user: **[elicitation](references/elicitatio
 
 ## How to run this checklist
 
+0. **One character at a time.** If the party has multiple PCs (table or solo
+   multi-PC), finish **one** full sheet before starting the next. Never run
+   parallel multi-PC elicitations ("what are all three classes?", "names for
+   everyone?", "stats for the whole party?"). Name who you are building
+   ("Creating PC 1 of 3 — Alice's character") and only ask decisions for them.
 1. Walk **Part 1 in order**. After **Class** is chosen, open that class's
    section in Part 2 and use it for every later closed list (race, look,
    alignment, gear, embedded starting-move choices).
 2. For every step with a **closed option set** in Part 2, **list the options
    before asking** — never "what race?" without the class's race list, never
-   "what alignment?" without the class's alignments. See [elicitation](references/elicitation.md).
+   "what alignment?" without the class's alignments. See [elicitation](references/elicitation.md)
+   (including the MCP-schema-shaped mapping for agents that use form UI).
 3. **Locked choices** (e.g. Paladin is Human only): state the lock and record
    it; do not pretend there is a free pick.
 4. **Multi-select** steps (Fighter signature-weapon enhancements, Barbarian
@@ -39,10 +45,11 @@ How to *present* closed menus to the user: **[elicitation](references/elicitatio
 7. Homebrew / not on the list is fine — say so when offering menus ("or name
    something else and we'll adapt").
 8. Speed mode: if the user wants to go fast, you may batch several *independent*
-   Part 2 picks for the same class in one message; keep branching picks
-   (class → race) sequential.
+   Part 2 picks for the **same** character in one message; keep branching picks
+   (class → race) sequential. Still never batch across different PCs.
 9. When the sheet is complete, write/update the character YAML via the template
-   and `yamledit` as usual; then return to campaign/session flow.
+   and `yamledit` as usual; then either start the **next** PC or return to
+   campaign/session flow.
 
 ---
 

@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.20.2"
+  version: "0.21.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -250,7 +250,7 @@ has problems. Always avoid bypassing `yamledit.pyz` for editing as much as possi
 - **[treasure-and-monster-building](references/treasure-and-monster-building.md)** — custom monsters / treasure table detail (`monster_gen.py` first for bestiary).
 - **[weather](references/weather.md)** — weather as threat/move.
 - **[hacking-and-conversion](references/hacking-and-conversion.md)** — custom classes/moves, conversion.
-- **[elicitation](references/elicitation.md)** — only when a procedure needs structured multi-choice, or auditing missed options.
+- **[elicitation](references/elicitation.md)** — only when a procedure needs structured multi-choice, or auditing missed options. Chat form + MCP-schema-shaped mapping; one PC at a time for chargen.
 - **[campaign-creation-checklist](references/campaign-creation-checklist.md)** — with 1a new campaign (or audit incomplete setup).
 - **[character-creation-checklist](references/character-creation-checklist.md)** — creating/rebuilding PCs.
 - **rulebook-digest** — L0 → L1 → L3 via `rulebook.py`; never read `source/xml/` wholesale. Tag Reference appendix is print-only; [tag-reference](references/tag-reference.md) is authority.

@@ -80,7 +80,9 @@ File: `<slug>_gmsecret.yaml`.
 | 2 | **Upload** existing character sheet YAML(s) |
 | 3 | **Mix** |
 
-Default: none — needs a pick before ready to play.
+Default: none — needs a pick before ready to play. If creating multiple PCs,
+run the checklist **once per character, fully, in sequence** — never
+"class/name/stats for everyone at once" (see [elicitation](references/elicitation.md)).
 
 ### 7. [ ] Front skeleton (GM-side)
 
