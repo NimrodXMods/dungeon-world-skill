@@ -1317,7 +1317,9 @@ TABLE (zero or more; default if omitted: every table below)
                    subject, an angle to ask it from, and a few loose
                    answer-tokens to think against. Hands you a QUESTION to
                    answer in play, not an answer - and deliberately never a
-                   whole front. Use it for a front's Stakes questions, for
+                   whole front. Subjects may carry <a/b/c> slots - pick one or
+                   invent another of the same kind; nothing expands them. Use
+                   it for a front's Stakes questions, for
                    worldbuilding, or mid-session when the players point at
                    something and you need a good question about it
   seed:SUBJECT/ANGLE/COUNT
