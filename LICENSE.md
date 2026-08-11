@@ -1,7 +1,7 @@
 dungeon-world-skill Copyright (C) 2026 by NimrodX
 
 Except as otherwise specified, all contents of dungeon-world-skill are
-licened according to CC BY-NC-SA 4.0 Attribution-NonCommercial-ShareAlike 4.0
+licensed according to CC BY-NC-SA 4.0 Attribution-NonCommercial-ShareAlike 4.0
 as described below.
 
 The `yamledit` utility is covered by the MIT license.

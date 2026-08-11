@@ -124,7 +124,7 @@ These moves are for actions that typically take half a day or more. Also include
 
 **Level Up**: subtract (current level + 7) from XP, +1 level, choose an advanced move, +1 to one stat (max 18). Wizards also gain a new spell.
 
-**End of Session**: read **[[session-end]]** when this move is triggered. This is the move that says "we want to end the
+**End of Session**: enter the **End of Session** state when this move is triggered. This is the move that says "we want to end the
 session" and there's no need to read the file about it beforehand.
 
 ## Flags (alternative to Bonds - see [[fronts-and-worldbuilding]] source notes)

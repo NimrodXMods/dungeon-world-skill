@@ -4,15 +4,6 @@ Purpose: ordered setup for a **new** campaign (or clarifying intent at session
 start). Present each step using **[[elicitation]]** — enumerate options, state
 defaults, allow custom answers where noted.
 
-Store decisions in `<campaign_slug>_gmsecret.yaml` as they are made (template:
-`assets/yaml_templates/gmsecret_template.yaml`). Never show the plain gmsecret
-to the player.
-
-For Fronts / dangers / "draw maps leave blanks" mechanics, also use
-**[[fronts-and-worldbuilding]]** and generators (`idea_gen.py`, `region_gen.py`,
-etc.) as needed. This checklist is the *procedure*; that reference is the
-*craft*.
-
 Read **on demand** at Session Start when starting new (or when intent is
 unclear). Skip when resuming a loaded campaign zip unless re-confirming a field.
 
@@ -40,9 +31,9 @@ What does the user want right now? (skip if already clearly answered)
 | # | Option | Next |
 | --- | --- | --- |
 | 1 | **New campaign** | Continue this checklist |
-| 2 | **Resume** from a campaign save zip | `session_load.py` path in SKILL.md — leave this checklist |
-| 3 | **GM Assistant** | Start **GM Assistant Mode** |
-| 4 | **Rules / reference only** | Answer questions; do not start session state |
+| 2 | **Resume** from a campaign save zip | enter **Resuming a Campaign** state — leave this checklist |
+| 3 | **GM Assistant** | enter **GM Assistant Mode** |
+| 4 | **Rules / reference only** | enter **GM Assistant Mode** and standby to answer questions - leave this checklist and do not start session state |
 
 Default: **none** — needs an explicit pick if unclear.
 
@@ -70,16 +61,7 @@ Present using **[[elicitation]]** as single-select (summaries ok; point at llm-p
 
 Default: **Dungeon World Pulpy**. Write `style_voice` on the gmsecret once chosen.
 
-### 4. [ ] Story log (`maintain_story`)
-
-Keep a running `story.md` narrative?
-
-1. **Yes** — maintain the log (default)
-2. **No** — skip `story.md`
-
-Default: **true** / yes. Mirror SKILL.md: assume yes unless they say otherwise.
-
-### 5. [ ] Premise
+### 4. [ ] Premise
 
 What kind of world / campaign do they want?
 
@@ -95,7 +77,7 @@ mark this done.
 Open follow-ups (free text, not every one mandatory): tone of danger, tech/magic
 level, regions they care about, banned content, one-shot vs long campaign.
 
-### 6. [ ] Campaign slug
+### 5. [ ] Campaign slug
 
 Propose a short `snake_case` slug (from premise or a neutral name). Confirm or
 accept their alternative.
@@ -103,7 +85,7 @@ accept their alternative.
 Default: your proposal if they say "fine" / "sure"; otherwise their string.
 File: `<slug>_gmsecret.yaml`.
 
-### 7. [ ] Characters
+### 6. [ ] Characters
 
 | # | Option |
 | --- | --- |
@@ -114,7 +96,7 @@ File: `<slug>_gmsecret.yaml`.
 Default: none — needs a pick. Run chargen (or load sheets) before calling the
 session truly ready to play.
 
-### 8. [ ] Front skeleton (GM-side)
+### 7. [ ] Front skeleton (GM-side)
 
 Not a player menu. Before play:
 
@@ -124,6 +106,22 @@ Not a player menu. Before play:
 - Optional: lightly name the starting region/steading via `region_gen.py` /
   `steading_gen.py` if fiction needs a place to stand.
 
+### 8. [ ] Story log (`maintain_story`)
+
+Ask the user: Keep a running `story.md` narrative?
+
+1. **Yes** — maintain the log (default)
+2. **No** — skip `story.md`
+
+Default: **true** / yes - assume yes unless they say otherwise.
+
+Only if the answer is **Yes**: set `maintain_story` to True. Propose a title
+to the user (`# The Adventures of Blah` - there is no default way to generate
+this so make one up from previous information), ask them to confirm if your
+suggestion is ok, and use whatever they specify if they want to change it.
+
+Only if the answer is **No**: set `maintain_story` to False.
+
 ### 9. [ ] Ready to play
 
 Only when:
@@ -132,10 +130,10 @@ Only when:
 - gmsecret exists with slug, `session_number` (1 for brand-new), `style_voice`,
   `maintain_story`, and ≥1 front
 - At least one character sheet is in play (created or uploaded)
-- Session-start always-read refs are loaded per SKILL.md
+- Session-start always-read refs are loaded
 
-Then move to the main gameplay loop. Do not narrate "session begins" until
-session-number rules in SKILL.md are satisfied.
+are all met do you enter the **Main Gameplay Loop**. Do not narrate
+"session begins" until session-number rules are satisfied.
 
 ---
 

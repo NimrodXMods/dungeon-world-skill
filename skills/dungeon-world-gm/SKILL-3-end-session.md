@@ -1,4 +1,4 @@
-# Session End
+# End of Session ("Session End)
 
 ## Moves
 

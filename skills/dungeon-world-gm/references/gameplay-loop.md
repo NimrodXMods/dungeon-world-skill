@@ -38,7 +38,7 @@ this, treat it as a live reminder to hold the line going forward, not just a one
 
 **Checkpoint:** triggered by the person saying something like "checkpoint" / "save checkpoint" (a rolling safety snapshot, doesn't advance the session count or end the session). `python3 scripts/session_save.py campaign_gmsecret.yaml --kind checkpoint` - Ensure that all yaml files are in the same directory as the gmsecret yaml when running this.
 
-**End of Session move:** read **[[session-end]]** when this move is invoked by player saying "end session" or similar.
+**End of Session move:** enter the **End of Session** state when this move is invoked by player saying "end session" or similar.
 
 ## Brief Agenda
 
@@ -59,4 +59,4 @@ this, treat it as a live reminder to hold the line going forward, not just a one
 ## See Also
 
 Read **[[gm-agenda-principles-moves]]** for the full agenda/principles/move list - only reread if necessary.
-Only read **[[session-end]]** when it's time to end a session because it isn't needed until then.
+Only read the End of Session instructions when it's time to end a session because it isn't needed until then.

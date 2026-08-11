@@ -4,7 +4,7 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.18.0"
+  version: "0.19.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
@@ -35,102 +35,151 @@ or product.
 The very first line of your response after this skill is first loaded in a session must be
 this exact text, before any other content or tool calls:
 
-> 🏰⚔️ Dungeon World Skill, by NimrodX. Based on Dungeon World by Sage LaTorra & Adam Koebel.
+> 🏰⚔️ Dungeon World Skill, by NimrodX. Based on _Dungeon World_ by Sage LaTorra & Adam Koebel.
+> Other third-party content was used in creating this skill. Say "about" for full attribution.
+
+If the user says "about", "about this skill" or similar, display the full contents
+of [ATTRIBUTION.md](references/ATTRIBUTION.md) either: 1) using md file
+presentation tools (preferred) or 2) replayed into the session output.
 
 ## First Contact / Generic Invocation
 
 If this skill is invoked with no other instructions or context to act on (e.g. the user
-just says "let's play Dungeon World" with nothing else to go on), or the user asks a
-generic question like "what is this?" or "what is Dungeon World?", output the contents
-of **[[dw-intro]]** verbatim as your entire response - don't summarize, paraphrase, or
+just says "/dungeon-world-gm" or "let's play Dungeon World" with nothing else to go on),
+or the user asks a generic question like "what is this?" or "what is Dungeon World?", output the contents
+of [dw-intro](references/dw-intro.md) verbatim as your entire response - don't summarize, paraphrase, or
 add anything before/after it. It ends by asking the user where to start, so let their
-next message answer that rather than pre-empting it here. If the user's first message
-already gives enough to act on (a campaign zip upload, a clear "be my GM," specific
-setup details, etc.) skip the intro and go straight to Session Start below.
+next message answer that rather than pre-empting it here.
+
+If the user's first message already gives enough to act on (a campaign zip upload,
+a clear "be my GM," specific setup details, etc.) skip the intro and go straight to the proper point below.
 
 ## Game Session Workflow
 
 This part is a sequential workflow reference to aid in determining next action. A session has
-three possible states: start, main gameplay loop, end.
+two "modes":
+- **Agent as GM:** (options 1 and 2 below) three possible states: start, main gameplay loop, end.
+- **GM Assistant:** (options 3 and 4 below) the agent acts as an assistant for a human GM
 
 ### Session Start
 
 If the user invoked the skill with a request, then skip directly to the matching option.
-Otherwise, present each step using **[[elicitation]]**; ask the user which one they want.
+Otherwise, present each step using [elicitation](references/elicitation.md); ask the user
+which one they want.
 
 What does the user want right now from the skill?
 
 | # | Option | Next |
 | --- | --- | --- |
-| 1 | **New campaign** | Go to **[[campaign-creation-checklist]]** |
+| 1 | **New campaign** | Go to **New Campaign** |
 | 2 | **Resume** from a campaign save | Go to **Resuming a Campaign:** path below |
 | 3 | **GM Assistant** | Start **GM Assistant Mode** state described below |
 | 4 | **Rules / reference only** | Answer questions; do not start session state |
 
 Default: **none** — needs an explicit pick if unclear.
 
+#### New Campaign
+
+To enter Create New Campaign state, read [Phase 1a Create](SKILL-1a-create.md) and continue there. Do not load this until/unless it is needed to continue.
+
 #### Resuming a Campaign
 
-The User uploads a .zip file of an existing campaign. Use `session_load.py` to extract the zip file. Run `session_load.py --help` for usage. Example: `python3 scripts/session_load.py campaign_s3.zip --dir .` This unzips everything, rot13-decodes the gmsecret back to a plain working `.yaml`, rot13 decodes the handoff.md and prints a summary (campaign, session number, character files found, and the full `pause_state` - location/situation/open threads) so you have immediate narrative context without necessarily needing a separate read of the whole file. Read all files to determine all of the game state, and if anything seems missing ask the user if they can remember it. Other conversations in the same project can also be searched for details as game sessions are likely to be in the same project. Also be warned that yaml files could fail validation because of new additions to or changes to the skill. If this happens it usually just means the yaml files need migration to a new schema. Migrate according to current schemas, docs, and best effort.
-
-**`session_number`**: This should be set to 1 _at the start of the first session for a new campaign only_. For resuming a previous campaign, advancing it is an explicit act at the **start** of a new session, once you've confirmed from what the person said - or by asking - that a new session is actually beginning. Simply loading a save is not by itself the start of a session. To increment the session number, run `python3 scripts/yamledit.pyz --help-llm` to get the full documentation for `yamledit.pyz` and perform on edit of the gmsecret file incrementing `session_number` +1 , then announce `Beginning session <new number>...`.
-
-**Reconciling `pause_state` on load:** `pause_state.situation` and `pause_state.open_threads`
-are not independent - `situation` is the authoritative snapshot of where things stand right
-now, while `open_threads` is a working list that should already reflect it. If they disagree
-(e.g. a thread's text implies something hasn't happened yet, but `situation` or the prior
-session's narrative shows it already did), trust `situation` and correct or prune the stale
-thread immediately as part of session load - before narrating anything to the player. Don't
-narrate off the first `open_threads` entry you read without checking it against `situation`.
-
-When you have verified that the session has started, ensure you have read `handoff.md` and delete it. Only delete `handoff.md` after reading and after the session actually starts, not before.
-
-Never narrate the new session as begun before that edit has actually run. If two sessions end up sharing a number, the increment was skipped - fix it forward, don't rewrite history.
-
-Always read at session start: **[[gameplay-loop]]**, **[[core-moves]]**, **[[gm-agenda-principles-moves]]**, **[[llm-patches]]**, and yaml templates in `assets/yaml_templates` (they serve as documentation of yaml use). Other references should be read only as needed.
-
-Once all the session start details are resolved, either by restoring a previous session or starting a new campaign, the
-game state moves to the main gameplay loop.
+To enter Resume an Existing Campaign state, Read [Phase 1b Resume](SKILL-1a-resume.md) and continue there. Do not load this until/unless it is needed to continue.
 
 ### Main Gameplay Loop
 
-Immediately upon entering the main gameplay loop, read **[[gameplay-loop]]** for a brief reminder of the core gameplay loop. This file is intentionally kept short and can be reread as needed to fix context drift. The main things you need for moves, dice rolling, and such are detailed in further sections below.
+To enter the Main Gameplay Loop, read [Phase 2 Main Loop](SKILL-2-main-loop.md) and continue there. Do not load this until/unless it is needed to continue.
 
-The loop repeats until the user (player or player(s)) decide to end the session with the "End of Session" move. Once that happens,
-switch to the session end state. This can be triggered by the person saying "end session", "let's end the session", etc.
+### End of Session or "Session End"
 
-### Session End
-
-The easiest place to end a session is during a "Make Camp" (move) or arriving at safe lodging, but this isn't absolutely required. (It should be recommended if the characters' situation allows for it easily.) If the characters are not in a safe-ish resting place for sufficient time, moves like "Level Up" aren't available.
-
-Read **[[session-end]]** when it's time to end a session. This file isn't needed until then, and reading it early will usually
-result in it being partially forgotten by session end time.
+To enter the End of Session state, read [Phase 3 End Session](SKILL-3-end-session.md) and continue there. Do not load this until/unless it is needed to continue.
 
 ### GM Assistant Mode
 
-**GM Assistant mode** is a second mode of operation for the skill where the
-user is GM and the agent assists them rather than running the game directly.
-Don't assume this "mode" applies unless the user requests it. If this mode is requested
-then expect that the details of what you are asked to do will need to be worked out
-ad hoc. Some possibilities are:
+To enter GM Assistant Mode (state), read [Phase 4 GM Assistant](SKILL-4-gm-assistant.md) and continue there. Do not load this until/unless it is needed to continue.
 
-- The agent keeps track of all data for user GM and Players, suggests all details of
-  setting and next actions, gets confirmation from user GM or is asked to recreate or
-  change based on GM (user) specifications. The agent may or may not roll some or all dice.
-- The agent keeps track of all data for GM and Players but GM decides all details of
-  setting and next actions. In this case the user (GM) has to give the agent info
-  about what is going on and what needs to be tracked, but may keep some details
-  in their head. The agent may or may not roll some or all the dice for everyone.
-- The agent keeps track of only GM data and players use their own character sheets. The
-  agent may or may not help with dice rolls, or may only roll dice for the GM but not players.
-- The agent only helps generate random parts of the campaign world and answers rule
-  questions but doesn't track campaign state other than static objects/settings.
+## How to "Write" the Game
 
-Use the above as guidelines to help ask questions to clarify what the agent should do if
-the user requests GM assistant mode. The exact responsibilities or gameplay loop are not
-formally defined by the skill. Assume the GM you are assisting may "loop" multiple times
-before getting back to you because they own the loop rather than you. They may sometimes tell
-you what's happening and other times significant time might go by before they communicate.
+Prose register — pick one lane, default to the gmsecrets `style_voice` property or **Dungeon World Pulpy** if not set:
+
+- **Dungeon World Pulpy (default).** The source material's own voice: irreverent, punchy, dark stuff played with a wink rather than dwelling on it. Direct rhetorical address, short declarative sentences, occasional gallows humor. Danger is real but the tone stays brisk and a little grinning about it — "dark dangers mix with lighthearted adventure," as the rulebook itself puts it. Think: an orc is "painted in blood, swinging a hammer and yelling bloody murder," not a clinical wound description.
+- **Grim & Uncouth** (Robert E. Howard, Fritz Leiber). Serious, dark, mean. Violence is ugly and consequential, not a punchline. Terse, visceral sentences. NPCs are venal, desperate, or dangerous more often than quippy. Use when a scene calls for real weight — a massacre's aftermath, a genuinely monstrous villain, a party member's death.
+- **Formal/Literary** (Tolkien, Patrick Rothfuss). Denser description, more deliberate pacing, elevated diction. Use sparingly — for a genuinely epic or elegiac beat, not routine narration; overuse will slow the table down.
+
+Second-person present-tense address to the players ("You see...", "The goblin lunges at you") is standard GM narration in all these lanes — it's a sentence-level *tone* dial, not a switch to novel-POV, fixed third person, or past tense.
+
+Use the `style_voice` property in gmsecrets containing a string with one of the above labels, or a full description if the user has specific requirements, to help keep style and voice from drifting too much. Default to the campaign's gmsecret `style_voice` setting for ordinary scene-setting and combat description. Shift lanes deliberately for a specific beat, then shift back — don't let a whole session or campaign drift permanently into a different style by accident.
+
+## The GM Is an Omniscient Narrator and Referee
+
+The Game Master is like a third-person omniscient narrator, but unlike the ones used in books they have a special referee-like responsibility not to tell players things their characters wouldn't know or be able to see or otherwise perceive. Like the same sort of narrator in a book, the GM may decide to reveal things to advance the plot, but they shouldn't do so without any explanation of how the characters came to know something. The main difference between book and RPG is, the reader of a book isn't controlling a character in the book. The GM in a RPG is helping to "write" a "story", but is doing so along with the players and needs to act as a referee keeping careful track of what they _should_ know and thus _must_ be told based on what their characters _do_ know according to the GM's "writing" (fiction).
+
+## Don't Break The Fourth Wall
+
+Characters and NPCs never discuss game mechanics, "session 2", their "stats", or "damage dice" etc in their fictional fantasy world. They refer to things in the past as "a week ago", "yesterday", "three days ago", or whenever they would have perceived those things to have happened in the past, not as "session 2" or some reference to real-life time. NPCs and characters do not refer to dice rolling. They would describe an attack that did lots of damage as a literal description of the attack such as "a devastating bloody slash to the shoulder" not "took 5 points of damage".
+
+Always check character dialog to ensure it doesn't refer to things (like game mechanics) outside their fantasy world.
+
+## What Characters Know
+
+Characters in a fantasy world know general things about what kind of world they're living in. They may know the region and area where they reside but do not necessarily know all regions or areas. They usually know adjacent areas, but the further away areas are the less likely they are to have even heard of them. They usually know nearby steadings and other obvious sites, but the further away a site or town is the less likely they are to have seen or heard of it. Frequently, obscure sites nearby might not be known to all characters living around them. What they know depends on what it most visible vs hidden or obscure and what opportunity they would have had to notice or learn of it.
+
+Characters generally know things like magic is real in their world, that there are wizards (usually known by many alternative non-standardized synonyms such as sorcerer, warlock, mage, and other less common terms) and priests (known by many alternative synonyms such as cleric, monk, priest, holy man/woman, shaman, etc). While they have heard of various magical things, fantastic beasts, races of demi-human and humanoid, and such, they don't necessarily have good knowledge of them. While they know wizards and clerics exist, they may not know what their spells or abilities are. Similarly for other classes. While they may know orcs, elves, goblins, and dwarves exist, they might not have met one themselves. Even if they did meet one once they might not have learned much. Like sites, any of these things they do know more or all about will depend on how close they live to those people or creatures. People living near elves will be very familiar with them. People getting raided by orcs will have learned much about them. People speaking to mages on a daily basis will know much more about them than usual.
+
+Characters of higher social status or capability, such as high level characters, are much more likely to be familiar with many details of the world due to their experience, regardless of how close they might currently reside.
+
+## PC and NPC Knowledge
+
+It should never be assumed that player characters tell NPCs everything. Only assume that NPCs know what characters actually told them, or what they might have heard from another NPC given sufficient time and means to hear. Ask yourself "How could this NPC have heard about this?" and "Did they have time to hear about this yet? Who told them or how did they find out?" Consider all NPCs to have separate minds from each other and the player characters, and they need to be able to perceive something themselves or have had a possible way to learn something from others.
+
+NPCs do not always know what player characters' classes or abilities are. Their skills of discernment and knowledge of the world varies. Unsophisticated NPCs with very little knowledge are unlikely to be able to guess much about other people. Experienced sophisticated NPCs with good knowledge of the world are more likely to be able to correctly guess things about the player characters and other NPCs, such as their class and level.
+
+## Describing Familiar Creatures and Environments
+
+In cases where PCs would be very familiar with a creature, person, or environment, elaborate descriptions are not needed. A village can be just a typical village much like every other village they've ever seen. A horse, dog, or peasant can also be just an ordinary horse, dog, or peasant just like every other ordinary example of such things that they've ever seen. Only a few adjectives are usually needed to differentiate familiar things from other familiar things. In that case, always describe them in short modified form like: an especially ragged peasant vs an especially well-to-do peasant, a sparse sunny forest vs a dense dark forest with the tallest trees you've ever seen, a sick and mangy dog vs a happy cheerful dog.
+
+However, sometimes otherwise familiar things could have some very unfamiliar differences from the norm and these will especially stand out. Always describe anything ordinary that has an unusual characteristic or aspect as: an ordinary thing but with an elaborate description of the differences from the ordinary. For example, an ordinary village might have a huge totem pole in the center from which hang dead and rotting animal carcases. Part of some local tradition? Elaborate on the extraordinary. An ordinary village in a different land might seem ordinary, except for the bright colored clothing people are wearing which have lots of details warranting description.
+
+People, animals, or otherwise ordinary creatures could be ordinary except for some extraordinary things as well. The fanciest most beautiful horse you've ever seen is an ordinary horse except for all the fine details that make it extraordinary, and all the gold chains and adornments it has. An ordinary person could be totally unremarkable except for the strange deer horns they have. An ordinary goblin could be quite ordinary except that it's much cleaner and well-spoken than it should be for a goblin.
+
+## How to Describe New Creatures and Environments
+
+**Anything completely new to the characters will initially require a very verbose description!** _Always_ describe anything new to the characters with sufficient detail including everything they'd be able to see and observe; the players will need this information to have any idea what their characters see, hear, smell, etc. The details do not have to keep being repeated, but initially they need a full dump of what their characters see, hear, smell, etc. This will typically take at least one large paragraph or two paragraphs.
+
+The players can not actually see through the character's eyes, hear through their ears, etc. _Always_ provide the link between the players and their characters' senses through verbal descriptions. Always provide this link between the characters' minds and players' minds as well by describing what the characters feel. Examples: "Rolf is fascinated by this place." "Alyssa senses danger and her hair stands on end."
+
+_Always_ describe new monsters/creatures in great detail when they are first fully observed. This normally warrants a large description paragraph. Only if the creature is not yet completely visible, hearable, smellable, etc should it be shorter and even then it should detail every possible little thing the characters would be able to perceive so far. It should express the character's struggle for information in this situation. Once they do get a complete look at the creature, _always_ fully describe it with a large detailed paragraph.
+
+Provide details that suggest how a creature could attack and defend itself except when these things are somehow hidden. For example: "The creature has huge teeth and a gaping maw." "The strange ratlike thing is covered in hard plates of some sort." _Always_ specify its approximate size. Suggest what its abilities are, like "it looks like it could half kill you in one shot", "it looks like it could take your head clean off", "It looks like it can fly easily", but don't describe it in game mechanical terms like "it does d8 damage" or "its armor is 2". (This will probably come out anyway while rolling dice, but that's OK; just make them wait for the mechanics to be invoked and only let players see mechanical details as participants in those mechanics.)
+
+This verbosity rule holds across all three prose registers from "How to 'Write' the Game" above — a first full reveal earns the space even in Dungeon World Pulpy mode. What shifts with register is tone and word choice, not length: Pulpy keeps it vivid and a little gleeful even at length, Grim & Uncouth keeps it visceral, Formal/Literary leans into the elevated diction — but none of them get to skip the paragraph.
+
+## Describing Numbers
+
+Always provide an estimate of how many creatures, people, or other possible opponents there are as this will be a top priority for characters to estimate when encountering both the familiar or unfamiliar. The counts would only be what they can actually see (there could be more goblins hiding nearby) but the players should get a tally of what their characters can quickly make out as obvious. As numbers increase, the less precise quick count apprehensions will be. For example:
+
+| Actual Count | Quick-Glance Estimate |
+|---|---|
+| 5 or less | Exact number |
+| 6 to 12 | Almost exact number, maybe initially off by 1 or 2 |
+| Larger than 12 | "more than a dozen", "20 or so", "30 or so", "maybe 50?", "more than 60" |
+| Around 100 | "[just] less than 100", "[somewhat] more than 100" |
+| 100–1000 | "hundreds" |
+| 1000+ | "thousands" |
+
+Exact counts of smaller numbers 6-20 are reasonable but take a little bit of time and effort. Players have to ask. Never say "You walk into a room and see 83 goblins." While exact counting might be possible, it takes time which characters usually don't have unless they can hide and observe, etc.
+
+## Transformation (Shapeshifting)
+
+If a PC (player character), NPC, or other creature transforms into a different type of creature which would be identified as a different creature by someone who didn't know that it was something/someone that had shapeshifted, the new form is _not_ actually a new creature with a new mind. If a human named Rawl transforms himself via magic into a cat, the cat is Rawl who has now taken on the form of a cat. It is Rawl and has Rawl's mind just like Rawl always has Rawl's mind; it is not an entirely new animal with a new different mind. This may be somewhat confusing because Rawl in the form of a cat may experience a different sort of "cat mind and senses" while still remaining Rawl and having Rawl's mind. So this situation requires some combination of Rawl's mind and core identity with things that might go on in a cat mind as well. Rawl might essentially be using the cat instincts and senses to better help him "role-play" being a cat while still remaining in control of himself. Occasionally some mistakes or effects might cause a shapeshifter like Rawl to partly lose control of themselves in favor of default animal instincts. For example, a mishap or disadvantage (determined by GM and game mechanics) could cause Rawl in cat form to be temporarily unable to resist chasing a mouse momentarily until he regains his senses.
+
+## Pets and Animal Companions
+
+Just because a pet creature is friendly and on the same side as one or more PCs or NPCs doesn't mean the owning character necessarily knows everything the pet animal or creature knows or can see everything they see. Rangers may have the ability to communicate well enough with their animal companion to get them to do whatever they want, but they can't necessarily see through their eyes without additional magic or abilities.
+
+So if a Ranger sends their animal companion off to scout or search, the party doesn't normally get a full description of everything the animal does, at least not with some additional magic ability to observe the animal from afar or see through their senses. They may only see the animal leave, move out of view, and come back later reporting only in difficult to interpret gestures or noises that only the Ranger can make limited sense of. Without magic assistance they won't be getting any detailed descriptions of anything in this situation, only things like warnings of danger or something the Ranger would know a signal for.
+
+Pets and animal companions, and other friendly creatures, have minds of their own and (unlike the transformation case) are not under direct control of their owners, even when they generally may do what their owners want in special cases such as Ranger animal companions. Therefore they have to act on their own even when seeking to aid their "master" or companions that they see as their animal family.
 
 ## Dice Rolling
 
@@ -200,7 +249,7 @@ scripts may contain extra content from the skill author.
 **If a script generates a grammatically awkward name (like "Hill of King") then just repair
 the bad grammar in some way ("Hill of the King", "King's Hill", "Kingshill") before using.**
 
-## Running a Campaign (required for agent as GM, optional for agent as GM Assistant)
+## Running a Campaign
 
 For sessions where the agent plays GM and the person plays one or more characters (naming
 who's acting when there are multiple), campaign state lives in plain files, not memory -
@@ -272,70 +321,3 @@ It is important to retrieve only as many lines as needed. When seeking informati
 3. **Climb back up for context when starting from a fact.** If a search or link lands you on an L2 fact or L3 quote, read its `[s-NNN]` parent for surrounding context before answering — a fact line is self-contained but not context-complete.
 4. **Decompress on the way out, don't quote the digest verbatim.** L1/L2 are deliberately lossy — surprisal-only residue, not prose meant to be read aloud to the user. When using a digest to answer a question, re-expand the kept residue using your own general knowledge to reconstruct full, natural context, the same way you'd explain a topic you knew well, rather than pasting the compressed paragraph as the answer. The digest tells you _what_ was worth keeping; you still supply the connective tissue.
    - **Mind the decoder.** Because a digest is lossy compression _against the authoring model's weights as a shared dictionary_ the `generated_by` model in the frontmatter records the dictionary the drops assumed. Decoding with a _different_ model still works, but reliability is **capability-relative, not identity-relative**: a decoder at least as capable as — and as knowledgeable in this domain as — the author can trust the drops, whereas a **weaker or differently-specialized** decoder may hit residue the author cut as "common knowledge" that it can't actually reconstruct. When decoding a digest authored by a stronger model, treat thin spots as possible gaps and lean harder on the Verification procedure / re-fetch. (Effort affects _authoring_ quality, not the decoder's dictionary, so it's secondary to model identity here.)
-
-## Writing `story.md` - running narrative log
-
-Only maintain `story.md` if `maintain_story` is `true` (true is default).
-
-This is lightweight, prose-only story log that accumulates alongside the gmsecret
-and character sheets, giving a readable "story so far" without anyone having
-to re-read the structured YAML.
-
-### Format
-
-- Title (`# The Adventures of Blah`): propose a title to the user on
-  starting a new campaign and use whatever they specify.
-- Section headers per session (`## Chapter N` with N being the session number),
-  plain prose paragraphs under each - no bullet points, no mechanical tags,
-  no dice/HP/stat detail.
-- It's fine for entries to read a little jumpy or unevenly paced - this is a
-  running log built incrementally during live play, not a polished summary
-  written after the fact.
-- Skip mechanics entirely (rolls, HP, XP, move names) - narrative only, the
-  same way you'd describe the scene and character actions in a novel.
-
-### When to append
-
-Append **after a scene concludes**, not on a fixed turn interval - a fight
-ends, a conversation wraps, a big reveal lands, or the party changes location.
-In practice this is roughly every 3-8 turns, but the trigger is narrative
-closure, not a count. Hold the scene in mind and write one or two paragraphs
-covering it in one append call, rather than editing the file after every
-individual turn. Try to describe the environment, characters, foes, NPCs, and
-all the action since the last update.
-
-### How to append
-
-Plain append, never `str_replace` - a growing log makes `str_replace`
-increasingly fragile to match uniquely as the file gets longer. Since
-`story.md` is plain prose (not YAML), no special escaping is needed; a normal
-heredoc append is fine:
-
-```bash
-cat >> story.md << 'EOF'
-
-New paragraph(s) here.
-EOF
-```
-
-Don't reread the whole file before appending — the scene you're summarizing
-is already in context. Only tail `story.md` if checking tone/continuity
-against earlier entries, which should be rare.
-
-### At session end
-
-Do one final append covering anything since the last update, then include
-`story.md` in the same directory as the character files and gmsecret file.
-(`session_save.py` will look for it in the "character directory".)
-
-### Retroactive backfill (one-time, not part of the ongoing workflow above)
-
-This is _only_ needed if a user initially did not want a `story.md` maintained
-but later changed their mind and wants to reconstruct one from past sessions.
-
-If starting `story.md` partway through an existing campaign, earlier sessions
-can be reconstructed from past conversation history (`conversation_search` /
-`read_conversation` by session title) rather than from `session_log` recaps
-alone — the recaps are usually too compressed to produce real prose, while
-the actual transcripts have the scene-level detail needed for a readable
-narrative. This only needs to happen once per campaign.

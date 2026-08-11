@@ -4,9 +4,9 @@ Dungeon World is a TTRPG (table top role-playing game) where a small group tells
 
 This skill lets an AI agent take on all or some of the job a person would otherwise fill. It can:
 
-- **Run the whole game as GM for a solo player** — you play one character, the agent plays the world.
-- **Run the whole game as GM for a full party** — same, but you voice (and roll for) every character.
-- **Assist a human GM** — you run the table, the agent helps as directed: planning the game session, generating fronts or ideas, tracking state, rolling dice, generating NPCs or loot, looking up rules, etc.
+- **Run the whole game as GM for a solo player** — you play one or more characters, the agent plays the world.
+- **Run the whole game as GM for a full party** — same, but a multiple players play one character each and you relay everyone's instructions to the agent.
+- **Assist a human GM** — you run the table as GM, the agent helps as much or as little as desired: planning the game session, generating fronts or ideas, tracking state, rolling dice, generating NPCs or loot, looking up rules, etc.
 
 Dice work either way in all three modes: the agent can roll true-random-seeded PRNG numbers in a script, or you can roll physical dice and report the results.
 
