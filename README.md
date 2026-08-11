@@ -9,7 +9,9 @@ Have you ever just wanted some assistance with being a GM to keep the
 game moving? Well, this could be your solution as well.
 
 > Does it work? Well, LLMs aren't the most creative but it does work.
-LLMs will do a better job as GM assistants, but they can act as GMs.
+LLMs will do a better job as GM assistants, but they can act as GMs. And all
+the random procedural generation scripts included in this skill do force
+creativity.
 
 ## What is Dungeon World?
 
