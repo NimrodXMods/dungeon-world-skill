@@ -117,8 +117,10 @@ context-budget discipline.
 
 ## Runtime state model
 
-Campaign state lives in files, not model memory: `<name>_<class>.yaml` character sheets and one
-`<campaign_slug>_gmsecret.yaml` (GM-only, never shown to the user). `session_save.py` packages these
+Campaign state lives in files, not model memory: `<name>_<class>.yaml` character sheets, one
+`<campaign_slug>_gmsecret.yaml` (GM-only, never shown to the user), and one
+`<campaign_slug>_environment.yaml` (player-visible; see the dashboard section below).
+`session_save.py` packages these
 into a downloadable zip, rot13-ing the gmsecret and `handoff.md` so a player can hold the file without
 spoiling themselves; `session_load.py` reverses that and prints a summary. rot13 here is
 spoiler-obfuscation, not security — don't "upgrade" it to encryption.
@@ -131,8 +133,50 @@ inverse, a guess would corrupt silently rather than fail, which is why the encod
 name and not in a header.
 
 Edits to those YAMLs go through `scripts/yamledit.pyz` (a bundled yamlpath-based tool) with
-`--schema assets/yaml_schemas/<type>.schema.yaml` passed on every call — there are two document types,
-so no single configured default works.
+`--schema assets/yaml_schemas/<type>.schema.yaml` passed on every call — there are three document
+types, so no single configured default works. `scripts/yamledit.yaml` does exist, but it sets
+**only** the dashboard hook and deliberately no `schema`; don't add one.
+
+### The player dashboard, and why the environment file exists
+
+`scripts/dashboard.py` renders `DW_Dashboard.html`: a location header, a card per PC, and the
+basic/special move reference. It is wired as yamledit's **post-write hook**, so every successful
+edit rewrites the page and there is no step for the model to remember.
+
+Three things here are load-bearing and easy to undo by accident:
+
+- **`dashboard.py` must never read `*_gmsecret.yaml`.** The page is what the player is looking at,
+  and the gmsecret is rot13'd on save precisely so holding the zip doesn't spoil them. The
+  exclusion is by *filename, before any read* — keep it that way rather than filtering content
+  later. The spoiler canary in `check_dashboard_hook()` is the regression test that matters.
+- **`<slug>_environment.yaml` is not a copy of the gmsecret's `current_location`.** The gmsecret
+  records ground truth; the environment file records what the characters *perceive* — what they
+  see, are told, or believe, which may be wrong. The party may know a place only as "A Suspicious
+  and Evil-Looking Forest of Weirdness" while the gmsecret calls it "Wizard X's Forest of
+  Experiments". Divergence is the feature. Do not "deduplicate" them.
+- **A failing hook is silent by design.** yamledit warns to stderr and does not change its exit
+  code, so a broken dashboard can never make the model think its edit failed. The cost is that a
+  typo in `yamledit.yaml` breaks the feature with no symptom, which is why `check_dashboard_hook()`
+  runs a *real* yamledit write and asserts the page appeared.
+
+The page is a static template (`assets/html_templates/dashboard_template.html`) plus one injected
+JSON blob spliced between two `<!--DW-DATA-...-->` markers. Every value reaches the DOM through
+`textContent`; `dashboard.py` has exactly one data path and one escaping rule, and nothing may
+route around it with `innerHTML`.
+
+**The `<script>` raw-text trap.** The content of a `<script>` element is raw text, so those HTML
+comment markers are *not* comments there — the page receives them as literal characters around the
+JSON, and `JSON.parse` throws unless they are stripped first. That failure is invisible: the catch
+falls back to the "no campaign loaded" placeholder, which looks exactly like a working page with an
+empty campaign. This shipped once. Two consequences:
+
+- The template's renderer must strip the markers before parsing, and `check_dashboard_hook()`
+  asserts it does.
+- **Verify the page by executing its JS against what a browser actually hands it** — extract the
+  `#dw-data` element's raw text verbatim, markers and all. A checker that slices the JSON out
+  itself tests a situation no browser produces and will pass a completely broken page. The same
+  rule applies to the validator, which is why it reads the carrier with a regex rather than
+  slicing between markers.
 
 ## Script conventions
 
@@ -295,7 +339,17 @@ python3 skills/dungeon-world-gm/scripts/yamledit.pyz \
   --schema skills/dungeon-world-gm/assets/yaml_schemas/character.schema.yaml <<'EOF'
 hp -> ?
 EOF
+
+# rebuild the dashboard for a scratch campaign under tmp/ (the hook does this
+# automatically on any yamledit write; run it by hand to force or debug)
+python3 skills/dungeon-world-gm/scripts/dashboard.py --dir tmp/<campaign> --out tmp/x.html
 ```
+
+For dashboard *rendering*, opening the file in a browser is the only way to judge the CSS, but the
+DOM the JS builds can be checked without one: run the page's own renderer against a small DOM stub
+under `node`, feeding it the `#dw-data` element's raw text verbatim (see the `<script>` raw-text
+trap above — a stub that pre-slices the JSON proves nothing). Such harnesses belong in gitignored
+`tmp/`, so they exist only in the working copy that wrote them.
 
 Note: the Bash tool's working directory persists between calls — `cd` to the repo root explicitly
 rather than assuming it.
@@ -327,8 +381,9 @@ For a fast loop while iterating, `--quick` trims it from ~25s to ~8s:
 python tools/validate_skill.py --quick
 ```
 
-`--quick` cuts the per-seed sweeps to a single seed and skips the session save/load round-trip
-(the most expensive single check). It prints exactly what it gave up and tags the result
+`--quick` cuts the per-seed sweeps to a single seed and skips the two checks that shell out
+heavily — the session save/load round-trip and the dashboard hook end-to-end test. It prints
+exactly what it gave up and tags the result
 `[QUICK - PARTIAL RUN]`. **It is not the pre-flight command** — a passing `--quick` run is not
 evidence the build is green, because CI always runs the full sweep. Run the plain command before
 pushing.
@@ -339,7 +394,9 @@ again look for a check that shells out per-seed or per-script rather than for sl
 It enforces the conventions described above that nothing else can: skill-root Markdown
 links resolve, no `[[wikilinks]]` remain, no top-level reference file is orphaned from the
 link graph, generators still answer `--help-llm`, templates still satisfy their schemas,
-the rulebook's page markers are contiguous, and `scripts/yamledit.pyz` still matches
+the rulebook's page markers are contiguous, `assets/moves.json` still carries real move text,
+the dashboard hook still fires and still keeps the gmsecret off the page, and
+`scripts/yamledit.pyz` still matches
 `tools/yamledit.lock` (version + sha256). The validator has no pip dependencies — it
 borrows `ruamel.yaml` and `fastjsonschema` off the vendored pyz's `sys.path`, so keep it
 that way.
