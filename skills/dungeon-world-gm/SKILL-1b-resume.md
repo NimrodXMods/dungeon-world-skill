@@ -21,6 +21,13 @@ when the prior session may live elsewhere.
 Yaml may fail validation after skill schema changes — migrate using any special
 instructions, then current schemas, docs, and best-effort inference.
 
+A campaign saved before the environment file existed will have no
+`<slug>_environment.yaml`. Create one from
+`assets/yaml_templates/environment_template.yaml` and fill it from
+`pause_state` — but only with what the characters actually perceive. It is
+player-visible; the gmsecret's `current_location` is ground truth and may use
+names or details the party has not earned.
+
 ### Reconciling `pause_state` on load
 
 `pause_state.situation` is authoritative; `open_threads` is a working list that
@@ -39,6 +46,17 @@ rules — not before.
 - Read yaml templates in `assets/yaml_templates` as documentation of yaml shape.
 - Use `yamledit.pyz` exclusively for editing active yaml.
 - Other references only as instructed or needed.
+
+## Present the dashboard
+
+Once the campaign files are restored and verified, show the player
+`DW_Dashboard.html` **once**. Any `yamledit.pyz` write keeps it current from then on,
+but on some clients it stays invisible until it has been presented once this session,
+and re-opening it re-reads the file from disk.
+
+If no dashboard exists yet, run `scripts/dashboard.py` once by hand to create it
+(`--help-llm` for how). Use whatever this client offers for showing a file to the
+user; if it offers nothing, say where the file is.
 
 ## Transition to main loop
 

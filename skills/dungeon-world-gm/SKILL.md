@@ -4,12 +4,12 @@ description: Reference material and tools for running Dungeon World (a Powered-b
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.23.0"
+  version: "0.24.0"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
   last-assisting-model: Anthropic Claude Opus 5 (claude-opus-5)
-  updated: "2026-08-11"
+  updated: "2026-08-12"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
 
@@ -194,7 +194,7 @@ the bad grammar in some way ("Hill of the King", "King's Hill", "Kingshill") bef
 
 For sessions where the agent plays GM and the person plays one or more characters (naming
 who's acting when there are multiple), campaign state lives in plain files, not memory -
-deterministic, exact, and downloadable. Two file types, both YAML:
+deterministic, exact, and downloadable. Three file types, all YAML:
 
 - **Character sheets**: `<name>_<class>.yaml` (e.g. `ragnar_warrior.yaml`). Template at
   `assets/yaml_templates/character_template.yaml`, schema at `assets/yaml_schemas/character.schema.yaml`.
@@ -205,6 +205,29 @@ deterministic, exact, and downloadable. Two file types, both YAML:
   Additional fields can be added as needed to store other information such as custom monsters,
   NPCs, XP bonus goals, or custom anything. **Never show this file's plain
   contents to the user** - it's GM-only spoiler material.
+- **Environment**: `<campaign_slug>_environment.yaml` - where the party is and what
+  is around them, as **the characters perceive it**. Template at
+  `assets/yaml_templates/environment_template.yaml`, schema at
+  `assets/yaml_schemas/environment.schema.yaml`. This is the only source for the
+  dashboard's location header, so keep it current as the party moves.
+
+  This is **not** a copy of the gmsecret's `current_location`. That one is ground
+  truth; this one is perception, and the two are allowed to disagree - the party may
+  know "A Suspicious and Evil-Looking Forest of Weirdness" while the gmsecret calls it
+  "Wizard X's Forest of Experiments". **Never copy gmsecret content into this file:
+  it is player-visible**, rendered into a page the player is looking at and bundled
+  into the session zip in plain text.
+
+**Player dashboard**: any successful `yamledit.pyz` write regenerates
+`DW_Dashboard.html`, a player-facing page showing the location and a card per PC.
+This happens automatically via a hook configured in `scripts/yamledit.yaml` - there is
+no step to remember. `scripts/dashboard.py` never reads the gmsecret.
+
+Present the dashboard to the player **once per session**, right after the campaign
+files exist; on some clients it stays invisible until you do. Treat the word
+"dashboard" from the player as "show it to me again". If it stops updating, see
+`scripts/dashboard.py --help-llm` (the usual cause is `python3` not being on PATH,
+fixed by editing one word in `scripts/yamledit.yaml`).
 
 **Keeping yaml updated cheaply**: use `yamledit.pyz` for every HP change, XP
 gain, gear pickup, etc. instead of rewriting/re-viewing the whole file - it's built for
@@ -212,9 +235,11 @@ exactly this. Run `python3 scripts/yamledit.pyz --help-llm` to get the full refe
 
 **Always pass `--schema` for the file being edited.** It catches a typo'd path
 (`hp.currnet`, `portents[0].chekced`) that would otherwise silently become a new field,
-which is the main way state files rot. This skill has two document types and a
+which is the main way state files rot. This skill has three document types and a
 `yamledit.yaml` config can only name one schema, so the flag must be passed per call -
-there is no default that covers both.
+there is no default that covers all three. The `scripts/yamledit.yaml` that ships with
+this skill deliberately sets **only** the dashboard hook and no schema, so it does not
+change this rule.
 
 For on-the-fly flexibility, all schemas are _selectively_ open:
 fixed shapes (`hp`, `stats.str`, a portent, a `current_location` entry) are closed

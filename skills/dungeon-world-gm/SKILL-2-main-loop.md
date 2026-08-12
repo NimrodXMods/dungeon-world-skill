@@ -31,6 +31,21 @@ If not already loaded this session, read all of:
 
 Other references only as needed (cold).
 
+## Keeping `<slug>_environment.yaml` current
+
+Update it whenever the party moves, the scene changes, or something arrives or
+leaves — the same beat at which you would update the gmsecret. It drives the
+dashboard's location header, so a stale environment file means the player is
+looking at the wrong place.
+
+It records **perception, not truth**: only what the characters can see, have been
+told, or believe. It may be wrong, and it may name a place differently from the
+gmsecret's `current_location`. Never copy gmsecret content into it.
+
+Editing it through `yamledit.pyz` refreshes the dashboard automatically. If the
+player says they can't see the dashboard, or just says "dashboard", present
+`DW_Dashboard.html` to them again — the file on disk is already current.
+
 ## Writing `story.md` — running narrative log
 
 Only if `maintain_story` is `true` (default true).

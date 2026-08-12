@@ -28,6 +28,16 @@ You are already on the **new campaign** path. Complete
 [campaign-creation-checklist](references/campaign-creation-checklist.md) now
 (skip any top-level intent fork that would leave create — stay on new campaign).
 
+## Present the dashboard
+
+Once the campaign files exist and `<slug>_environment.yaml` has a `where`, show the
+player `DW_Dashboard.html` **once**. Any `yamledit.pyz` write keeps it current from
+then on, but on some clients it stays invisible until it has been presented once this
+session, and re-opening it re-reads the file from disk.
+
+Use whatever this client offers for showing a file to the user. If it offers nothing,
+say where the file is.
+
 Only when the checklist **Ready to play** requirements are met, enter the main
 loop via [SKILL-2-main-loop.md](SKILL-2-main-loop.md). Follow **Session Number**
 there before announcing that play has begun (`session_number` is 1 for a brand-new

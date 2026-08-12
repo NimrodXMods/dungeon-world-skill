@@ -70,7 +70,12 @@ tone, tech/magic level, regions, banned content, one-shot vs long campaign.
 ### 5. [ ] Campaign slug
 
 Propose short `snake_case` slug; confirm or take their alternative.
-File: `<slug>_gmsecret.yaml`.
+Files: `<slug>_gmsecret.yaml` and `<slug>_environment.yaml`.
+
+Create both from their templates in `assets/yaml_templates/`. The environment
+file is player-visible and holds only what the characters perceive - it is the
+sole source for the dashboard's location header, and creating it blank now is
+fine (`where` fills in once the opening scene is set).
 
 ### 6. [ ] Characters
 
@@ -111,6 +116,8 @@ Only when:
 - Still on new campaign
 - gmsecret has slug, `session_number` **1**, `style_voice`, `maintain_story`, ≥1 front
 - ≥1 character sheet in play
+- `<slug>_environment.yaml` exists, with `where` set to the opening scene
+- dashboard presented to the player once (see [SKILL-1a-create.md](SKILL-1a-create.md))
 - 1a required refs loaded (fronts + gm-narration)
 
 Then enter [SKILL-2-main-loop.md](SKILL-2-main-loop.md) and follow **Session

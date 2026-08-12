@@ -80,7 +80,7 @@ These are used for actions on a short timescale such as attacks in combat, death
 - 10+: +1 or -2 to their roll (their choice which)
 - 7-9: as above, but you expose yourself to danger/cost
 
-## Long Timescale Moves
+## Special Moves (Longer Timescale Moves)
 
 These moves are for actions that typically take half a day or more. Also included on the list is Last Breath where characters have a chance to escape death when their HP reaches 0.
 

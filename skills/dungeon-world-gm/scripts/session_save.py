@@ -215,7 +215,11 @@ def main():
         print(f"  - {os.path.basename(cf)}")
     if has_story:
         print(f"  - {STORY_FILENAME}")
-    if not char_files:
+    # The environment file is bundled with the sheets above (it is player-safe,
+    # so it rides along plain), but it is not a character - a campaign with only
+    # an environment file still has no PCs and should still say so.
+    if not [p for p in char_files
+            if not os.path.basename(p).endswith("_environment.yaml")]:
         print("  (no character *.yaml files found alongside the gmsecret - is --dir right?)", file=sys.stderr)
     if args.no_rot13:
         print("  (spoilers are readable in this zip - hand it to a GM, not a player. "
