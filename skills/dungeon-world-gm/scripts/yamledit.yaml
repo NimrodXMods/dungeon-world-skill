@@ -1,0 +1,27 @@
+# yamledit.pyz reads this file from its OWN directory (not the caller's CWD).
+# It registers dashboard.py as the post-write hook: every successful edit to a
+# campaign YAML rewrites DW_Dashboard.html, so the player's view can never go
+# stale behind the state.
+#
+# The hook runs only after a real write - never on reads, --get, --dry-run, or a
+# failed batch. A failing hook warns on stderr and does NOT change yamledit's
+# exit code, so a broken dashboard can never make the model believe its edit
+# failed.
+#
+# DO NOT ADD `schema:` HERE. It is a valid key and it is the wrong thing to use:
+# this skill has three document types (character, gmsecret, environment), so
+# --schema must keep being passed per call. A default here would silently
+# validate every edit against one of the three.
+#
+# Off switches: YAMLEDIT_NO_HOOK=1 for a single call, or `enabled: false` below.
+
+hook:
+  # `dashboard.py` is a bare relative name on purpose - yamledit resolves the
+  # first two command parts against this file's directory, so the hook works
+  # regardless of where the caller is. yamledit appends the edited file's path.
+  #
+  # If `python3` is not on PATH (some Windows setups) the hook warns to stderr
+  # and the dashboard silently stops updating while edits keep working. The fix
+  # is to change the word below to `python`.
+  command: [python3, dashboard.py]
+  timeout: 15

@@ -199,6 +199,30 @@ the interface.
 `*_gen.py` scripts take `--seed` for reproducibility. That flag is development-only — SKILL.md
 forbids the model from using it at play time, so don't add gameplay guidance that relies on it.
 
+### Generated assets: regenerate, don't hand-edit
+
+`assets/monsters.json` and `assets/moves.json` are build products of `tools/`, which is
+not shipped inside the skill. Edit the extractor and re-run it; a hand-patch is lost the
+next time anyone regenerates.
+
+- `tools/extract_moves.py` → `assets/moves.json` — basic moves, special moves, and every
+  class's starting/advanced moves, read out of the vendored rulebook XML for the player
+  dashboard. Paragraphs are stored as bold/plain **spans** rather than HTML so the page can
+  keep the rulebook's bolded trigger while still setting every string with `textContent`.
+
+  ```bash
+  python3 tools/extract_moves.py \
+      skills/dungeon-world-gm/references/rulebook-digest/source/xml \
+      skills/dungeon-world-gm/assets/moves.json
+  ```
+
+  The parser walks a *layout*-driven document — headings and their prose are siblings
+  inside `<Story>`/`<Body>`/`<div>` wrappers that nest differently from file to file, which
+  is why it flattens containers into one stream instead of recursing structurally. That
+  makes it quietly fragile against an upstream refresh: a changed wrapper yields a valid
+  JSON file with empty move lists. `check_moves_asset()` in the validator is the guard —
+  it enforces move-count floors and that no move has empty text.
+
 ### The monster difficulty formula is duplicated — keep it in sync by hand
 
 `difficulty` is not in the upstream rulebook; it is invented by this repo. The formula lives in

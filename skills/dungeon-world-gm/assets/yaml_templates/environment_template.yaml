@@ -1,0 +1,48 @@
+# Template environment file. Copy to <campaign_slug>_environment.yaml and keep
+# it current as the party moves. One per campaign, not one per character.
+#
+# PLAYER-VISIBLE. This file is rendered into DW_Dashboard.html, which the player
+# is looking at, and it is bundled into the session zip in PLAIN TEXT. It holds
+# only what the party has actually been told or seen. Never copy anything out of
+# <campaign_slug>_gmsecret.yaml into it - the gmsecret is rot13'd on save
+# precisely so a player can hold the zip without spoiling themselves, and a
+# secret restated here defeats that.
+#
+# It is YAML rather than prose so that edits go through yamledit.pyz and fire
+# the dashboard hook. A Markdown file would leave the dashboard stale exactly
+# when the party moved.
+#
+# NOT A COPY OF gmsecret's `current_location`. The two look alike and are not:
+#
+#   _gmsecret.yaml   ground truth - the GM's absolute reality.
+#   _environment.yaml  perception - what the characters can see, have been told,
+#                      or believe. May be skewed, incomplete, or simply wrong.
+#
+# So the names legitimately differ. The GM's canonical site may be "Wizard X's
+# Forest of Experiments" while the party knows only "A Suspicious and
+# Evil-Looking Forest of Weirdness". Divergence between the two files is the
+# feature, not drift - do not "deduplicate" them.
+
+where: "" # short label for the dashboard header, e.g. "The Sunken Chapel - flooded nave"
+
+# Nested location, coarse to fine. Fill in what is known; blank is fine.
+region: "" # e.g. "The Dunmarch"
+area: "" # e.g. "Blackmire Fen"
+site: "" # e.g. "The Sunken Chapel"
+site_label: "" # what to call the site on the dashboard when "Site" is wrong:
+# "Town", "Village", "Steading", "Keep", "Dungeon"... Blank means "Site".
+point: "" # e.g. "flooded nave, west aisle"
+
+time: "" # e.g. "dusk, second day" - in-fiction, not wall clock
+
+description: "" # prose the GM has ALREADY narrated to the party
+
+present: [] # NPCs/creatures the party can currently see
+exits: [] # ways out the party knows about
+notable: [] # things the party has noticed here
+
+# Only when the party is split. charname -> where that character is.
+# Empty {} means everyone is together at the location above.
+separated: {}
+
+notes: "" # anything else player-safe worth showing on the dashboard

@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon World Dashboard</title>
+<!--
+  Player-facing dashboard for the dungeon-world-gm skill.
+
+  This file is a TEMPLATE. scripts/dashboard.py reads it, replaces whatever sits
+  between the DW-DATA-START / DW-DATA-END markers below with a minified JSON
+  blob, and writes the result out as DW_Dashboard.html. It is openable in a
+  browser exactly as it stands - the empty {} renders a "no campaign loaded"
+  placeholder.
+
+  Two rules this file must keep:
+
+  1. Self-contained. No external CSS, JS, fonts or images - the page is opened
+     from disk, often with no network.
+  2. Every value from the JSON reaches the DOM through textContent, NEVER
+     innerHTML. dashboard.py escapes the JSON so it cannot break out of the
+     script tag, but that escaping only holds if nothing here re-parses a value
+     as markup. See the `text()` helper at the bottom - use it.
+
+  Nothing in the data is GM-secret: dashboard.py never opens *_gmsecret.yaml.
+-->
+<style>
+  /* Light is the base palette; dark redefines only the tokens. */
+  :root {
+    --bg: #f4efe6;
+    --panel: #fffdf8;
+    --panel-2: #efe8db;
+    --ink: #241f1a;
+    --ink-soft: #5d5347;
+    --ink-faint: #8b8172;
+    --rule: #d9cfbe;
+    --accent: #7a2e26;
+    --accent-soft: #a8493c;
+    /* Second accent for the shared move reference, so a rule everyone can use
+       is never mistaken at a glance for one of your character's own moves. */
+    --accent-alt: #2f5f66;
+    /* Condition severity, worst to best. Note sev2/sev3 are a dark amber and
+       olive rather than true yellow and yellow-green: on the light panel those
+       hues have almost no contrast as text, so they are darkened to stay
+       readable while keeping the red->green progression legible. */
+    --sev-0: #9d2f26;
+    --sev-1: #a2551a;
+    --sev-2: #7a6410;
+    --sev-3: #55701f;
+    --sev-4: #3f6b3f;
+    --good: #3f6b3f;
+    --bad: #9d2f26;
+    --shadow: 0 1px 2px rgba(36, 31, 26, .09), 0 6px 18px rgba(36, 31, 26, .06);
+    /* Stat block: dark name/score half, light modifier half. */
+    --stat-dark: #241f1a;
+    --stat-dark-ink: #f2ece1;
+    --stat-light: #fbf7ef;
+    --stat-light-ink: #241f1a;
+    --stat-edge: #241f1a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1e2127;
+      --panel-2: #262a32;
+      --ink: #e8e4dc;
+      --ink-soft: #a9a396;
+      --ink-faint: #7b7568;
+      --rule: #333842;
+      --accent: #d98a72;
+      --accent-soft: #c2705a;
+      --accent-alt: #6fb2bd;
+      /* Same ramp, lifted for a dark panel - here true yellow reads fine. */
+      --sev-0: #e8796c;
+      --sev-1: #e7a25f;
+      --sev-2: #ddc95f;
+      --sev-3: #b0cf6d;
+      --sev-4: #86b886;
+      --good: #7fb07f;
+      --bad: #e0796c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .28);
+      /* Same split, one step lighter than the page so the box still reads as a
+         unit against a dark background. */
+      --stat-dark: #0f1114;
+      --stat-dark-ink: #e8e4dc;
+      --stat-light: #39404b;
+      --stat-light-ink: #f4f1ea;
+      --stat-edge: #454c58;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 1.5rem 1rem 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 68rem; margin: 0 auto; }
+
+  h1, h2, h3, .display {
+    font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---- location header ---- */
+  .place {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .place h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+  /* Two location lines: the coarse geography, then the local place (larger,
+     because it is what the player is actually standing in). */
+  .place .path {
+    margin-top: .35rem;
+    color: var(--ink-soft);
+    font-size: 1.22rem;
+    line-height: 1.4;
+  }
+  /* The local line is the header's title now that the redundant `where`
+     heading is gone, so it carries the old h1's size. */
+  .place .path.local {
+    margin-top: .15rem;
+    font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-size: 1.92rem;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .place .path .lbl {
+    color: var(--ink-faint);
+    font-size: .78em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .place .path .sep { color: var(--ink-faint); padding: 0 .35em; }
+  /* Labels scale with their line, so the big local line needs a smaller ratio
+     or "SITE:" starts competing with the place name. */
+  .place .path.local .lbl {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: .55em;
+  }
+  .place .when {
+    margin-top: .5rem;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+  }
+  .place .when .lbl {
+    color: var(--ink-faint);
+    font-size: .78em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .place .desc { margin: .8rem 0 0; color: var(--ink-soft); }
+  /* Rules fence the narrated description off from the location lines above and
+     the facet columns below - it is prose in among labelled data. */
+  .place .desc.place-desc {
+    margin: .85rem 0 0;
+    padding: .75rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .place .desc.place-notes {
+    padding-top: .75rem;
+    border-top: 1px solid var(--rule);
+    font-size: 1.2rem;
+    line-height: 1.45;
+    /* Full-strength ink, unlike the description above it - this is what the
+       party believes, and it should be the most readable line in the header. */
+    color: var(--ink);
+  }
+
+  .facets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: .9rem;
+    margin-top: 1rem;
+  }
+  .facet h3 {
+    margin: 0 0 .3rem;
+    font-size: .74rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .facet ul { margin: 0; padding-left: 1.05rem; }
+  .facet li { margin: .12rem 0; }
+
+  /* ---- tabs ---- */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: -1px;
+  }
+  .tab {
+    appearance: none;
+    font: inherit;
+    font-size: .92rem;
+    cursor: pointer;
+    padding: .45rem .95rem;
+    border: 1px solid var(--rule);
+    border-bottom-color: transparent;
+    border-radius: 9px 9px 0 0;
+    background: var(--panel-2);
+    color: var(--ink-soft);
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] {
+    background: var(--panel);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .sheet {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 0 12px 12px 12px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+  }
+  .sheet[hidden] { display: none; }
+
+  .who { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; }
+  /* The whole row scales together (+20%), pills included, so the Look chips
+     stay proportionate to the name they sit opposite. */
+  .who h2 { margin: 0; font-size: 1.62rem; }
+  .who .sub { color: var(--ink-faint); font-size: 1.08rem; }
+  .who .pill { font-size: .96rem; }
+  /* Look sits opposite the name: it is identity, not a stat, and as its own
+     section it pushed the character's actual moves further down the card. */
+  .who .look {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .25rem;
+  }
+  @media (max-width: 34rem) {
+    .who .look { margin-left: 0; justify-content: flex-start; }
+  }
+
+  /* ---- vitals ---- */
+  .vitals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: .7rem;
+    margin: 1rem 0;
+  }
+  .vital {
+    background: var(--panel-2);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    padding: .55rem .7rem;
+  }
+  .vital .k {
+    font-size: .68rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .vital .v { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+
+  .bar {
+    height: 5px;
+    margin-top: .4rem;
+    border-radius: 999px;
+    background: var(--rule);
+    overflow: hidden;
+  }
+  .bar > i { display: block; height: 100%; background: var(--good); }
+  .bar.low > i { background: var(--bad); }
+
+  /* Condition sits in the vitals row beside HP. It holds prose, so it gets two
+     tracks and drops back to full width once the row is single-column. */
+  .vital.cond { grid-column: span 2; }
+  .vital.cond .tags { margin-top: .18rem; }
+  .vital.cond .note {
+    margin-top: .22rem;
+    color: var(--ink-soft);
+    font-size: .84rem;
+    line-height: 1.4;
+  }
+  /* Inferred from HP, not written by anyone - kept visually quieter than a
+     real GM comment so the two are never mistaken for each other. */
+  .vital.cond .note.derived { color: var(--ink-faint); font-style: italic; }
+  /* Severity wins over the .derived dimming above: the colour IS the signal.
+     It never carries meaning alone - the wording says the same thing - so a
+     colour-blind reader loses nothing. */
+  .vital.cond .note.sev0 { color: var(--sev-0); }
+  .vital.cond .note.sev1 { color: var(--sev-1); }
+  .vital.cond .note.sev2 { color: var(--sev-2); }
+  .vital.cond .note.sev3 { color: var(--sev-3); }
+  .vital.cond .note.sev4 { color: var(--sev-4); }
+  @media (max-width: 30rem) {
+    .vital.cond { grid-column: 1 / -1; }
+  }
+
+  /* ---- stats ---- */
+  /* Each stat is one box split down the middle: a dark left half carrying the
+     name over the score, and a lighter right half carrying the modifier - the
+     number actually rolled with, so it gets the contrast. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: .75rem;
+    margin: 1.1rem 0;
+  }
+  .stat {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    border: 1px solid var(--stat-edge);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat .side {
+    background: var(--stat-dark);
+    color: var(--stat-dark-ink);
+    padding: .4rem .85rem .5rem;
+    text-align: center;
+  }
+  .stat .n {
+    font-size: .7rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    opacity: .78;
+  }
+  .stat .score {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.5rem;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .mod {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.1rem;
+    padding: .4rem .85rem;
+    background: var(--stat-light);
+    color: var(--stat-light-ink);
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- generic sections ---- */
+  .sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1.1rem;
+    margin-top: 1.1rem;
+  }
+  section > h3 {
+    margin: 0 0 .4rem;
+    padding-bottom: .25rem;
+    border-bottom: 1px solid var(--rule);
+    font-size: .76rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  section ul { margin: 0; padding-left: 1.05rem; }
+  section li { margin: .16rem 0; }
+  section p { margin: .2rem 0; }
+  .prose { white-space: pre-wrap; color: var(--ink-soft); }
+
+  .pill {
+    display: inline-block;
+    margin: .12rem .22rem .12rem 0;
+    padding: .08rem .5rem;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: var(--panel-2);
+    font-size: .8rem;
+  }
+  .pill.warn { border-color: var(--bad); color: var(--bad); }
+  .pill .k {
+    color: var(--ink-faint);
+    font-size: .82em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .carry {
+    margin: .1rem 0 .35rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .prepared { color: var(--good); font-weight: 600; }
+  .unprepared { color: var(--ink-faint); }
+
+  .muted { color: var(--ink-faint); font-style: italic; }
+
+  /* ---- moves (class moves on a card, and the reference box) ---- */
+  .move {
+    border-left: 3px solid var(--accent);
+    padding: .1rem 0 .1rem .7rem;
+    margin-bottom: .8rem;
+    /* Required for the multi-column layouts below: without it a move splits
+       across the column break and its title strands at the bottom. */
+    break-inside: avoid;
+  }
+  .move:last-child { margin-bottom: 0; }
+
+  /* Move lists span the whole card rather than sitting in one grid cell, then
+     balance themselves across two columns - CSS column-fill defaults to
+     `balance`, so the two sides end up about the same height on their own. */
+  .sections > section.wide { grid-column: 1 / -1; }
+  .wide .moves { columns: 2; column-gap: 1.8rem; }
+  @media (max-width: 46rem) {
+    .wide .moves { columns: 1; }
+  }
+  .move .mname {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.02rem;
+    font-weight: 600;
+  }
+  .move p { margin: .18rem 0; color: var(--ink-soft); font-size: .93rem; }
+  .move ul { margin: .18rem 0; padding-left: 1.1rem; color: var(--ink-soft); font-size: .93rem; }
+  .move b { color: var(--ink); font-weight: 600; }
+  .move .nodesc { color: var(--ink-faint); font-style: italic; font-size: .88rem; }
+
+  /* The full-width basic/special reference under the character cards. */
+  .ref { margin-top: 1.5rem; }
+  .ref > h2 {
+    margin: 0 0 .5rem;
+    font-size: .8rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .ref .sheet { border-radius: 0 12px 12px 12px; }
+  .ref .cols {
+    columns: 22rem;
+    column-gap: 1.6rem;
+  }
+  .ref .move { break-inside: avoid; margin-bottom: .85rem; }
+  /* Second accent: these are the rules every character shares, not this
+     character's moves. */
+  .ref .move { border-left-color: var(--accent-alt); }
+  .ref .tab[aria-selected="true"] { box-shadow: inset 0 2px 0 var(--accent-alt); }
+
+  .empty {
+    background: var(--panel);
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+    color: var(--ink-faint);
+  }
+
+  footer {
+    margin-top: 1.5rem;
+    color: var(--ink-faint);
+    font-size: .76rem;
+    text-align: right;
+  }
+
+  @media (max-width: 30rem) {
+    body { padding: 1rem .6rem 3rem; }
+    .sheet { border-radius: 12px; padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="place"></div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div id="sheets"></div>
+  <div id="reference"></div>
+  <footer id="stamp"></footer>
+</div>
+
+<script type="application/json" id="dw-data">
+<!--DW-DATA-START-->{}<!--DW-DATA-END-->
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  // The markers are HTML comments, but the content of a <script> element is RAW
+  // TEXT - the parser does not treat them as comments, so they arrive here as
+  // literal characters wrapped around the JSON and must be stripped before
+  // parsing. (Getting this wrong fails silently: JSON.parse throws, the catch
+  // below swallows it, and the page renders as an empty template.)
+  var MARK_A = "<!--DW-DATA-START-->", MARK_B = "<!--DW-DATA-END-->";
+  var data = {};
+  try {
+    var raw = document.getElementById("dw-data").textContent || "";
+    var a = raw.indexOf(MARK_A), b = raw.lastIndexOf(MARK_B);
+    if (a !== -1 && b !== -1 && b > a) raw = raw.slice(a + MARK_A.length, b);
+    data = JSON.parse(raw) || {};
+  } catch (e) {
+    data = {};
+  }
+
+  // ---- DOM helpers. Everything user-supplied goes through text(). ----
+  function el(tag, cls) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    return n;
+  }
+  function text(node, value) {
+    node.textContent = value === null || value === undefined ? "" : String(value);
+    return node;
+  }
+  function add(parent, tag, cls, value) {
+    var n = el(tag, cls);
+    if (value !== undefined) text(n, value);
+    parent.appendChild(n);
+    return n;
+  }
+
+  // A YAML list entry may be a plain string or a mapping. Render both without
+  // ever assuming a shape - a half-filled sheet must still produce a page.
+  function itemToString(item) {
+    if (item === null || item === undefined) return "";
+    if (typeof item !== "object") return String(item);
+    if (Array.isArray(item)) return item.map(itemToString).filter(Boolean).join(", ");
+    if (item.name !== undefined && item.name !== null && item.name !== "") {
+      var extra = [];
+      Object.keys(item).forEach(function (k) {
+        if (k === "name") return;
+        var v = item[k];
+        if (v === null || v === undefined || v === "" ) return;
+        if (typeof v === "object") return;
+        extra.push(k + ": " + v);
+      });
+      return extra.length ? item.name + " (" + extra.join(", ") + ")" : String(item.name);
+    }
+    return Object.keys(item).map(function (k) {
+      return k + ": " + itemToString(item[k]);
+    }).join(", ");
+  }
+
+  function nonEmpty(list) {
+    if (!Array.isArray(list)) return [];
+    return list.map(itemToString).filter(function (s) { return s.trim() !== ""; });
+  }
+  function has(v) {
+    if (v === null || v === undefined) return false;
+    if (typeof v === "string") return v.trim() !== "";
+    if (Array.isArray(v)) return nonEmpty(v).length > 0;
+    if (typeof v === "object") return Object.keys(v).length > 0;
+    return true;
+  }
+
+  // A titled section holding a bullet list. Returns null when there is nothing
+  // to show, so callers can simply skip appending it.
+  function listSection(title, list) {
+    var items = nonEmpty(list);
+    if (!items.length) return null;
+    var s = el("section");
+    add(s, "h3", null, title);
+    var ul = add(s, "ul");
+    items.forEach(function (t) { add(ul, "li", null, t); });
+    return s;
+  }
+  // Gear, with what you are carrying stated above the list: load is a limit on
+  // the list below it, and coin is the thing most often spent straight out of
+  // it, so both belong here rather than in the vitals row.
+  function gearSection(c) {
+    var items = nonEmpty(c.gear);
+    var load = c.load;
+    var hasLoad = load && typeof load === "object" &&
+      (has(load.current) || has(load.max));
+    var hasCoin = has(c.coin);
+    if (!items.length && !hasLoad && !hasCoin) return null;
+
+    var s = el("section");
+    add(s, "h3", null, "Gear");
+
+    if (hasLoad || hasCoin) {
+      var row = add(s, "p", "carry");
+      if (hasLoad) {
+        var l = add(row, "span", "pill");
+        add(l, "span", "k", "Load ");
+        add(l, "span", null,
+          (has(load.current) ? load.current : "–") + " / " +
+          (has(load.max) ? load.max : "–"));
+      }
+      if (hasCoin) {
+        var m = add(row, "span", "pill");
+        add(m, "span", "k", "Coin ");
+        add(m, "span", null, c.coin);
+      }
+    }
+
+    if (items.length) {
+      var ul = add(s, "ul");
+      items.forEach(function (t) { add(ul, "li", null, t); });
+    }
+    return s;
+  }
+
+  function proseSection(title, value) {
+    if (!has(value)) return null;
+    var s = el("section");
+    add(s, "h3", null, title);
+    add(s, "p", "prose", value);
+    return s;
+  }
+
+  // ---- location header ----
+  function renderPlace(env) {
+    var host = document.getElementById("place");
+    var box = add(host, "div", "place");
+
+    if (!env || !has(env.where)) {
+      add(box, "h1", null, "Location unknown");
+      add(box, "p", "desc muted",
+        env ? "No location set yet." : "No environment file found for this campaign.");
+      return;
+    }
+
+    // No separate title line: the local path line below IS the heading. A
+    // `where` label restates site/point almost word for word, so showing both
+    // just doubles it.
+    //
+    // Two lines: coarse geography, then the local place. `site_label` lets a
+    // settlement read "Town: Cowsburg" instead of the generic "Site".
+    function pathLine(cls, parts) {
+      var live = parts.filter(function (p) { return has(p[1]); });
+      if (!live.length) return;
+      var row = el("div", "path" + (cls ? " " + cls : ""));
+      live.forEach(function (p, i) {
+        if (i) add(row, "span", "sep", "›");
+        if (p[0]) add(row, "span", "lbl", p[0] + ": ");
+        add(row, "span", null, p[1]);
+      });
+      box.appendChild(row);
+    }
+
+    var siteLabel = has(env.site_label) ? String(env.site_label).trim() : "Site";
+    pathLine("", [["Region", env.region], ["Area", env.area]]);
+    if (has(env.site) || has(env.point)) {
+      pathLine("local", [[siteLabel, env.site], ["", env.point]]);
+    } else {
+      // Early in a campaign only `where` is filled in. It carries the heading
+      // on its own rather than leaving the header with no local line at all.
+      pathLine("local", [["", env.where]]);
+    }
+
+    if (has(env.time)) {
+      var when = el("div", "when");
+      add(when, "span", "lbl", "Time: ");
+      add(when, "span", null, env.time);
+      box.appendChild(when);
+    }
+    if (has(env.description)) add(box, "p", "desc prose place-desc", env.description);
+
+    var facets = el("div", "facets");
+    [["Present", env.present], ["Exits", env.exits], ["Notable", env.notable]]
+      .forEach(function (pair) {
+        var items = nonEmpty(pair[1]);
+        if (!items.length) return;
+        var f = el("div", "facet");
+        add(f, "h3", null, pair[0]);
+        var ul = add(f, "ul");
+        items.forEach(function (t) { add(ul, "li", null, t); });
+        facets.appendChild(f);
+      });
+
+    // Only rendered while the party is split.
+    if (env.separated && typeof env.separated === "object") {
+      var names = Object.keys(env.separated);
+      if (names.length) {
+        var f = el("div", "facet");
+        add(f, "h3", null, "Separated");
+        var ul = add(f, "ul");
+        names.forEach(function (n) {
+          add(ul, "li", null, n + " — " + itemToString(env.separated[n]));
+        });
+        facets.appendChild(f);
+      }
+    }
+
+    if (facets.childNodes.length) box.appendChild(facets);
+    if (has(env.notes)) add(box, "p", "desc prose place-notes", env.notes);
+  }
+
+  // ---- character sheet ----
+  var STAT_ORDER = ["str", "dex", "con", "int", "wis", "cha"];
+
+  function renderVitals(c, host) {
+    var v = el("div", "vitals");
+
+    function pool(label, p) {
+      if (!p || typeof p !== "object") return;
+      var box = el("div", "vital");
+      add(box, "div", "k", label);
+      add(box, "div", "v", num(p.current) + " / " + num(p.max));
+      var max = Number(p.max), cur = Number(p.current);
+      if (isFinite(max) && max > 0 && isFinite(cur)) {
+        var pct = Math.max(0, Math.min(100, (cur / max) * 100));
+        var bar = add(box, "div", "bar" + (pct <= 33 ? " low" : ""));
+        add(bar, "i").style.width = pct + "%";
+      }
+      v.appendChild(box);
+    }
+    function plain(label, value) {
+      if (!has(value)) return;
+      var box = el("div", "vital");
+      add(box, "div", "k", label);
+      add(box, "div", "v", value);
+      v.appendChild(box);
+    }
+    function num(x) { return x === null || x === undefined ? "–" : String(x); }
+
+    // Load and coin are not vitals - they are what you are carrying, so they
+    // live with Gear instead of competing with HP for the top row.
+    pool("HP", c.hp);
+    conditionTile(c, v);   // beside HP: both answer "how hurt am I?"
+    plain("Level", c.level);
+    plain("XP", c.xp);
+
+    if (v.childNodes.length) host.appendChild(v);
+  }
+
+  function renderStats(c, host) {
+    var stats = c.stats;
+    if (!stats || typeof stats !== "object") return;
+    var keys = STAT_ORDER.filter(function (k) { return stats[k]; })
+      .concat(Object.keys(stats).filter(function (k) { return STAT_ORDER.indexOf(k) === -1; }));
+    if (!keys.length) return;
+
+    var grid = el("div", "stats");
+    keys.forEach(function (k) {
+      var s = stats[k] || {};
+      var box = el("div", "stat");
+
+      // Dark half: name above score. Light half: the modifier.
+      var side = add(box, "div", "side");
+      add(side, "div", "n", k);
+      add(side, "div", "score",
+        s.score === undefined || s.score === null ? "–" : s.score);
+
+      var mod = s.mod;
+      add(box, "div", "mod",
+        (typeof mod === "number" && mod >= 0) ? "+" + mod
+          : (mod === null || mod === undefined ? "–" : String(mod)));
+
+      grid.appendChild(box);
+    });
+    host.appendChild(grid);
+  }
+
+  // ---- moves ----
+  // A move's text arrives as blocks: {t:"p", spans:[{b,s}]} or {t:"ul", items}.
+  // Spans exist so the rulebook's bolded trigger survives without innerHTML.
+  function renderMove(move, host) {
+    var wrap = add(host, "div", "move");
+    add(wrap, "div", "mname", move.name);
+
+    var blocks = Array.isArray(move.blocks) ? move.blocks : [];
+    if (!blocks.length) {
+      add(wrap, "div", "nodesc", "no description on file");
+      return wrap;
+    }
+
+    blocks.forEach(function (b) {
+      if (b && b.t === "ul" && Array.isArray(b.items)) {
+        var ul = add(wrap, "ul");
+        b.items.forEach(function (i) { add(ul, "li", null, i); });
+      } else if (b && Array.isArray(b.spans)) {
+        var p = add(wrap, "p");
+        b.spans.forEach(function (sp) {
+          add(p, sp && sp.b ? "b" : "span", null, sp ? sp.s : "");
+        });
+      }
+    });
+    return wrap;
+  }
+
+  function movesSection(title, list) {
+    if (!Array.isArray(list) || !list.length) return null;
+    var s = el("section", "wide");
+    add(s, "h3", null, title);
+    var box = add(s, "div", "moves");
+    list.forEach(function (m) { renderMove(m, box); });
+    return s;
+  }
+
+  // Condition rides in the vitals row immediately after HP rather than in a
+  // section further down: debilities modify rolls the same way damage does, so
+  // burying them below gear meant reading past the whole card to learn you are
+  // shaky. Spans two grid tracks because the comment is prose, not a number.
+  // Plain-language stand-in for the debility line, from HP alone. Only used
+  // when the sheet records no debilities and no comment - it is a reading of
+  // the HP number already on the card, never a claim about game state, so it
+  // must not look like something the GM wrote.
+  // [max percent, wording, severity class]. Five severity colours span the
+  // seven bands, so neighbouring wordings can share a colour.
+  var HP_BANDS = [
+    [10,  "almost dead",                      "sev0"],
+    [25,  "gravely wounded",                  "sev1"],
+    [50,  "badly hurt",                       "sev2"],
+    [75,  "bloodied, still standing",         "sev3"],
+    [99,  "a little beaten up but mostly ok", "sev3"],
+    [100, "unhurt",                           "sev4"]
+  ];
+
+  function hpStatus(hp) {
+    if (!hp || typeof hp !== "object") return null;
+    var cur = Number(hp.current), max = Number(hp.max);
+    if (!isFinite(cur) || !isFinite(max) || max <= 0) return null;
+    if (cur <= 0) return { text: "down - rolling Last Breath", sev: "sev0" };
+    var pct = (cur / max) * 100;
+    for (var i = 0; i < HP_BANDS.length; i++) {
+      if (pct <= HP_BANDS[i][0]) {
+        return { text: HP_BANDS[i][1], sev: HP_BANDS[i][2] };
+      }
+    }
+    var last = HP_BANDS[HP_BANDS.length - 1];
+    return { text: last[1], sev: last[2] };
+  }
+
+  function conditionTile(c, host) {
+    var d = (c.debilities && typeof c.debilities === "object") ? c.debilities : {};
+    var tags = nonEmpty(d.tags);
+
+    // Always rendered, even when there is nothing wrong: a missing tile reads
+    // as "not checked yet" rather than "fine", and the empty slot beside HP
+    // is more confusing than the word "unhurt".
+    var box = el("div", "vital cond");
+    add(box, "div", "k", "Condition");
+
+    if (tags.length) {
+      var row = add(box, "div", "tags");
+      tags.forEach(function (t) { add(row, "span", "pill warn", t); });
+    }
+
+    // Severity colour comes from HP either way, so a GM-written comment is
+    // tinted by how hurt the character actually is rather than being read for
+    // sentiment. No usable HP leaves the note in default ink.
+    var status = hpStatus(c.hp);
+    var sev = status ? " " + status.sev : "";
+
+    if (has(d.comment)) {
+      add(box, "div", "note" + sev, d.comment);
+    } else if (!tags.length) {
+      add(box, "div", "note derived" + sev,
+        status ? status.text : "nothing recorded");
+    }
+
+    host.appendChild(box);
+  }
+
+  function renderSpellbook(book, sections) {
+    if (!Array.isArray(book)) return;
+    var rows = book.filter(function (sp) {
+      return sp && (typeof sp !== "object" || has(sp.name));
+    });
+    if (!rows.length) return;
+    var s = el("section");
+    add(s, "h3", null, "Spellbook");
+    var ul = add(s, "ul");
+    rows.forEach(function (sp) {
+      var li = el("li");
+      if (typeof sp !== "object") {
+        text(li, String(sp));
+      } else {
+        var label = String(sp.name);
+        if (has(sp.level)) label += " (lvl " + sp.level + ")";
+        text(li, label + " — ");
+        add(li, "span", sp.prepared ? "prepared" : "unprepared",
+          sp.prepared ? "prepared" : "not prepared");
+      }
+      ul.appendChild(li);
+    });
+    sections.appendChild(s);
+  }
+
+  // class_specifics minus the keys rendered elsewhere, so homebrew classes still
+  // show up instead of silently vanishing.
+  function renderClassExtras(cs, sections) {
+    if (!cs || typeof cs !== "object") return;
+    Object.keys(cs).forEach(function (k) {
+      if (k === "spellbook") return;
+      var v = cs[k];
+      if (!has(v)) return;
+      var title = k.replace(/_/g, " ");
+      var s;
+      if (Array.isArray(v)) {
+        s = listSection(title, v);
+      } else if (typeof v === "object") {
+        s = el("section");
+        add(s, "h3", null, title);
+        var ul = add(s, "ul");
+        Object.keys(v).forEach(function (kk) {
+          if (!has(v[kk])) return;
+          add(ul, "li", null, kk.replace(/_/g, " ") + ": " + itemToString(v[kk]));
+        });
+        if (!ul.childNodes.length) s = null;
+      } else {
+        s = proseSection(title, v);
+      }
+      if (s) sections.appendChild(s);
+    });
+  }
+
+  function renderSheet(c, index) {
+    var panel = el("div", "sheet");
+    panel.id = "sheet-" + index;
+    panel.setAttribute("role", "tabpanel");
+    panel.hidden = index !== 0;
+
+    var who = add(panel, "div", "who");
+    add(who, "h2", null, has(c.name) ? c.name : "(unnamed)");
+    var bits = ["class", "race", "gender", "alignment"]
+      .map(function (k) { return c[k]; })
+      .filter(function (v) { return has(v); });
+    if (bits.length) add(who, "span", "sub", bits.join(" · "));
+
+    var look = nonEmpty(c.look);
+    if (look.length) {
+      var lookRow = add(who, "div", "look");
+      look.forEach(function (t) { add(lookRow, "span", "pill", t); });
+    }
+
+    renderVitals(c, panel);
+    renderStats(c, panel);
+
+    // Order matters. The short sections come first and tile into the grid's
+    // columns; the move lists go last because each spans the full card width,
+    // and a full-width section in the middle would cut the tiling in half and
+    // strand whitespace beside the short ones.
+    var sections = el("div", "sections");
+
+    [listSection("Bonds", c.bonds),
+     gearSection(c)]
+      .forEach(function (s) { if (s) sections.appendChild(s); });
+
+    renderSpellbook((c.class_specifics || {}).spellbook, sections);
+    renderClassExtras(c.class_specifics, sections);
+
+    var notes = proseSection("Notes", c.notes);
+    if (notes) sections.appendChild(notes);
+
+    // Prefer the resolved moves (name + rulebook text) that dashboard.py
+    // attaches; fall back to the bare names on the sheet if moves.json is
+    // missing, so the card never loses information it used to show.
+    var moves = c.moves || {};
+    var detail = c.move_details || {};
+    [movesSection("Class moves", detail.starting) ||
+       listSection("Class moves", moves.starting),
+     movesSection("Advanced moves", detail.advanced) ||
+       listSection("Advanced moves", moves.advanced)]
+      .forEach(function (s) { if (s) sections.appendChild(s); });
+
+    if (sections.childNodes.length) panel.appendChild(sections);
+    return panel;
+  }
+
+  // ---- tabs ----
+  // Shared by the character cards and the move reference. `entries` is a list
+  // of {label, panel}; the first is shown and the rest are hidden.
+  function wireTabs(tabsHost, panelHost, prefix, entries) {
+    var buttons = [];
+    var panels = [];
+
+    entries.forEach(function (entry, i) {
+      var b = el("button", "tab");
+      b.type = "button";
+      b.id = prefix + "-tab-" + i;
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-controls", prefix + "-panel-" + i);
+      b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+      b.tabIndex = i === 0 ? 0 : -1;
+      text(b, entry.label);
+      b.addEventListener("click", function () { select(i); });
+      tabsHost.appendChild(b);
+      buttons.push(b);
+
+      var p = entry.panel;
+      p.id = prefix + "-panel-" + i;
+      p.setAttribute("role", "tabpanel");
+      p.hidden = i !== 0;
+      panelHost.appendChild(p);
+      panels.push(p);
+    });
+
+    function select(i) {
+      buttons.forEach(function (b, j) {
+        b.setAttribute("aria-selected", j === i ? "true" : "false");
+        b.tabIndex = j === i ? 0 : -1;
+      });
+      panels.forEach(function (p, j) { p.hidden = j !== i; });
+    }
+
+    tabsHost.addEventListener("keydown", function (ev) {
+      var cur = -1;
+      buttons.forEach(function (b, j) {
+        if (b.getAttribute("aria-selected") === "true") cur = j;
+      });
+      if (cur < 0) return;
+      var next = null;
+      if (ev.key === "ArrowRight") next = (cur + 1) % buttons.length;
+      else if (ev.key === "ArrowLeft") next = (cur - 1 + buttons.length) % buttons.length;
+      if (next === null) return;
+      ev.preventDefault();
+      select(next);
+      buttons[next].focus();
+    });
+
+    if (entries.length === 1) tabsHost.style.display = "none";
+  }
+
+  function renderCharacters(chars) {
+    var tabs = document.getElementById("tabs");
+    var host = document.getElementById("sheets");
+
+    if (!chars || !chars.length) {
+      var box = el("div", "empty");
+      add(box, "p", null, "No character sheets found.");
+      add(box, "p", null,
+        "Create <name>_<class>.yaml alongside the campaign files and edit it with yamledit.pyz.");
+      host.appendChild(box);
+      return;
+    }
+
+    wireTabs(tabs, host, "pc", chars.map(function (c, i) {
+      return {
+        label: has(c.name) ? c.name : "(unnamed)",
+        panel: renderSheet(c, i),
+      };
+    }));
+  }
+
+  // The rulebook moves every character can make, under the cards. Basic moves
+  // are the in-the-moment ones; special moves are the longer-term ones.
+  function renderReference(ref) {
+    if (!ref) return;
+    var groups = [["Basic Moves", ref.basic], ["Special Moves", ref.special]]
+      .filter(function (g) { return Array.isArray(g[1]) && g[1].length; });
+    if (!groups.length) return;
+
+    var host = document.getElementById("reference");
+    var wrap = add(host, "div", "ref");
+    add(wrap, "h2", null, "Moves anyone can make");
+
+    var tabs = add(wrap, "div", "tabs");
+    tabs.setAttribute("role", "tablist");
+    var panelHost = add(wrap, "div");
+
+    wireTabs(tabs, panelHost, "ref", groups.map(function (g) {
+      var panel = el("div", "sheet");
+      var cols = add(panel, "div", "cols");
+      g[1].forEach(function (m) { renderMove(m, cols); });
+      return { label: g[0], panel: panel };
+    }));
+  }
+
+  renderPlace(data.environment);
+  renderCharacters(data.characters);
+  renderReference(data.reference);
+
+  var stamp = document.getElementById("stamp");
+  if (data.generated) {
+    text(stamp, "Updated " + data.generated);
+  } else {
+    text(stamp, "Template preview — no campaign loaded.");
+  }
+}());
+</script>
+</body>
+</html>

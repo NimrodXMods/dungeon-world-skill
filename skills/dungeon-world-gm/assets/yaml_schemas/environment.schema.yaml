@@ -1,0 +1,59 @@
+# Describes assets/yaml_templates/environment_template.yaml.
+# Selectively open, same policy as character.schema.yaml: the top level accepts
+# new fields, but every fixed shape inside it is closed so that a typo'd path is
+# an error rather than a new key.
+#
+# This document is PLAYER-VISIBLE. It is rendered into DW_Dashboard.html and is
+# bundled into the session zip in plain text, unlike the rot13'd gmsecret.
+#
+# NOT a copy of gmsecret's `current_location`, despite the shared field names:
+# the gmsecret records ground truth, this records what the characters perceive -
+# what they can see, have been told, or believe, which may be skewed, incomplete
+# or wrong. Divergence between the two is the feature. Do not merge them.
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Dungeon World player-visible environment"
+type: object
+
+# Open at the top level: a campaign invents player-facing scene fields all the
+# time (weather, light, a countdown the party can see), and forbidding them
+# would make the tool unusable.
+additionalProperties: true
+
+# Only `where` is required. The file is created blank at campaign setup, before
+# anyone knows where the party will start.
+required: [where]
+
+properties:
+  # The dashboard header label. Free prose, and deliberately not derived from
+  # region/area/site/point below - the party may know the place by a name that
+  # is not its real one.
+  where: { type: string }
+
+  # Nested location as the party understands it, coarse to fine. Blank is fine.
+  region: { type: string }
+  area: { type: string }
+  site: { type: string }
+  # Overrides the word "Site" in the dashboard header, so a settlement reads
+  # "Town: Cowsburg" rather than "Site: Cowsburg". Blank means "Site".
+  site_label: { type: string }
+  point: { type: string }
+
+  # In-fiction time, e.g. "dusk, second day". Not wall clock.
+  time: { type: string }
+
+  # Prose the GM has ALREADY narrated. Nothing here is a surprise to the player.
+  description: { type: string }
+
+  present: { type: array }
+  exits: { type: array }
+  notable: { type: array }
+
+  # charname -> where that character is, and only while the party is split. An
+  # empty object means everyone is together at the location above. Open, because
+  # the keys are character names.
+  separated:
+    type: object
+    additionalProperties: { type: string }
+
+  notes: { type: string }
