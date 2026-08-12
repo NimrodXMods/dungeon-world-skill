@@ -107,6 +107,14 @@ context-budget discipline.
   is committed, so prefer it over the system temp directory — it keeps the work next to the
   repo and visible to the user, and keeps stray files out of `git status`.
 
+  This includes **design and plan documents**: a spec written before implementing an issue
+  belongs in `tmp/docs/` (e.g. `tmp/docs/superpowers/specs/YYYY-MM-DD-<slug>-design.md`), not
+  in a tracked `docs/` directory and not in the system temp directory. They are working
+  documents for one change, so they are deliberately never committed — if something in one
+  needs to outlive the change, put it in this file, in `SKILL.md`, or in the issue itself.
+  Note the consequence: a plan doc exists only in the working copy that created it, so link
+  or paste the relevant part into the GitHub issue if another session will need it.
+
 ## Runtime state model
 
 Campaign state lives in files, not model memory: `<name>_<class>.yaml` character sheets and one
