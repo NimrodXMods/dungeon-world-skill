@@ -1,16 +1,16 @@
 # Elicitation — how to ask the human for structured choices
 
 Purpose: a **harness-agnostic** pattern for offering multi-choice and form-like
-questions to the user. Inspired by MCP form-mode elicitation (message + discrete
-fields + options + defaults), but rendered as ordinary chat. There is no shared
-cross-client tool for this; do **not** invent or name harness-specific tooling.
+ELICITATION questions to the user. Inspired by MCP form-mode ELICITATION
+(message + discrete fields + options + defaults) using clickable widgets
+presented to users via tool calls. There is no shared cross-client tool for
+this; do **not** invent or name harness-specific tooling.
 
-Read this **on demand** — when running setup checklists, offering a closed menu,
-or any time a finite option set exists and the user has not already answered.
+Read this file **on demand** only as instructed to.
 
 ---
 
-## When to use structured elicitation
+## When to use structured ELICITATION
 
 **Use it** for out-of-fiction / meta decisions and explicit menus:
 
@@ -21,19 +21,19 @@ or any time a finite option set exists and the user has not already answered.
 
 **Do not use it** for ordinary in-fiction play:
 
-- Soft GM moves, "what do you do?", fictional forks inside a scene
-- Open creative questions with no closed set ("name your deity", "describe the scar")
+- Do not use: soft GM moves, "what do you do?", fictional forks inside a scene
+- Do not use: Open creative questions with no closed set ("name your deity",
+  "describe the scar")
 
-When in doubt: if the skill already knows a finite list, **list it**. If the
-answer is free invention, ask open and optionally offer 2–3 examples without
-forcing them.
+When in doubt: if the skill already knows a finite list, **list it** as a menu.
+If the answer is free invention, ask open and optionally offer 2–3 examples
+without forcing them.
 
 ---
 
 ## The pattern (shape, not wire format)
 
-For each decision, hold this structure in mind — present it in plain prose, not
-as JSON or a protocol method:
+For each decision, hold this structure in mind:
 
 | Piece | Role |
 | --- | --- |
@@ -50,37 +50,38 @@ as JSON or a protocol method:
   (class → race → look).
 - **Independent setup fields** may share one message (player count + story log +
   voice) as a short multi-field form.
-- Prefer fewer turns over dumping an entire chargen sheet as one wall of text
-  unless the user asks to go fast.
-- **Characters are never batched across PCs.** Create **one character at a time**,
-  finish their sheet (or a clear handoff point), then start the next. Do **not**
-  ask parallel multi-PC questions such as "what are all three classes?" or
-  "give me all three names at once." Same for stats, gear, and bonds: one PC's
-  decisions only, until that PC is done. Solo multi-PC games still go sequential
-  (PC 1 fully, then PC 2, …).
 
-### Presentation (plain chat)
+### Presentation: clickable ELICITATION widget form presented by tool calls
 
-Number or letter the options. Keep labels short; put detail in a half-line gloss.
-Always say how to reply (number, name, or free text).
+If you have tool calls available for presenting the necessary clickable/tappable
+ELICITATION widgets/forms to obtain structured data from the user then use
+those when they fit. There are no standard tool calls for these so you are
+not expected to have any particular tools for this but you should check anyway.
+If you do not then use the instructions in **Presentation: plain chat** below.
 
-**This chat formatting is the UI.** If your runtime knows MCP form-mode
-elicitation (`elicitation/create` + `requestedSchema`), treat the markdown below
+If your runtime knows MCP form-mode
+ELICITATION (`elicitation/create` + `requestedSchema`), treat the markdown below
 as the same shape as that schema — map fields/options/defaults mentally, then
-render with whatever structured-ask facility you have **or** as numbered chat.
-Do **not** dump raw MCP JSON or protocol envelopes at the user unless their
-client is an MCP form UI that expects that.
+render with whatever structured-ask facility you have **or** as numbered questions
+in chat with lettered options. Do **not** dump raw MCP JSON or protocol envelopes
+at the user unless their client is an MCP form UI that expects that.
 
-```text
+### Presentation: plain chat
+
+**Number the questions**, **letter the options**. Keep labels short;
+put detail in a half-line gloss. Always say how to reply
+(letter, Y/N, or free text). **This chat formatting is the UI.**
+
+```markdown
 **Class** — pick one playbook (or name a homebrew and we'll improvise).
 Default: none — this needs an explicit pick.
 
-1. Fighter — frontline, Signature Weapon
-2. Wizard — spellbook, fragile, versatile magic
-3. Cleric — deity, healing and divine magic
+A. Fighter — frontline, Signature Weapon
+B. Wizard — spellbook, fragile, versatile magic
+C. Cleric — deity, healing and divine magic
 … (list every option the skill actually supports)
 
-Reply with a number, a name, or your own idea.
+Reply with a letter, a name, or your own idea.
 ```
 
 Treat that block as equivalent to a single-field MCP-style form like:
@@ -109,14 +110,14 @@ there is none — same as "Default: none" in the chat form.)
 
 Boolean example with default:
 
-```text
+```markdown
 **Story log** — keep a running `story.md` narrative of the campaign?
 Default: **yes**.
 
-1. Yes — maintain the log (default)
-2. No — skip story.md
+A. [Y]es — maintain the log (default)
+B. [N]o — skip story.md
 
-Reply 1, 2, yes, or no.
+Reply A, B, Y, N, yes, or no.
 ```
 
 Equivalent shape:
@@ -145,55 +146,59 @@ Equivalent shape:
 1. **If a finite option set is known, always enumerate it** when eliciting.
    Never ask "what class?" without listing the playbooks.
 2. **Never name harness-specific tool APIs** as required (e.g. a particular
-   product's ask-user helper). Prefer the chat form above; if you map it to MCP
-   form mode or similar, that is fine — still present a clear multi-choice to
-   the human.
+   product's ask-user helper). If you can use clickable ELICITATION widget
+   form mode or similar tool calls, that is fine — still present a clear
+   multi-choice to the human.
 3. **Defaults are first-class.** When the skill or template has a default, say
    it out loud before the user answers.
 4. **Chat is the default UI.** The JSON examples above are a **mapping aid** for
-   agents that understand MCP form elicitation — not something to paste at the
-   player mid-session unless their client is literally driving an MCP form.
+   agents that understand clickable widget MCP form ELICITATION — not something
+   to paste at the player mid-session unless their client is literally
+   driving an MCP form.
 5. **Multi-select:** say how many to pick ("choose two") and list the full set.
+   Note that some tool call descriptions state false limits on their number of
+   options and they can display more than their claimed limit.
 6. **Locked choices** (e.g. Paladin is Human only): state the lock; do not fake
    a menu of one meaningful option unless clarifying.
 7. **One PC at a time** for character creation (see Batching). No parallel
-   multi-character questionnaires.
+   multi-character questionnaires by default unless the user explicitly requests
+   this.
 
 ---
 
-## Worked example A — session start fork
+## Worked example 1 — session start fork
 
 ```text
-How do you want to proceed?
+1. How do you want to proceed?
 Default: none — needs a pick.
 
-1. Start a **new campaign** (setup world + characters)
-2. **Resume** from a campaign save zip
-3. **GM Assistant** — you GM; the agent assists
-4. Rules / reference only (not starting a session yet)
+A. Start a **new campaign** (setup world + characters)
+B. **Resume** from a campaign save zip
+C. **GM Assistant** — you GM; the agent assists
+D. Rules / reference only (not starting a session yet)
 
-Reply with a number or a short phrase.
+Reply with a letter or matching phrase.
 ```
 
 ---
 
-## Worked example B — one chargen step after class is known
+## Worked example 2 — one chargen step after class is known
 
 ```text
-**Race** (Fighter) — each race grants a different race move.
+2. **Race** (Fighter) — each race grants a different race move.
 Default: none — needs a pick.
 
-1. Dwarf
-2. Elf
-3. Halfling
-4. Human
+A. Dwarf
+B. Elf
+C. Halfling
+D. Human
 
-Or describe a custom ancestry and we'll fit a move. Reply with a number or name.
+Or describe a custom ancestry and we'll fit a move. Reply with a letter or name.
 ```
 
 ---
 
-## Reuse outside this skill
+## Reuse
 
 The same shape works anywhere an agent must collect discrete user input without
 a shared UI tool: **message · kind · options · default · escape · response

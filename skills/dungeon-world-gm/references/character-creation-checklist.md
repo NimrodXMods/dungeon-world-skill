@@ -24,6 +24,7 @@ How to *present* closed menus to the user: **[elicitation](references/elicitatio
    parallel multi-PC elicitations ("what are all three classes?", "names for
    everyone?", "stats for the whole party?"). Name who you are building
    ("Creating PC 1 of 3 — Alice's character") and only ask decisions for them.
+   Only invert the above if the user _explicitly_ asks for it.
 1. Walk **Part 1 in order**. After **Class** is chosen, open that class's
    section in Part 2 and use it for every later closed list (race, look,
    alignment, gear, embedded starting-move choices).

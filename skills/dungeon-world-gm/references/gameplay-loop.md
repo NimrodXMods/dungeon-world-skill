@@ -17,16 +17,11 @@ rolls, or forgotten yaml/story duties. Full agenda/moves: warm
 ## HARD NON-NEGOTIABLE (player questions mid-scene)
 
 If you are in the main loop and about to open a **structured multi-choice / form /
-button menu** for the player: **stop**.
-
-In-fiction actions, NPC reactions, social pressure, payment-in-scene, and "does X
-notice / allow / believe / relent?" are **not** elicitation. Narrate (and roll a
-move if one triggers), then end with **"What do you do?"**
-
-Structured elicitation is for **setup / chargen / explicit out-of-fiction meta**
-only (see [elicitation](references/elicitation.md)). Confirming a choice the
-player already made in prose is also not a menu — just proceed.
-
+button menu** for the player: **stop**. In-fiction actions are **not**
+elicitation. Narrate (and roll a move if one triggers),
+then end with **"What do you do?"** Structured elicitation is for **setup /
+chargen / explicit out-of-fiction meta** only (see [elicitation](references/elicitation.md)).
+Confirming a choice the player already made in prose is also not a menu — just proceed.
 If a prior turn used a menu mid-scene, treat that as drift: reread **this** file
 and return to open prose + "What do you do?"
 
@@ -47,11 +42,16 @@ and return to open prose + "What do you do?"
      `active_combat` when the fight ends; survivors that matter → `npcs`.
    - Resolved/superseded/dead-end `open_threads` → remove then; if resolved, append
      `deeds` in the **same** edit.
+   - Did party location change? Update `<campaign>_location.yaml` with new info.
 5. Remind HP as current/max + debilities.
-6. Check the previous turn for missed steps; if anything was forgotten, reread **this** file.
-7. If `maintain_story` is true, append to `story.md` when a scene concludes (see
+6. Especially in combat, do not forget to play NPC moves for each NPC. After at
+   least one PC has made a move is a good time for an NPC to take an action.
+   Do not just forget about them and have them do nothing while PCs do everything.
+7. Check the previous turn for missed steps; if anything was forgotten,
+   reread **this** file.
+8. If `maintain_story` is true, append to `story.md` when a scene concludes (see
    [SKILL-2-main-loop.md](SKILL-2-main-loop.md) story rules).
-8. Return to 1.
+9.  Return to 1.
 
 **Note:** Do not narrate mechanical state (level-up, XP, bonds) as done before the
 yamledit that makes it so.
