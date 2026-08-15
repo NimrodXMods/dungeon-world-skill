@@ -10,6 +10,33 @@ supersedes: null
 
 # L0 Index — Dungeon World Core Rulebook
 
+## `advanced-digest` Retrieval for **rulebook-digest**
+
+It is important to retrieve only as many lines as needed. When seeking information or answering a question from a digest:
+
+0. Make sure you have run `scripts/rulebook.py --help-llm` first for the full rulebook query options to use if L0-L2 is not sufficient.
+1. **Start at L0.** Scan tags/titles for the matching source(s). This narrows scope for free — don't open L1 files you don't need.
+2. **Read the matching L1 section(s) first.** Use 'grep' tools to range read this file by chunk. Most questions resolve here.
+   Only descend to L2 if the L1 paragraph doesn't contain the specific figure, name, or claim being asked about, and only
+   open L3 (which is `scripts/rulebook.py`) if exact wording (not just the fact) matters. For L3, take the `[xml:...]` anchor off that
+   section's header and run `scripts/rulebook.py` with an anchor query; prefer the narrowest anchor that answers the question
+   over a whole-chapter one.
+3. **Climb back up for context when starting from a fact.** If a search or link lands you on an L2 fact or L3 quote, read its `[s-NNN]`
+   parent for surrounding context before answering — a fact line is self-contained but not context-complete.
+4. **Decompress on the way out, don't quote the digest verbatim.** L1/L2 are deliberately lossy — surprisal-only residue, not prose
+   meant to be read aloud to the user. When using a digest to answer a question, re-expand the kept residue using your own general
+   knowledge to reconstruct full, natural context, the same way you'd explain a topic you knew well, rather than pasting the
+   compressed paragraph as the answer. The digest tells you _what_ was worth keeping; you still supply the connective tissue.
+   - **Mind the decoder.** Because a digest is lossy compression _against the authoring model's weights as a shared dictionary_ the
+     `generated_by` model in the frontmatter records the dictionary the drops assumed. Decoding with a _different_ model still works,
+     but reliability is **capability-relative, not identity-relative**: a decoder at least as capable as — and as knowledgeable in this
+     domain as — the author can trust the drops, whereas a **weaker or differently-specialized** decoder may hit residue the author cut
+     as "common knowledge" that it can't actually reconstruct. When decoding a digest authored by a stronger model, treat thin spots as
+     possible gaps and lean harder on the Verification procedure / re-fetch. (Effort affects _authoring_ quality, not the decoder's
+     dictionary, so it's secondary to model identity here.)
+
+## L0 Index
+
 One line per chapter, with page range and status. Status updates as chunks complete.
 
 Page ranges here are a courtesy pointer for a human holding the printed 1st edition — they
