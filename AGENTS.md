@@ -62,7 +62,7 @@ Both are described in more detail under [CI and releasing](#ci-and-releasing).
 
 ## What this repo is
 
-This repo is not an application — it is the source of a single distributable **Claude Skill**,
+This repo is not an application — it is the source of a single distributable **Agent Skill**,
 `skills/dungeon-world-gm/`, for running the tabletop RPG Dungeon World. Everything outside that
 directory is packaging (`.gitignore`, VS Code workspace, empty `README.md`). The deliverable is the
 skill directory itself: prose references an LLM reads at runtime, plus Python scripts it shells out to.
@@ -449,8 +449,8 @@ Semver policy for `metadata.version`:
 
 | Part | When |
 |-------|------|
-| major | Only ever for major changes — a redesign, a break in how the skill is used or how campaign state is stored. |
-| minor | Any feature or functionality addition. |
+| major | Only ever for major changes — a redesign, a break in how the skill is used or major (but not minor) change in how campaign state is stored. |
+| minor | Any feature or functionality addition. Some minor changes could require some minor gmsecret or yaml migration. |
 | patch | Any fix, or an extremely trivial addition. |
 
 Never bump more than one part, and never bump for a change that doesn't touch `skills/`
@@ -470,4 +470,5 @@ python tools/check_version_bump.py --base origin/main
 
 The skill is CC-BY-NC-SA-4.0 and distills the Dungeon World core rulebook plus fan supplements. All
 credit/copyright detail lives in `references/ATTRIBUTION.md`, deliberately isolated so it never
-consumes play-time context — keep new attributions there rather than inline.
+automatically consumes play-time context when not requested — keep new attributions there rather
+than inline.
