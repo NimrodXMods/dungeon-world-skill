@@ -3,28 +3,43 @@
 [![CI Status](https://raw.githubusercontent.com/NimrodXMods/dungeon-world-skill/refs/heads/badges/status_main.svg)](https://github.com/NimrodXMods/dungeon-world-skill/actions/workflows/validate.yml)
 [![Release](https://raw.githubusercontent.com/NimrodXMods/dungeon-world-skill/refs/heads/badges/release.svg)](https://github.com/NimrodXMods/dungeon-world-skill/releases/latest/download/dungeon-world-gm.zip)
 
-Have you ever wanted to _not_ be the GM, but nobody else around wanted to GM either? Well here's your solution!
+## What ... and more imporatnly, Why?
 
-Have you ever just wanted some assistance with being a GM to keep the
-game moving? Well, this could be your solution as well.
+This is a _highly experimental_ "Agent Skill" for any LLM of sufficient capability
+that allows the LLM to actually run a tabletop RPG like a GM using the rules for the
+Dungeon World RPG. In addition, it can also do lesser related things like answer rules
+questions, generate one-off random encounters, or do whatever is a subset of running
+a full game. Therefore it can also do one-off tasks to help with a game that it isn't
+otherwise aware of.
 
-> Does it work? Well, LLMs aren't the most creative but it does work.
-LLMs will do a better job as GM assistants, but they can act as GMs. And all
-the random procedural generation scripts included in this skill do force
-creativity.
+Why? Primarily because you can't understand new technology and what it is or isn't
+good for without experimenting with it. I used to play Infocom games like Zork, I
+wrote code for MUDs (Multi-User Dungeons, the first online multiplayer RPGs), and
+otherwise have previous experience with pushing the limits of technology when it
+comes to RPGs. The latest developments in "AI" (which I consider to be a
+misnomer) in the form of large language generative transformer models provide a new
+opportunity to, yet again, experiment with what new technology can do just like
+computers did, just like the internet did, and just like computer graphics did.
+
+So I'm taking that opportunity to implement ideas primarily for the purpose of
+learning what works well and what doesnt, and how to get things to work if they can
+be done and seem worthwhile. This is ultimately the only way that anything new ever
+gets invented.
 
 ## What is Dungeon World?
 
-[Dungeon World](https://www.dungeon-world.com/about/) is a TTRPG (table top role-playing game) where a small group tells
-a shared fantasy story together, guided by simple rules that stay out of the way
+[Dungeon World](https://www.dungeon-world.com/about/) is a
+TTRPG (table top role-playing game) where a small group similates a shared
+fantasy world together, guided by simple rules that stay out of the way
 until they matter. Normally it's played around a table with one person as GM --
 describing the world, playing every NPC and monster, posing problems -- while
-everyone else plays their adventuresome character.
+everyone else plays an adventureous character of so,e sort.
 
-Play moves through conversation: when a character tries something risky, the
-player rolls 2d6 plus a stat, and the result (strong hit, partial success, or a
-miss) shapes what happens next. No map grid, no turn tracker — just fiction,
-moves, and dice. This makes it less complex and less formal than more wargame-like "d20" systems.
+I picked this RPG over other more popular ones because it is simple. Most moves
+are decided by 2d6 dice rolls. There's no map grid, no turn tracker — just fiction,
+moves, and dice. This makes it less complex and less formal than more
+wargame-like "d20" systems. The rulebook text os also CC-BY licensed making it
+free to use as necessary.
 
 ## dungeon-world-gm
 
@@ -84,6 +99,12 @@ when assisting a human who can better filter and modify the output.
   (These are agent-visible context injections of reminder strings and prompts
   that are sometimes reloaded as needed to prevent drift.)
 
+### What this is not
+
+This is not a way to crank out mass slop content in the form of poor quality
+campaign supplement PDFs to spam the marlet with junk. Some effort has been
+made to prevent it from being used in that manner.
+
 ### Installation
 
 First check the requirements below, but it should work with Anthropic, SpaceX AI,
@@ -91,13 +112,14 @@ or OpenAI's minimum subscription level services at the very least. (I'm unsure i
 free options from those providers will work though.)
 
 [Download the latest skill `.zip` here](https://github.com/NimrodXMods/dungeon-world-skill/releases/latest/download/dungeon-world-gm.zip)
-(stable link; always the current non-prerelease release asset). Versioned zips remain on
+(stable link; always the current release asset). Versioned zips remain on
 the [releases page](https://github.com/NimrodXMods/dungeon-world-skill/releases)
 as well.
 
-Upload it to your agent of choice or install it according to your agent provider's
+Upload it to your LLM agent of choice or install it according to your agent provider's
 skill installation procedure. It follows standard [Agent Skill](https://agentskills.io/home)
-packaging conventions and should work with Anthropic Claude, xAI Grok, and OpenAI ChatGPT.
+packaging conventions and should work with Anthropic Claude, xAI Grok, OpenAI ChatGPT,
+and probably others.
 
 Then just invoke the skill, usually with: `/dungeon-world-gm`
 
