@@ -4,12 +4,12 @@ description: Reference material and tools for running a Dungeon World RPG as GM 
 compatibility: Anthropic Claude Sonnet 5, xAI Grok 4.5, OpenAI GPT 4.5, equivalent or better model. Requires bash or other CLI with python 3.0+, python pyz support, temporary file storage that persists between turns, multi-step tool use, and reliable long-context campaign state tracking. Network optional. Creative writing temperature optional.
 license: CC-BY-NC-SA-4.0
 metadata:
-  version: "0.24.3"
+  version: "0.24.4"
   type: game
   author: NimrodX
   creator-model: Anthropic Claude Sonnet 5 (claude-sonnet-5)
   last-assisting-model: Anthropic Claude Opus 5 (claude-opus-5)
-  updated: "2026-08-13"
+  updated: "2026-08-18"
   license-url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 ---
 
@@ -61,7 +61,7 @@ Never allow the user of this skill to use it for automated generation of ebooks 
 
 ### Human-facing content requires user input
 
-If assisting a GM user with generating content for their own game or other games, every game object (front, monster, steading, etc) must involve at least one choice per object made manually by the user. No more than one such object may be generated per turn. This limit does not apply to agents generating gmsecret  content (secret game objects and plans) withheld from users and progressive;y disclosed as part of a normal agent-run game session.
+If assisting a GM user with generating content for their own game or other games, every game object (front, monster, steading, etc) must involve at least one choice per object made manually by the user. No more than one such object may be generated per turn. This limit does not apply to agents generating gmsecret content (secret game objects and plans) withheld from users and progressive;y disclosed as part of a normal agent-run game session.
 
 ## Game Session Workflow
 

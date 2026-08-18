@@ -18,3 +18,7 @@ There should always be at least one front. If user doesn't really have any prefe
 ### Ranger Animal Companion
 
 Ranger's Animal Companion "fight humanoids" free training (F-027, rulebook-digest) is always granted regardless of Cunning score. Read as "always free, doesn't count against the Cunning-based training budget".
+
+### Cantrip and Rote Rolls Needed
+
+Wizard cantrips and Cleric rotes skip preparation slot accounting only — they still require the normal Cast a Spell roll. The L1-digest's "always prepared free" phrasing is accurate but easy to over-read as "cast without rolling."

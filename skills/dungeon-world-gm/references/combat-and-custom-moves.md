@@ -6,12 +6,14 @@
 
 Combat is the same conversation as everything else, just faster and more dangerous. Flow:
 
-1. Narrate the start of an NPC's action (a threat, not yet its outcome).
+1. Narrate the start of an enemy's action (a threat, not yet its outcome). "The enemy begins to charge [PC name]." etc.
 2. The player responds - describe *how*, specifically. The specifics of the fiction (what hand, what stance, how much time) determine which move triggers, or whether one triggers at all (attacking a helpless/surprised enemy needs no roll).
-3. If their response triggers a move, they roll.
-4. Narrate the conclusion based on the roll, which becomes the setup for the next exchange.
+3. Decide the actions of Friendly NPCs in the group also.
+4. Friendly NPC actions may aid the player's actions with bonuses or constitute actions needing a roll of their own. See the Followers system. They will act on their own even when not ordered if the situation requires it.
+5. If the player's response triggers a move, they roll. If NPCs need rolls for their action, roll for them.
+6. Narrate the conclusion based on the roll(s), which becomes the setup for the next exchange.
 
-Think of it like directing an action movie: zoom in on one character for an exciting beat, cut to a cliffhanger, cut to the next character - including interrupting mid-scene to threaten someone else. There's no "turn order" to protect; everyone is at risk all the time.
+Think of it like directing an action movie: zoom in on one character for an exciting beat, cut to a cliffhanger, cut to the next character - including interrupting mid-scene to threaten someone else. There's no "turn order" to protect; everyone is at risk all the time. Fiction could determine what order PCs and NPCs act, but friendly NPCs should have some effect if they can, such as aiding players. Unfriendly NPCs will have effects as well such as attacking or interfering with players.
 
 ## Multiple Enemies vs One PC
 

@@ -9,28 +9,25 @@ Whenever creativity is needed use one or more of these scripts to avoid repition
 
 ## Agenda
 
-- Portray a fantastic world
-- Fill the characters' lives with adventure
-- Play to find out what happens
+- Portray a fantastic world - use creativity and the creativity tools with a bias toward magic and the amazing
+- Fill the characters' lives with adventure - provide challenges, use suspense, and give them things to do
 
 ## Principles
 
-- Draw maps, leave blanks
 - Address the characters, not the players
-- Embrace the fantastic
+- Embrace the fantastic - the world need not be fully realistic. It is like myth and magic.
 - Make a move that follows (from the fiction)
 - Never speak the name of your move (don't say "I'm using Show Signs of an Approaching Threat" - just describe what happens)
-- Give every monster life
-- Name every person
-- Ask questions and use the answers
-- Be a fan of the characters
-- Think dangerous
+- Give every monster life - similar to an NPC, monsters should have some sort of "personality" even ones with low intelligence.
+- Name every person - generate names for everyone the PCs talk to even if they don't learn those names immediately.
+- Ask questions and use the answers - if you don't know something about the PCs then ask the user.
 - Begin and end with the fiction (a move's outcome should always resolve back into "what do you do?", not stay abstract)
 - Think offscreen, too (things keep happening even when the players aren't looking)
+- NPCs also make moves. When the PCs make moves, have the NPCs move as well.
 
 ## When to Make a Move
 
-- When everyone looks to you to find out what happens
+- When the PCs want to know what happens next.
 - When the players give you a golden opportunity (a bad roll, or fictional positioning that invites it)
 - When they roll a 6-
 
@@ -121,6 +118,7 @@ Full writeup with worked examples: ["Suddenly Ogres" by Vasiliy Shapovalov](http
 ## Combat Specifics (see [combat-and-custom-moves](references/combat-and-custom-moves.md) for the full discussion)
 
 - No initiative, no rounds - combat runs on the same fiction-first conversation as everything else.
+- NPCs and monsters need to take some initiative to act on their own. Have them act between PC actions as well.
 - **Multiple enemies attacking one PC (official rule, per core rulebook):** roll damage once, using the _highest_ damage die among the attackers, and add +1 damage for each additional attacker beyond the first (not a re-roll per attacker). E.g. a d10+1-ignores-armor orkaster plus three d6 goblins all hit at once: roll 1d10+1 (ignores armor) and add +3 (for the three other attackers) - one roll total. (Alternate 'easy mode' house rule if players request: rolling one die per attacker and taking the highest.)
 - A "swarm" of many small enemies can be run as one HP pool; when it hits 0 the survivors flee/surrender.
 - Making a threat clear matters: always be explicit about whether you're describing a past action, flavor text, or an _incoming_ attack the player needs to respond to.

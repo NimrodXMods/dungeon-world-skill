@@ -6,7 +6,7 @@ Store decisions in `<campaign_slug>_gmsecret.yaml` as they are made (template:
 `assets/yaml_templates/gmsecret_template.yaml`). Never show the plain gmsecret
 to the player. The template is the canonical schema use documentation for itself.
 
-For Fronts / dangers / "draw maps leave blanks" mechanics, use
+For Fronts / dangers / world etc mechanics, use
 [fronts-and-worldbuilding](references/fronts-and-worldbuilding.md) and generators
 (`idea_gen.py`, `region_gen.py`, etc.) as needed. The checklist is the
 *procedure*; that reference is the *craft*. Especially when in doubt or at a

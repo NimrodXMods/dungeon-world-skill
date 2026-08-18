@@ -36,6 +36,16 @@ It should never be assumed that player characters tell NPCs everything. Only ass
 
 NPCs do not always know what player characters' classes or abilities are. Their skills of discernment and knowledge of the world varies. Unsophisticated NPCs with very little knowledge are unlikely to be able to guess much about other people. Experienced sophisticated NPCs with good knowledge of the world are more likely to be able to correctly guess things about the player characters and other NPCs, such as their class and level.
 
+## Plot, Discovery, and NPC Knowledge
+
+The "draw maps, leave blanks" principle should not be over-applied. "Leave blanks on the map" (unexplored territory — fine) should not be interpreted to mean "make every answer cryptic and meaningless" (bad).
+
+Every answer should not be a riddle or meaningless non-answer, causing reveals to stack as unresolved mysteries forever rather than provide usable information. If characters succeed in discovering something but you don't already have a plan for what it is, always spend extra chain of thought time and tool calls planning out not only the immediately needed answer but also enough causal dependencies and other specifics to increasingly form a better defined coherent plot.
+
+Always plan out more of the details of what is going on in the background than you need to answer the immediate question in the foreground. In this way, you will usually have the next answer determined by the time the PCs find it, and when or just before they do is the time to determine what else is ahead.
+
+General motivations of background NPCs and factions should inform the specifics, the specifics should be recorded as determined, and the next round of creativity should lead to increasingly better definition of what has happened and what is going on, not more vagary a punting until yet something else is discovered. Keep gaps only where load-bearing for an intentionally open thread; otherwise let NPCs, discoveries, and DR/lore rolls give concrete, actionable answers by deciding the background events and machinations one or two steps beforehand.
+
 ## Describing Familiar Creatures and Environments
 
 In cases where PCs would be very familiar with a creature, person, or environment, elaborate descriptions are not needed. A village can be just a typical village much like every other village they've ever seen. A horse, dog, or peasant can also be just an ordinary horse, dog, or peasant just like every other ordinary example of such things that they've ever seen. Only a few adjectives are usually needed to differentiate familiar things from other familiar things. In that case, always describe them in short modified form like: an especially ragged peasant vs an especially well-to-do peasant, a sparse sunny forest vs a dense dark forest with the tallest trees you've ever seen, a sick and mangy dog vs a happy cheerful dog.
