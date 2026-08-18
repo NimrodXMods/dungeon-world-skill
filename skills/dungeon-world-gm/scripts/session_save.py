@@ -72,6 +72,65 @@ force_utf8_stdio()
 
 YAMLEDIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yamledit.pyz")
 
+HELP_LLM = """session_save.py - package a Dungeon World campaign into a downloadable zip.
+
+WHAT IT IS
+  Campaign state lives in files, not your memory. This bundles the whole
+  working set - gmsecret, environment, character sheets, handoff, story - into
+  one zip the user can download and hand back at the start of the next session.
+
+  The gmsecret and handoff are rot13-encoded by default so a player can hold
+  the zip without spoiling themselves. That is obfuscation, not security.
+
+WHEN TO CALL IT
+  --kind session_end   The session is over. handoff.md is REQUIRED; the script
+                       exits with an error if it is missing, because that file
+                       is what the next session picks up from. Names the zip
+                       <slug>_s<session_number>.zip.
+  --kind checkpoint    A mid-session snapshot. handoff.md is optional and
+                       simply omitted when absent. Names the zip
+                       <slug>_checkpoint.zip, overwriting any previous one.
+
+USAGE
+  python3 scripts/session_save.py GMSECRET --kind {session_end,checkpoint}
+          [--slug SLUG] [--dir DIR] [--outdir OUTDIR] [--no-rot13]
+
+  GMSECRET     Path to the plain-text gmsecret YAML working copy.
+  --slug       Override the campaign slug used in filenames. Default: slugified
+               `campaign_slug` (falling back to `campaign`) read from GMSECRET.
+  --dir DIR    Where to look for character *.yaml, the environment file,
+               handoff.md and story.md. Default: GMSECRET's own directory.
+  --outdir     Where to write the zip. Default: current directory.
+  --no-rot13   Store the gmsecret and handoff as plain text. Use when the person
+               holding the zip IS the GM (GM-assistant mode, a solo GM archiving
+               prep) - the obfuscation guards against a player spoiling
+               themselves, which does not apply to them.
+
+WHAT GOES IN THE ZIP
+  <slug>_gmsecret.txt      rot13   (or <slug>_gmsecret.yaml with --no-rot13)
+  <slug>_handoff.txt       rot13   (or handoff.md with --no-rot13)
+  <slug>_environment.yaml  plain   player-visible; omitted if it does not exist
+  *.yaml                   plain   character sheets
+  story.md                 plain   only when the gmsecret has maintain_story
+
+  The ENCODING IS CARRIED BY THE FILENAME, which is why session_load.py needs
+  no matching flag and cannot guess wrong: rot13 is its own inverse, so a wrong
+  guess would corrupt silently instead of failing.
+
+  Payloads are normalized to LF inside the zip regardless of local line endings.
+
+EXIT CODES
+  0  zip written
+  1  no handoff.md at session_end, or no session_number in the gmsecret
+
+NOTES
+  - A missing character sheet is a warning, not an error - check --dir if you
+    see it, since the usual cause is pointing at the wrong directory.
+  - The environment file is bundled but is NOT counted as a character sheet.
+  - Re-running is harmless and idempotent; it just rewrites the same zip.
+  - Restore with: python3 scripts/session_load.py <zip> [--dir .]
+"""
+
 STORY_FILENAME = "story.md"
 
 
@@ -102,6 +161,10 @@ def slugify(name):
 
 
 def main():
+    if "--help-llm" in sys.argv[1:]:
+        sys.stdout.write(HELP_LLM)
+        return 0
+
     ap = argparse.ArgumentParser(description="Package a DW session for download.")
     ap.add_argument("gmsecret", help="Path to the plain-text gmsecret YAML working copy")
     ap.add_argument("--kind", choices=["session_end", "checkpoint"], required=True)
@@ -109,6 +172,8 @@ def main():
     ap.add_argument("--dir", default=None,
                      help="Directory to look for character *.yaml files in (default: gmsecret's directory)")
     ap.add_argument("--outdir", default=".", help="Where to write the zip (default: current dir)")
+    ap.add_argument("--help-llm", action="store_true", dest="help_llm",
+                     help="print the dense full reference written for LLM callers, then exit")
     ap.add_argument("--no-rot13", action="store_true", dest="no_rot13",
                      help="Store the gmsecret and handoff as plain text instead of "
                           "rot13. Use when the person holding the zip IS the GM "
@@ -174,8 +239,18 @@ def main():
 
     char_files = sorted(
         p for p in glob.glob(os.path.join(char_dir, "*.yaml"))
-        if not os.path.basename(p).endswith("_gmsecret.yaml")
+        if not (os.path.basename(p).endswith("_gmsecret.yaml")
+                or os.path.basename(p).endswith("_environment.yaml"))
     )
+
+    # The environment file is handled on its own rather than falling out of the
+    # glob above: it is player-visible (so it rides along plain, never rot13'd)
+    # but it is not a character, and counting it as one would make a campaign
+    # with no PCs look like it has one. Absent is fine - a campaign may not have
+    # written one yet.
+    environment_path = os.path.join(char_dir, f"{slug}_environment.yaml")
+    if not os.path.exists(environment_path):
+        environment_path = None
 
     # story.md rides along in plain text, unlike the gmsecret and handoff: it is
     # the narrative the player has already lived through, so there is nothing in
@@ -188,10 +263,23 @@ def main():
               file=sys.stderr)
 
     zip_path = os.path.join(args.outdir, zip_name)
+    print(f"Writing {zip_path} ...")
+
+    note = "plain text - readable by anyone holding the zip" if args.no_rot13 \
+        else "rot13-encoded"
+
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(gmsecret_name, encoded_gmsecret_text)
+        print(f"  - {gmsecret_name} ({note})")
+        if environment_path is not None:
+            zf.writestr(
+                os.path.basename(environment_path),
+                normalize_newlines_to_lf(read_text_utf8(environment_path)),
+            )
+            print(f"  - {os.path.basename(environment_path)}")
         if encoded_handoff_text is not None:
             zf.writestr(handoff_name, encoded_handoff_text)
+            print(f"  - {handoff_name} ({note})")
         for cf in char_files:
             # writestr + LF, not zf.write raw bytes: Windows working copies may
             # be CRLF on disk; the zip must stay LF-canonical.
@@ -199,27 +287,16 @@ def main():
                 os.path.basename(cf),
                 normalize_newlines_to_lf(read_text_utf8(cf)),
             )
+            print(f"  - {os.path.basename(cf)}")
         if has_story:
             zf.writestr(
                 STORY_FILENAME,
                 normalize_newlines_to_lf(read_text_utf8(story_path)),
             )
-
-    note = "plain text - readable by anyone holding the zip" if args.no_rot13 \
-        else "rot13-encoded"
+            print(f"  - {STORY_FILENAME}")
     print(f"Wrote {zip_path}")
-    print(f"  - {gmsecret_name} ({note})")
-    if encoded_handoff_text is not None:
-        print(f"  - {handoff_name} ({note})")
-    for cf in char_files:
-        print(f"  - {os.path.basename(cf)}")
-    if has_story:
-        print(f"  - {STORY_FILENAME}")
-    # The environment file is bundled with the sheets above (it is player-safe,
-    # so it rides along plain), but it is not a character - a campaign with only
-    # an environment file still has no PCs and should still say so.
-    if not [p for p in char_files
-            if not os.path.basename(p).endswith("_environment.yaml")]:
+
+    if not char_files:
         print("  (no character *.yaml files found alongside the gmsecret - is --dir right?)", file=sys.stderr)
     if args.no_rot13:
         print("  (spoilers are readable in this zip - hand it to a GM, not a player. "
