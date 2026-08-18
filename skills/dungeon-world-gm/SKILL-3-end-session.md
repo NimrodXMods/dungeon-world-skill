@@ -39,11 +39,19 @@ been pruned as they resolved during play; this is the backstop:
   collapsing into one replaces all of them), or dead-ended. A thread nobody has touched
   in two sessions is a dead end - cut it.
 - For each thread that was _resolved_ rather than abandoned, append a `deeds` entry
-  recording who did it - PCs and any NPCs who helped - and what resulted, e.g. "Fred and
-  Joe solved the mystery of the disappearing cattle in Cowsburg with Old Marta's help,
-  and gained the gratitude of the townsfolk". One deed may close several threads at once.
-  `deeds` is append-only and sequential: never rewrite or reorder past entries. It is the
-  campaign's memory, and the reason pruning threads loses nothing.
+  recording who did it - PCs and any NPCs who helped - and what resulted,
+  e.g. session: 3 deed: "Fred and Joe solved the mystery of the disappearing cattle
+  in Cowsburg with Old Marta's help, and gained the gratitude of the townsfolk".
+  One deed may close several threads at once. `deeds` is append-only and sequential:
+  never rewrite or reorder past entries. It is the campaign's memory, and the reason
+  pruning threads loses nothing.
+
+```
+deeds:
+  - session: 3
+    deed: "Fred and Joe solved the mystery..."
+```
+
 - Before pruning, check each surviving thread against `pause_state.situation` - if a thread's
   text no longer matches what actually happened this session, `situation` wins: rewrite or
   cut the thread rather than leaving a stale version of events sitting in `open_threads`.
